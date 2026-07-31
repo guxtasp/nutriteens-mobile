@@ -25,6 +25,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "scheme": "nutriteens",
+    "plugins": [
+      "expo-font",
+      "expo-web-browser"
+    ]
   }
+  
 }
