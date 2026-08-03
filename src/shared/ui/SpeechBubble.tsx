@@ -11,11 +11,14 @@ interface SpeechBubbleProps {
   typewriter?: boolean; // se false, mostra o texto inteiro direto (sem digitação)
   onFinishTyping?: () => void;
   style?: object;
+  // 'left': balão ao lado do Bróxis (mascote à esquerda, mesma linha) — usar no EBIA e Recordatório.
+  // 'bottom': balão abaixo do Bróxis (mascote em cima, layout empilhado).
+  tailPosition?: 'left' | 'bottom';
 }
 
 // Bolha de fala do Bróxis. Quando `typewriter` está ativo, o texto some
 // gradualmente como se estivesse sendo digitado; tocar na bolha pula pro final.
-export function SpeechBubble({ text, typewriter = true, onFinishTyping, style }: SpeechBubbleProps) {
+export function SpeechBubble({ text, typewriter = true, onFinishTyping, style, tailPosition = 'bottom' }: SpeechBubbleProps) {
   const { displayedText, isDone, skipToEnd } = useTypewriter(text, {
     onDone: onFinishTyping,
   });
@@ -29,10 +32,10 @@ export function SpeechBubble({ text, typewriter = true, onFinishTyping, style }:
       transition={{ type: 'timing', duration: 250 }}
       style={[styles.bubble, style]}
     >
-      <Pressable onPress={typewriter && !isDone ? skipToEnd : undefined}>
-        <AppText style={styles.text}>{shownText}</AppText>
-      </Pressable>
-      <View style={styles.tail} />
+        <Pressable onPress={typewriter && !isDone ? skipToEnd : undefined}>
+          <AppText style={styles.text}>{shownText}</AppText>
+        </Pressable>
+      <View style={tailPosition === 'left' ? styles.tailLeft : styles.tailBottom} />
     </MotiView>
   );
 }
@@ -46,7 +49,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     maxWidth: 320,
-    alignSelf: 'center',
   },
   text: {
     fontFamily: typography.regular,
@@ -55,7 +57,7 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     textAlign: 'center',
   },
-  tail: {
+  tailBottom: {
     position: 'absolute',
     bottom: -8,
     left: '50%',
@@ -68,5 +70,19 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#D9D9D9',
+  },
+  tailLeft: {
+    position: 'absolute',
+    left: -10,
+    top: '50%',
+    marginTop: -8,
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderRightWidth: 10,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRightColor: '#D9D9D9',
   },
 });

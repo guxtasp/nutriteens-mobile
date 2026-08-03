@@ -1,7 +1,7 @@
 // src/features/auth/screens/SignupScreen.tsx
 import React, { useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
-import { supabase } from '../../../lib/supabase';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { AppText } from '../../../shared/ui/AppText';
@@ -14,85 +14,16 @@ import { RadioGroup } from '../../../shared/ui/RadioGroup';
 import { Checkbox } from '../../../shared/ui/Checkbox';
 import { Divider } from '../../../shared/ui/Divider';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
-import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TIPO_ESCOLA_OPTIONS } from '../constants/tipoEscolaOptions';
+import { useSignup } from '../hooks/useSignup';
+import {
+  validateNome,
+  validateDataNascimento,
+  validateEmail,
+  validatePassword,
+} from '../utils/signupValidators';
+import { GENERO_OPTIONS } from '../constants/generoOptions';
 
-
-const TIPO_ESCOLA_OPTIONS = [
-  { label: 'Pública', value: 'PUBLICA' },
-  { label: 'Privada', value: 'PRIVADA' },
-  { label: 'Filantrópica', value: 'FILANTROPICA' },
-];
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_MIN_LENGTH = 8;
-
-// converte DD/MM/AAAA -> AAAA-MM-DD (formato aceito pela coluna DATE do Postgres)
-function toIsoDate(brDate: string): string | null {
-  const match = brDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) return null;
-  const [, day, month, year] = match;
-  return `${year}-${month}-${day}`;
-}
-
-// checa se dia/mês/ano formam uma data real (rejeita 31/02, 30/02 em ano não bissexto etc.)
-function isRealDate(day: number, month: number, year: number): boolean {
-  const date = new Date(year, month - 1, day);
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
-}
-
-function validateNome(value: string): string | null {
-  const palavras = value.trim().split(/\s+/).filter(Boolean);
-  if (palavras.length < 2) {
-    return 'Digite seu nome completo (nome e sobrenome)';
-  }
-  return null;
-}
-
-function validateDataNascimento(value: string): string | null {
-  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) {
-    return 'Digite a data no formato DD/MM/AAAA';
-  }
-
-  const day = parseInt(match[1], 10);
-  const month = parseInt(match[2], 10);
-  const year = parseInt(match[3], 10);
-
-  if (!isRealDate(day, month, year)) {
-    return 'Digite uma data de nascimento válida';
-  }
-
-  const hoje = new Date();
-  const dataInformada = new Date(year, month - 1, day);
-  if (dataInformada > hoje) {
-    return 'A data de nascimento não pode ser no futuro';
-  }
-
-  return null;
-}
-
-function validateEmail(value: string): string | null {
-  if (!EMAIL_REGEX.test(value.trim())) {
-    return 'Digite um e-mail em um formato válido';
-  }
-  return null;
-}
-
-function validatePassword(value: string): string | null {
-  if (value.length < PASSWORD_MIN_LENGTH) {
-    return `A senha precisa ter pelo menos ${PASSWORD_MIN_LENGTH} caracteres`;
-  }
-  if (!/[a-z]/.test(value)) return 'A senha precisa ter pelo menos uma letra minúscula';
-  if (!/[A-Z]/.test(value)) return 'A senha precisa ter pelo menos uma letra maiúscula';
-  if (!/[0-9]/.test(value)) return 'A senha precisa ter pelo menos um número';
-  if (!/[^A-Za-z0-9]/.test(value)) return 'A senha precisa ter pelo menos um caractere especial (ex: !@#$%)';
-  return null;
-}
 
 export default function SignupScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -102,8 +33,8 @@ export default function SignupScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [aceitouTermos, setAceitouTermos] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { message, type, showMessage, clearMessage } = useMessageBanner();
+  const [genero, setGenero] = useState<string | null>(null);
+  const { loading, message, type, showMessage, clearMessage, handleSignup } = useSignup();
 
   // dispara a validação de um campo no onBlur e mostra o erro no toast do topo
   function handleFieldBlur(validator: (value: string) => string | null, value: string) {
@@ -113,92 +44,8 @@ export default function SignupScreen({ navigation }: any) {
     }
   }
 
-  async function handleSignup() {
-    const erroNome = validateNome(nome);
-    if (erroNome) {
-      showMessage(erroNome, 'error');
-      return;
-    }
-
-    const erroData = validateDataNascimento(dataNascimento);
-    if (erroData) {
-      showMessage(erroData, 'error');
-      return;
-    }
-
-    if (!tipoEscola) {
-      showMessage('Selecione o tipo de escola', 'error');
-      return;
-    }
-
-    const erroEmail = validateEmail(email);
-    if (erroEmail) {
-      showMessage(erroEmail, 'error');
-      return;
-    }
-
-    const erroSenha = validatePassword(password);
-    if (erroSenha) {
-      showMessage(erroSenha, 'error');
-      return;
-    }
-
-    if (!aceitouTermos) {
-      showMessage('Você precisa aceitar os termos de uso para continuar', 'error');
-      return;
-    }
-
-    setLoading(true);
-
-    const dataIso = toIsoDate(dataNascimento) as string;
-    const { data, error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      setLoading(false);
-      let mensagem = 'Não conseguimos criar sua conta :(';
-      if (error.message.includes('already registered')) {
-        mensagem = 'Já existe uma conta com esse email';
-      } else if (error.message.includes('Password')) {
-        mensagem = 'A senha não atende aos requisitos de segurança do Supabase';
-      }
-      showMessage(mensagem, 'error');
-      return;
-    }
-
-    const userId = data.user?.id;
-    if (!userId) {
-      setLoading(false);
-      showMessage('Não foi possível concluir o cadastro, tente novamente', 'error');
-      return;
-    }
-
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: userId,
-      nome,
-      data_nascimento: dataIso,
-      tipo_instituicao: tipoEscola,
-    });
-
-    if (profileError) {
-      setLoading(false);
-      showMessage('Conta criada, mas houve um erro ao salvar seu perfil', 'error');
-      return;
-    }
-
-    const { error: consentError } = await supabase.from('consentimentos').insert({
-      user_id: userId,
-      aceite_termos: true,
-      versao_termo: '1.0',
-    });
-
-    setLoading(false);
-
-    if (consentError) {
-      showMessage('Conta criada, mas houve um erro ao registrar o aceite dos termos', 'error');
-      return;
-    }
-
-    // a partir daqui o RootNavigator detecta a sessão e troca de stack sozinho
+  function onSubmit() {
+    handleSignup({ nome, dataNascimento, tipoEscola, genero,  email, password, aceitouTermos });
   }
 
   async function handleGoogleSignup() {
@@ -232,6 +79,13 @@ export default function SignupScreen({ navigation }: any) {
           value={nome}
           onChangeText={setNome}
           onBlur={() => handleFieldBlur(validateNome, nome)}
+        />
+
+        <RadioGroup
+          label="Qual é o seu gênero?"
+          options={GENERO_OPTIONS}
+          value={genero}
+          onChange={setGenero}
         />
 
         <DateInput
@@ -274,18 +128,14 @@ export default function SignupScreen({ navigation }: any) {
               Li e aceito os{' '}
               <AppText
                 style={styles.link}
-                onPress={() =>
-                  showMessage('Documento ainda não implementado', 'info')
-                }
+                onPress={() => showMessage('Documento ainda não implementado', 'info')}
               >
                 Termos de Uso
               </AppText>{' '}
               e a{' '}
               <AppText
                 style={styles.link}
-                onPress={() =>
-                  showMessage('Documento ainda não implementado', 'info')
-                }
+                onPress={() => showMessage('Documento ainda não implementado', 'info')}
               >
                 Política de Privacidade
               </AppText>
@@ -299,7 +149,7 @@ export default function SignupScreen({ navigation }: any) {
           textColor={colors.white}
           shadowColor="#123024"
           fullWidth
-          onPress={handleSignup}
+          onPress={onSubmit}
         />
 
         <Divider />
@@ -333,7 +183,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 40,
   },
-    topBanner: {
+  topBanner: {
     position: 'absolute',
     width: '90%',
     alignSelf: 'center',

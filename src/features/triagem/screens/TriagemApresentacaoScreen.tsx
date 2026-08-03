@@ -19,7 +19,7 @@ export default function TriagemApresentacaoScreen({ navigation }: any) {
 
       <View style={styles.content}>
         <SpeechBubble
-          text={`Quero te conhecer melhor! Vou fazer ${TOTAL_PERGUNTAS} perguntinhas rápidas pra te acompanhar direitinho nessa jornada`}
+          text={`Quero te conhecer melhor! Vou fazer umas perguntinhas rápidas pra te acompanhar direitinho nessa jornada`}
           style={styles.bubble}
           onFinishTyping={() => setPodeAvancar(true)}
         />
@@ -33,7 +33,9 @@ export default function TriagemApresentacaoScreen({ navigation }: any) {
         shadowColor="#123024"
         fullWidth
         disabled={!podeAvancar}
-        onPress={() => navigation.navigate('TriagemPergunta', { indice: 0 })}
+        // primeiro passo agora é o Recordatório, não a EBIA — única mudança
+        // necessária aqui por causa da troca de ordem
+        onPress={() => navigation.navigate('RecordatorioRefeicao', { indice: 0 })}
         style={styles.continueButton}
       />
     </View>
@@ -59,6 +61,6 @@ const styles = StyleSheet.create({
     marginBottom: -8,
   },
   continueButton: {
-    marginBottom: 40,
+    marginBottom: 70,
   },
 });

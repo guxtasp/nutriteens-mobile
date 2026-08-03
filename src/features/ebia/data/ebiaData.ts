@@ -1,4 +1,4 @@
-// src/features/triagem/data/ebiaData.ts
+// src/features/ebia/data/ebiaData.ts
 
 // Perguntas adaptadas para linguagem de adolescente, com base na escala de
 // insegurança alimentar validada por Coelho et al. (2015, Rev. Nutr.) para
@@ -41,12 +41,10 @@ export type ClassificacaoEbia =
   | 'INSEGURANCA_MODERADA'
   | 'INSEGURANCA_GRAVE';
 
-// Respostas: true = "Sim" (1 ponto), false = "Não" (0 pontos)
 export function calcularPontuacaoEbia(respostas: boolean[]): number {
   return respostas.filter(Boolean).length;
 }
 
-// Pontos de corte sugeridos por Coelho et al. (2015) para a escala de 5 itens
 export function classificarEbia(pontuacao: number): ClassificacaoEbia {
   if (pontuacao === 0) return 'SEGURANCA_ALIMENTAR';
   if (pontuacao <= 2) return 'INSEGURANCA_LEVE';

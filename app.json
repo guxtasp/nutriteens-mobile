@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "nutriteens-mobile",
-    "slug": "nutriteens-mobile",
+    "name": "NutriTeens",
+    "slug": "nutriteens",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/img/mascot/icon-app.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -17,11 +17,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/img/mascot/icon-app.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.nutriteens.nutriteens"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,7 +31,12 @@
     "plugins": [
       "expo-font",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "164a0816-3be5-4d3e-b295-a38cf7e188ec"
+      }
+    },
+    "owner": "nutriteens"
   }
-  
 }

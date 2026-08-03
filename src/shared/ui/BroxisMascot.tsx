@@ -15,9 +15,9 @@ interface BroxisMascotProps {
 // Troque pelos PNGs reais quando estiverem exportados em assets/mascot/.
 // Mantendo um source por pose facilita trocar a arte sem mexer na animação.
 const BROXIS_SOURCES: Record<BroxisPose, ImageSourcePropType> = {
-  aceno: require('../../../assets/mascot/broxis-aceno.png'),
-  apresentando: require('../../../assets/mascot/broxis-apresentando.png'),
-  pensando: require('../../../assets/mascot/broxis-pensando.png'),
+  aceno: require('../../../assets/img/mascot/broxis-aceno.png'),
+  apresentando: require('../../../assets/img/mascot/broxis-apresentando.png'),
+  pensando: require('../../../assets/img/mascot/broxis-pensando.png'),
 };
 
 // Partícula decorativa simples (bolinha) usada para dar sensação de leveza

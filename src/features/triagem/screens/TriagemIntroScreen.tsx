@@ -59,6 +59,6 @@ const styles = StyleSheet.create({
     marginBottom: -8,
   },
   continueButton: {
-    marginBottom: 40,
+    marginBottom: 70,
   },
 });

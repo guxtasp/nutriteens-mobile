@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 20,
+    justifyContent: 'flex-start',
   },
   optionRow: {
     flexDirection: 'row',
