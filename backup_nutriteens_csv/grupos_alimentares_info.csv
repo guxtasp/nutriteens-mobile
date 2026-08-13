@@ -1,0 +1,11 @@
+﻿grupo,titulo_amigavel,explicacao,exemplo,icone
+CEREAIS_E_TUBERCULOS,Cereais e Tubérculos,"São os alimentos que dão energia pro seu dia — tipo o ""combustível"" do corpo.","arroz, batata, pão, mandioca, macarrão",nutrition-outline
+LEGUMES_E_VERDURAS,Legumes e Verduras,"Cheios de vitaminas e fibras, ajudam seu corpo a funcionar bem e te deixam saciado.","alface, tomate, cenoura, brócolis",leaf-outline
+FRUTAS,Frutas,Doces naturalmente e cheias de vitaminas — ótima opção pra matar a vontade de doce de forma saudável.,"banana, maçã, laranja, mamão",nutrition-outline
+LEITE_E_DERIVADOS,Leite e Derivados,"Fontes de cálcio, essenciais pra ossos e dentes fortes enquanto você ainda está crescendo.","leite, queijo, iogurte",water-outline
+CARNES_E_OVOS,Carnes e Ovos,"Ricos em proteína, ajudam a construir e manter seus músculos.","frango, carne, peixe, ovo",restaurant-outline
+LEGUMINOSAS,Leguminosas,Boa fonte de proteína vegetal e fibras — combinam super bem com arroz.,"feijão, lentilha, grão-de-bico",leaf-outline
+OLEAGINOSAS_E_SEMENTES,Oleaginosas e Sementes,"Gorduras boas em pequenas porções, dão energia e ajudam na concentração.","castanha, amendoim, semente de girassol",ellipse-outline
+OLEOS_E_GORDURAS,Óleos e Gorduras,Usados com moderação no preparo dos alimentos — em excesso não fazem bem.,"óleo de cozinha, azeite, manteiga",water-outline
+ACUCARES_E_DOCES,Açúcares e Doces,"Gostosos, mas devem ser consumidos com moderação — o excesso não faz bem pro corpo.","bala, chocolate, sorvete, bolo",ice-cream-outline
+BEBIDAS,Bebidas,Água é sempre a melhor escolha. Bebidas açucaradas devem ser mais raras.,"água, suco, refrigerante, chá",cafe-outline

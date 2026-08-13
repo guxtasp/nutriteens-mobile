@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/img/mascot/icon-app.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -25,7 +25,7 @@
       "package": "com.nutriteens.nutriteens"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/img/mascot/icon-app.png"
     },
     "scheme": "nutriteens",
     "plugins": [

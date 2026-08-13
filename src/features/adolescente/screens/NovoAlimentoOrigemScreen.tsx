@@ -1,5 +1,5 @@
 // src/features/adolescente/screens/NovoAlimentoOrigemScreen.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../shared/ui/AppText';
 import { typography } from '../../../shared/theme/typography';
+import { InfoButton } from '../../../shared/ui/InfoButton';
+import { InfoSheet } from '../../../shared/ui/InfoSheet';
 
 export type OrigemAlimento = 'PREPARADO_EM_CASA' | 'INDUSTRIALIZADO' | 'NATURAL';
 
@@ -23,6 +25,7 @@ const OPCOES: { origem: OrigemAlimento; titulo: string; exemplo: string }[] = [
 export default function NovoAlimentoOrigemScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { params } = useRoute<RouteProps>();
+  const [infoVisivel, setInfoVisivel] = useState(false);
 
   function selecionar(origem: OrigemAlimento) {
     navigation.navigate('NovoAlimentoForm', { tipo: params.tipo, nomeRefeicao: params.nomeRefeicao, origem });
@@ -35,9 +38,7 @@ export default function NovoAlimentoOrigemScreen() {
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
         <View style={styles.topoDireita}>
-          <Pressable style={styles.botaoCircularPequeno}>
-            <Ionicons name="information" size={16} color="#fff" />
-          </Pressable>
+          <InfoButton style={styles.botaoCircularPequeno} onPress={() => setInfoVisivel(true)} />
           <Pressable onPress={() => navigation.goBack()} style={styles.botaoCircularPequeno}>
             <Ionicons name="close" size={16} color="#fff" />
           </Pressable>
@@ -58,6 +59,15 @@ export default function NovoAlimentoOrigemScreen() {
           </Pressable>
         ))}
       </View>
+
+      <InfoSheet
+        visivel={infoVisivel}
+        onFechar={() => setInfoVisivel(false)}
+        titulo="Qual a origem do alimento?"
+        icone="restaurant-outline"
+        explicacao="A origem ajuda a gente a entender o quanto o alimento foi processado antes de chegar até você. Isso conta pra saber se a refeição está mais equilibrada ou não."
+        exemplo="Natural = veio direto da natureza. Preparado em casa = você ou sua família cozinhou. Industrializado = veio pronto de fábrica."
+      />
     </SafeAreaView>
   );
 }

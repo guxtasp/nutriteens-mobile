@@ -3,7 +3,7 @@ import { Image, StyleSheet, View, ImageSourcePropType } from 'react-native';
 import { MotiView } from 'moti';
 import { Easing } from 'react-native-reanimated';
 
-type BroxisPose = 'aceno' | 'apresentando' | 'pensando';
+type BroxisPose = 'aceno' | 'apresentando' | 'pensando' | 'orgulhoso' | 'supercontente' | 'surpresoPositivo' | 'curioso' | 'calmo';
 
 interface BroxisMascotProps {
   size?: number;
@@ -18,6 +18,12 @@ const BROXIS_SOURCES: Record<BroxisPose, ImageSourcePropType> = {
   aceno: require('../../../assets/img/mascot/broxis-aceno.png'),
   apresentando: require('../../../assets/img/mascot/broxis-apresentando.png'),
   pensando: require('../../../assets/img/mascot/broxis-pensando.png'),
+  // expressões específicas da tela de feedback de refeição (assets/img/feedback)
+  orgulhoso: require('../../../assets/img/feedback/orgulhoso.png'),
+  supercontente: require('../../../assets/img/feedback/supercontente.png'),
+  surpresoPositivo: require('../../../assets/img/feedback/surpreso-positivamente.png'),
+  curioso: require('../../../assets/img/feedback/curioso.png'),
+  calmo: require('../../../assets/img/feedback/calmo.png'),
 };
 
 // Partícula decorativa simples (bolinha) usada para dar sensação de leveza

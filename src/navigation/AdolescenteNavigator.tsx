@@ -6,6 +6,10 @@ import TriagemApresentacaoScreen from '../features/triagem/screens/TriagemAprese
 import RecordatorioRefeicaoScreen from '../features/recordatorio/screens/RecordatorioRefeicaoScreen';
 import EbiaPerguntaScreen from '../features/ebia/screens/EbiaPerguntaScreen';
 import HomeScreen from '../features/adolescente/screens/HomeScreen';
+import AlimentacaoHomeScreen from '../features/adolescente/screens/AlimentacaoHomeScreen';
+import TrilhaScreen from '../features/adolescente/screens/TrilhaScreen';
+import SocialScreen from '../features/adolescente/screens/SocialScreen';
+import MaisScreen from '../features/adolescente/screens/MaisScreen';
 import AtividadeFisicaScreen from '../features/adolescente/screens/AtividadeFisicaScreen';
 import BuscaAtividadeScreen from '../features/adolescente/screens/BuscaAtividadeScreen';
 import ProfileScreen from '../features/adolescente/screens/ProfileScreen';
@@ -28,14 +32,27 @@ export type AdolescenteStackParamList = {
   RecordatorioRefeicao: { indice: number; recordatorioId?: string };
   EbiaPergunta: { indice: number; respostasAnteriores: boolean[] };
   Home: undefined;
+  Alimentacao: undefined;
+  Trilha: undefined;
+  Social: undefined;
+  Mais: undefined;
   AtividadeFisica: undefined;
   BuscaAtividade: undefined;
   Profile: undefined;
   BuscaAlimento: { tipo: TipoRefeicao; nomeRefeicao: string; alimentoRecemCriado?: Alimento };
-NovoAlimentoOrigem: { tipo: TipoRefeicao; nomeRefeicao: string };
-NovoAlimentoForm: { tipo: TipoRefeicao; nomeRefeicao: string; origem: OrigemAlimento };
-AlimentoCadastrado: { tipo: TipoRefeicao; nomeRefeicao: string; alimento: Alimento };
-FeedbackRefeicao: { nomeRefeicao: string; mensagemEducativa: string };
+  NovoAlimentoOrigem: { tipo: TipoRefeicao; nomeRefeicao: string };
+  NovoAlimentoForm: { tipo: TipoRefeicao; nomeRefeicao: string; origem: OrigemAlimento };
+  AlimentoCadastrado: { tipo: TipoRefeicao; nomeRefeicao: string; alimento: Alimento };
+  FeedbackRefeicao: {
+  tipo: TipoRefeicao;
+  nomeRefeicao: string;
+  nivelQualidade: 'EXCELENTE' | 'EQUILIBRADO' | 'ATENCAO_ULTRAPROCESSADO';
+  intensidade: number;
+  processamento: string;
+  nutricional: string;
+  melhoria: string;
+  missao: { titulo: string; texto: string; nutriente: string } | null;
+  };  
   ConsumoAgua: undefined;
   TipoRefeicao:undefined;
   MetodoRegistroAlimentar: { tipo: TipoRefeicao; nomeRefeicao: string };
@@ -60,7 +77,14 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="TriagemApresentacao" component={TriagemApresentacaoScreen} />
                     <Stack.Screen name="RecordatorioRefeicao" component={RecordatorioRefeicaoScreen} />
                     <Stack.Screen name="EbiaPergunta" component={EbiaPerguntaScreen} />
-                    <Stack.Screen name="Home" component={HomeScreen} />
+                    {/* sem animação de transição entre essas 5 telas — a troca de
+                        aba é sinalizada só pelo indicador que desliza dentro da
+                        própria HomeBottomBar, não por um slide de tela */}
+                    <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -75,7 +99,14 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                 </>
                 ) : (
                 <>
-                    <Stack.Screen name="Home" component={HomeScreen} />
+                    {/* sem animação de transição entre essas 5 telas — a troca de
+                        aba é sinalizada só pelo indicador que desliza dentro da
+                        própria HomeBottomBar, não por um slide de tela */}
+                    <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />

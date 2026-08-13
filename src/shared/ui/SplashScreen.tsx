@@ -7,9 +7,14 @@ export default function SplashScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../../assets/img/logo.png')}
+        source={require('../../../assets/img/splash.png')} // Mascote
+        style={styles.mascote}
+        resizeMode="contain"
+      />
+      <Image
+        source={require('../../../assets/img/logo.png')} // Logo NutriTeens
         style={styles.logo}
-        resizeMode="contain" // Mantém a proporção da imagem enquanto se ajusta ao tamanho do contêiner
+        resizeMode="contain"
       />
       <ActivityIndicator
         size="large"
@@ -23,12 +28,18 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  mascote: {
+    width: 130,
+    height: 130,
+    marginBottom: 12,
+  },
   logo: {
-    width: 300,
+    width: 200,
+    height: 60,
     marginBottom: 20,
   },
   loader: {

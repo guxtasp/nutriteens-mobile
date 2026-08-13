@@ -1,6 +1,6 @@
 // src/features/adolescente/components/HomeHeader.tsx
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../shared/ui/AppText';
 import { colors } from '../../../shared/theme/colors';
@@ -11,36 +11,56 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'Home'>;
-type Props = { nome: string; pontos: number; onAbrirPerfil?: () => void };
+type Props = { 
+  nome: string; 
+  pontos: number; 
+  sequenciaAtual: number; 
+  onAbrirPerfil?: () => void 
+};
 
-export default function HomeHeader({ nome, pontos, onAbrirPerfil }: Props) {
+export default function HomeHeader({ nome, pontos, sequenciaAtual, onAbrirPerfil }: Props) {
   const saudacao = useSaudacao();
   const navigation = useNavigation<NavigationProp>();
-  function irParaPerfil() {
-    navigation.navigate('Profile');
-  }
+
+  const handleAbrirPerfil = useCallback(() => {
+    if (onAbrirPerfil) {
+      onAbrirPerfil();
+    } else {
+      navigation.navigate('Profile');
+    }
+  }, [onAbrirPerfil, navigation]);
+
   return (
     <View style={styles.linha}>
       <View style={styles.esquerda}>
-        <AppText style={styles.saudacao} numberOfLines={1} ellipsizeMode="tail">
+        <AppText style={styles.saudacao}>
           Olá, {nome}.
         </AppText>
-        <AppText style={styles.pergunta} numberOfLines={1} ellipsizeMode="tail">
+        <AppText style={styles.pergunta}>
           {saudacao}
         </AppText>
       </View>
 
       <View style={styles.direita}>
-        <View style={styles.pontosPill}>
-          <Ionicons name="water" size={14} color={colors.primaryDark} />
-          <AppText style={styles.pontosTexto}>{pontos}</AppText>
-        </View>
-        <Ionicons
-          name="person-circle-outline"
-          size={30}
-          color={colors.primaryDark}
-          onPress={onAbrirPerfil || irParaPerfil}
-        />
+        {sequenciaAtual > 0 && (
+          <View style={[styles.pontosPill, styles.sequenciaPill]}>
+            <Ionicons name="flame" size={20} color="#EA580C" />
+            <AppText style={[styles.pontosTexto, styles.sequenciaTexto]}>{sequenciaAtual}</AppText>
+          </View>
+        )}
+
+        <Pressable 
+          onPress={handleAbrirPerfil} 
+          style={styles.perfilBotao}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir perfil"
+        >
+          <Ionicons
+            name="person-circle-outline"
+            size={35}
+            color={colors.primaryDark}
+          />
+        </Pressable>
       </View>
     </View>
   );
@@ -64,17 +84,18 @@ const styles = StyleSheet.create({
     fontFamily: typography.bold,
     fontSize: 24,
     color: colors.primaryDark,
+    lineHeight: 26,
   },
   pergunta: {
     fontFamily: typography.bold,
     fontSize: 16,
     color: colors.primary ?? '#3FA85C',
-    marginTop: 2,
+    marginTop: 4,
   },
   direita: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 2,
     flexShrink: 0,
   },
   pontosPill: {
@@ -91,5 +112,16 @@ const styles = StyleSheet.create({
     fontFamily: typography.bold,
     fontSize: 13,
     color: colors.primaryDark,
+  },
+  sequenciaPill: {
+    borderColor: '#EA580C',
+  },
+  sequenciaTexto: {
+    color: '#EA580C',
+  },
+  perfilBotao: {
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

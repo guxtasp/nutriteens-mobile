@@ -14,16 +14,18 @@ import HomeBottomBar from '../components/HomeBottomBar';
 import QuickActionsMenu from '../components/QuickActionsMenu';
 import type { TipoRefeicao } from '../services/alimentacaoService';
 import GuiaAlimentacaoSheet from '../components/GuiaAlimentaçãoSheet';
+import { ICONE_POR_TIPO_REFEICAO } from '../utils/refeicaoInfo';
+
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'TipoRefeicao'>;
 
-const REFEICOES: { tipo: TipoRefeicao; nome: string; icone: keyof typeof Ionicons.glyphMap }[] = [
-  { tipo: 'CAFE_DA_MANHA', nome: 'Café', icone: 'cafe' },
-  { tipo: 'LANCHE_MANHA', nome: 'Lanche da manhã', icone: 'nutrition' },
-  { tipo: 'ALMOCO', nome: 'Almoço', icone: 'restaurant' },
-  { tipo: 'LANCHE_TARDE', nome: 'Lanche da Tarde', icone: 'ice-cream' },
-  { tipo: 'JANTAR', nome: 'Jantar', icone: 'moon' },
-  { tipo: 'CEIA', nome: 'Ceia', icone: 'bed' },
+const REFEICOES: { tipo: TipoRefeicao; nome: string }[] = [
+  { tipo: 'CAFE_DA_MANHA', nome: 'Café' },
+  { tipo: 'LANCHE_MANHA', nome: 'Lanche da manhã' },
+  { tipo: 'ALMOCO', nome: 'Almoço' },
+  { tipo: 'LANCHE_TARDE', nome: 'Lanche da Tarde' },
+  { tipo: 'JANTAR', nome: 'Jantar' },
+  { tipo: 'CEIA', nome: 'Ceia' },
 ];
 export default function TipoRefeicaoScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -68,7 +70,7 @@ export default function TipoRefeicaoScreen() {
           renderItem={({ item }) => (
             <Pressable style={styles.card} onPress={() => selecionar(item)}>
               <View style={styles.cardEsquerda}>
-                <Ionicons name={item.icone} size={20} color={colors.primaryDark} />
+                <Ionicons name={ICONE_POR_TIPO_REFEICAO[item.tipo]} size={20} color={colors.primaryDark} />
                 <AppText style={styles.cardTexto}>{item.nome}</AppText>
               </View>
               <View style={styles.botaoAdicionar}>
@@ -84,7 +86,7 @@ export default function TipoRefeicaoScreen() {
         onFechar={() => setMenuAberto(false)}
         onSelecionar={handleSelecionarAcao}
       />
-      <HomeBottomBar menuAberto={menuAberto} onAbrirMenu={() => setMenuAberto((v) => !v)} />
+      <HomeBottomBar activeTab="alimentacao" menuAberto={menuAberto} onAbrirMenu={() => setMenuAberto((v) => !v)} />
     <GuiaAlimentacaoSheet visivel={sheetGuia} onFechar={() => setSheetGuia(false)} />
       <QuickActionsMenu
         aberto={menuAberto}

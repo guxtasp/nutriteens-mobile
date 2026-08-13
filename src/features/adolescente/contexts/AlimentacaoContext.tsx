@@ -1,6 +1,7 @@
 // src/features/adolescente/contexts/AlimentacaoContext.tsx
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Alimento, TipoRefeicao, registrarRefeicao } from '../services/alimentacaoService';
+import type { FeedbackRefeicao } from '../utils/regraFeedbackRefeicao';
 import { ItemCarrinhoAlimento } from '../types/alimentacao';
 import { formatarDataISO } from '../../../shared/utils/data';
 import { useAuth } from '../../../shared/contexts/AuthContext';
@@ -12,7 +13,7 @@ interface AlimentacaoContextValue {
   decrementarItem: (alimentoId: string) => void;
   removerDoCarrinho: (alimentoId: string) => void;
   limparCarrinho: () => void;
-  registrarCarrinho: (tipo: TipoRefeicao) => Promise<{ quantidade: number; mensagemEducativa: string } | null>;
+  registrarCarrinho: (tipo: TipoRefeicao) => Promise<({ quantidade: number } & FeedbackRefeicao) | null>;
   enviando: boolean;
 }
 
@@ -69,7 +70,8 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
         });
         const quantidade = carrinho.length;
         setCarrinho([]);
-        return { quantidade, mensagemEducativa: resultado.mensagemEducativa };
+        const { refeicaoId, ...feedback } = resultado;
+        return { quantidade, ...feedback };
       } finally {
         setEnviando(false);
       }

@@ -1,6 +1,8 @@
 // src/features/adolescente/services/alimentacaoService.ts
 import { supabase } from '../../../lib/supabase';
-import { calcularFeedbackRefeicao, ClassificacaoNova } from '../utils/regraFeedbackRefeicao';
+import type { ClassificacaoEbia } from '../../ebia/data/ebiaData';
+import { gerarEPersistirFeedback } from './feedbackService';
+import { ClassificacaoNova, FeedbackRefeicao } from '../utils/regraFeedbackRefeicao';
 
 export type TipoRefeicao = 'CAFE_DA_MANHA' | 'LANCHE_MANHA' | 'ALMOCO' | 'LANCHE_TARDE' | 'JANTAR' | 'CEIA';
 
@@ -13,10 +15,36 @@ export type Alimento = {
   grupos_alimentares: string[];
 };
 
+// colunas explícitas: nunca inclui nivel_maximo_ebia na resposta pro adolescente,
+// ele só entra como critério de filtro (.gte), nunca é lido pelo app dele
+const COLUNAS_ALIMENTO = 'id, nome, eh_prato_composto, classificacao_nova, acessivel_ebia, grupos_alimentares';
+
+// cache simples em memória por sessão — evita 1 select em profiles a cada busca digitada
+let cacheClassificacao: { userId: string; valor: ClassificacaoEbia } | null = null;
+
+async function obterClassificacaoEbiaAtual(userId: string): Promise<ClassificacaoEbia> {
+  if (cacheClassificacao?.userId === userId) return cacheClassificacao.valor;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('classificacao_ebia_atual')
+    .eq('id', userId)
+    .single();
+
+  // se ainda não fez a triagem ou deu erro, não filtra ninguém de fora —
+  // trata como o nível mais severo (mostra tudo) até ter uma classificação real
+  const valor: ClassificacaoEbia =
+    !error && data?.classificacao_ebia_atual ? data.classificacao_ebia_atual : 'INSEGURANCA_GRAVE';
+
+  cacheClassificacao = { userId, valor };
+  return valor;
+}
+
 export async function criarAlimento(params: {
   nome: string;
   classificacaoNova: ClassificacaoNova;
-  grupoAlimentar: string; // categoria escolhida na tela "O que é?"
+  grupoAlimentar: string;
+  userId: string; // obrigatório agora — a RLS exige auth.uid() = criado_por
 }): Promise<Alimento> {
   const { data, error } = await supabase
     .from('alimentos')
@@ -25,8 +53,9 @@ export async function criarAlimento(params: {
       classificacao_nova: params.classificacaoNova,
       grupos_alimentares: [params.grupoAlimentar],
       eh_prato_composto: false,
+      criado_por: params.userId,
     })
-    .select()
+    .select(COLUNAS_ALIMENTO)
     .single();
 
   if (error) throw error;
@@ -62,7 +91,7 @@ export async function registrarRefeicao(params: {
   dataISO: string;
   tipo: TipoRefeicao;
   itens: { alimento: Alimento; quantidade: number }[];
-}): Promise<{ refeicaoId: string; nivelQualidade: string; mensagemEducativa: string }> {
+}): Promise<{ refeicaoId: string } & FeedbackRefeicao> {
   const registroDiarioId = await obterOuCriarRegistroDiarioId(params.userId, params.dataISO);
 
   const agora = new Date();
@@ -90,30 +119,30 @@ export async function registrarRefeicao(params: {
   const { error: erroItens } = await supabase.from('refeicao_alimentos').insert(linhas);
   if (erroItens) throw erroItens;
 
-  const classificacoes = params.itens.flatMap((item) =>
-    Array(item.quantidade).fill(item.alimento.classificacao_nova)
+  // 1 "quantidade" no carrinho = 1 item pra fins de feedback (mesmo padrão
+  // já usado antes pra classificacoesNova, só que agora carregando também
+  // os grupos alimentares de cada item, usados na dimensão "nutricional")
+  const itensFeedback = params.itens.flatMap((item) =>
+    Array(item.quantidade).fill({
+      classificacaoNova: item.alimento.classificacao_nova,
+      gruposAlimentares: item.alimento.grupos_alimentares ?? [],
+    })
   );
-  const feedback = calcularFeedbackRefeicao(classificacoes);
-
-  const { error: erroFeedback } = await supabase.from('feedbacks_nutricionais').insert({
-    refeicao_id: refeicao.id,
-    mensagem_educativa: feedback.mensagemEducativa,
-    nivel_qualidade: feedback.nivelQualidade,
-  });
-  if (erroFeedback) throw erroFeedback;
-
-  return {
+  const feedback = await gerarEPersistirFeedback({
+    userId: params.userId,
     refeicaoId: refeicao.id,
-    nivelQualidade: feedback.nivelQualidade,
-    mensagemEducativa: feedback.mensagemEducativa,
-  };
+    itens: itensFeedback,
+  });
+  return { refeicaoId: refeicao.id, ...feedback };
 }
-export async function buscarAlimentos(termo: string): Promise<Alimento[]> {
+export async function buscarAlimentos(termo: string, userId: string): Promise<Alimento[]> {
   if (!termo.trim()) return [];
+  const classificacao = await obterClassificacaoEbiaAtual(userId);
 
   const { data, error } = await supabase
     .from('alimentos')
-    .select('*')
+    .select(COLUNAS_ALIMENTO)
+    .gte('nivel_maximo_ebia', classificacao)
     .ilike('nome', `%${termo.trim()}%`)
     .order('nome');
 
@@ -121,10 +150,55 @@ export async function buscarAlimentos(termo: string): Promise<Alimento[]> {
   return data ?? [];
 }
 
-export async function listarAlimentosIniciais(): Promise<Alimento[]> {
+export async function listarAlimentosIniciais(userId: string): Promise<Alimento[]> {
+  const classificacao = await obterClassificacaoEbiaAtual(userId);
+
   const { data, error } = await supabase
     .from('alimentos')
-    .select('*')
+    .select(COLUNAS_ALIMENTO)
+    .gte('nivel_maximo_ebia', classificacao)
+    .order('nome');
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+// alimentos cadastrados pelo próprio adolescente: sempre aparecem pra ele,
+// então aqui não filtra por escala EBIA (só troca * pelas colunas explícitas)
+export async function listarMeusAlimentos(userId: string): Promise<Alimento[]> {
+  const { data, error } = await supabase
+    .from('alimentos')
+    .select(COLUNAS_ALIMENTO)
+    .eq('criado_por', userId)
+    .order('nome');
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function listarPratos(userId: string): Promise<Alimento[]> {
+  const classificacao = await obterClassificacaoEbiaAtual(userId);
+
+  const { data, error } = await supabase
+    .from('alimentos')
+    .select(COLUNAS_ALIMENTO)
+    .eq('eh_prato_composto', true)
+    .gte('nivel_maximo_ebia', classificacao)
+    .order('nome');
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function buscarPratos(termo: string, userId: string): Promise<Alimento[]> {
+  const classificacao = await obterClassificacaoEbiaAtual(userId);
+
+  const { data, error } = await supabase
+    .from('alimentos')
+    .select(COLUNAS_ALIMENTO)
+    .eq('eh_prato_composto', true)
+    .gte('nivel_maximo_ebia', classificacao)
+    .ilike('nome', `%${termo.trim()}%`)
     .order('nome');
 
   if (error) throw error;

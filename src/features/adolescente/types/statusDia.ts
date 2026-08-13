@@ -1,47 +1,34 @@
 // src/features/adolescente/types/statusDia.ts
 import { DiaSemanaBase } from '../../../shared/utils/data';
 
-export type StatusDia = 'futuro' | 'sem_registro' | 'parcial' | 'completo' | 'hoje';
+export type StatusDia = 'futuro' | 'hoje_pendente' | 'hoje_mantido' | 'mantido' | 'nao_mantido';
 
 export const CORES_STATUS_DIA: Record<StatusDia, string> = {
   futuro: '#D9E2E8',
-  sem_registro: '#F3E3B8',
-  parcial: '#D4E8A8',
-  completo: '#3FA85C',
-  hoje: '#FFFFFF',
+  hoje_pendente: '#F3E3B8',
+  hoje_mantido: '#3FA85C',
+  mantido: '#3FA85C',
+  nao_mantido: '#E8A8A8',
 };
 
-// Atualizar os caminhos quando confirmar onde a pasta assets/broxis está de fato
 export const IMAGENS_STATUS_DIA: Record<StatusDia, any> = {
   futuro: require('../../../../assets/img/mascot/broxis-dormindo.png'),
-  sem_registro: require('../../../../assets/img/mascot/broxis-triste.png'),
-  parcial: require('../../../../assets/img/mascot/broxis-neutro.png'),
-  completo: require('../../../../assets/img/mascot/broxis-radiante.png'),
-  hoje: require('../../../../assets/img/mascot/broxis-hoje.png'),
+  hoje_pendente: require('../../../../assets/img/mascot/broxis-hoje.png'),
+  hoje_mantido: require('../../../../assets/img/mascot/broxis-radiante.png'),
+  mantido: require('../../../../assets/img/mascot/broxis-radiante.png'),
+  nao_mantido: require('../../../../assets/img/mascot/broxis-triste.png'),
 };
 
 type ParametrosStatusDia = {
   data: string; // formato ISO (YYYY-MM-DD)
   hojeISO: string;
-  temRegistroAgua?: boolean;
-  temRegistroAlimentacao?: boolean;
-  temRegistroAtividade?: boolean;
+  mantido: boolean; // true se o dia contou pra sequência (missão cumprida OU teve registro)
 };
 
-export function calcularStatusDia(params: ParametrosStatusDia): StatusDia {
-  const { data, hojeISO, temRegistroAgua, temRegistroAlimentacao, temRegistroAtividade } = params;
-
-  if (data === hojeISO) return 'hoje';
+export function calcularStatusDia({ data, hojeISO, mantido }: ParametrosStatusDia): StatusDia {
   if (data > hojeISO) return 'futuro';
-
-  const totalRegistros = [temRegistroAgua, temRegistroAlimentacao, temRegistroAtividade].filter(Boolean).length;
-
-  if (totalRegistros === 0) return 'sem_registro';
-  if (totalRegistros < 3) return 'parcial';
-  return 'completo';
+  if (data === hojeISO) return mantido ? 'hoje_mantido' : 'hoje_pendente';
+  return mantido ? 'mantido' : 'nao_mantido';
 }
 
-// Único tipo DiaSemana do projeto: a base (label/numero/data) + o status calculado
-export type DiaSemana = DiaSemanaBase & {
-  status: StatusDia;
-};
+export type DiaSemana = DiaSemanaBase & { status: StatusDia };

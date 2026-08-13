@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {AppText} from '../../../shared/ui/AppText';
 import {BackButton} from '../../../shared/ui/BackButton';
 import {LogoutButton} from '../../..//shared/ui/LogoutButton';
+import { BroxisMascot } from '../../../shared/ui/BroxisMascot';
 import ChatFab from '../components/ChatFab';
 import { usePerfilUsuario } from '../hooks/usePerfilUsuario';
 import { calcularIdade } from '../../../shared/utils/calcularIdade';
@@ -33,7 +34,9 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.card}>
-          <View style={styles.avatarPlaceholder} />
+          <View style={styles.avatarWrapper}>
+            <BroxisMascot size={92} pose="supercontente" entrance="fade" showParticles={false} />
+          </View>
 
           <AppText style={styles.nome}>{primeiroNome}</AppText>
 
@@ -107,12 +110,9 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 24,
   },
-  avatarPlaceholder: {
-    width: 84,
-    height: 84,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
+  avatarWrapper: {
+    alignItems: 'center',
+    marginBottom: 4,
   },
   nome: {
     fontSize: 26,
