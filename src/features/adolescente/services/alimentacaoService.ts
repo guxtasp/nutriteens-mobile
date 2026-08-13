@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import type { ClassificacaoEbia } from '../../ebia/data/ebiaData';
 import { gerarEPersistirFeedback } from './feedbackService';
 import { ClassificacaoNova, FeedbackRefeicao } from '../utils/regraFeedbackRefeicao';
+import { valoresEbiaAceitaveis } from '../utils/ordemEbia';
 
 export type TipoRefeicao = 'CAFE_DA_MANHA' | 'LANCHE_MANHA' | 'ALMOCO' | 'LANCHE_TARDE' | 'JANTAR' | 'CEIA';
 
@@ -142,7 +143,7 @@ export async function buscarAlimentos(termo: string, userId: string): Promise<Al
   const { data, error } = await supabase
     .from('alimentos')
     .select(COLUNAS_ALIMENTO)
-    .gte('nivel_maximo_ebia', classificacao)
+    .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
     .ilike('nome', `%${termo.trim()}%`)
     .order('nome');
 
@@ -156,7 +157,7 @@ export async function listarAlimentosIniciais(userId: string): Promise<Alimento[
   const { data, error } = await supabase
     .from('alimentos')
     .select(COLUNAS_ALIMENTO)
-    .gte('nivel_maximo_ebia', classificacao)
+    .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
     .order('nome');
 
   if (error) throw error;
@@ -183,7 +184,7 @@ export async function listarPratos(userId: string): Promise<Alimento[]> {
     .from('alimentos')
     .select(COLUNAS_ALIMENTO)
     .eq('eh_prato_composto', true)
-    .gte('nivel_maximo_ebia', classificacao)
+    .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
     .order('nome');
 
   if (error) throw error;
@@ -197,7 +198,7 @@ export async function buscarPratos(termo: string, userId: string): Promise<Alime
     .from('alimentos')
     .select(COLUNAS_ALIMENTO)
     .eq('eh_prato_composto', true)
-    .gte('nivel_maximo_ebia', classificacao)
+    .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
     .ilike('nome', `%${termo.trim()}%`)
     .order('nome');
 

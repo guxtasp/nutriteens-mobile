@@ -10,7 +10,7 @@ type Props = {
   dias: DiaSemana[];
 };
 
-const LARGURA_COLUNA = 80;
+const LARGURA_COLUNA = 64;
 
 function ehHoje(status: DiaSemana['status']) {
   return status === 'hoje_pendente' || status === 'hoje_mantido';
@@ -33,6 +33,7 @@ export default function WeekDaySelector({ dias }: Props) {
       ref={scrollRef}
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
       contentContainerStyle={styles.linha}
     >
       {dias.map((dia) => {
@@ -51,7 +52,9 @@ export default function WeekDaySelector({ dias }: Props) {
   );
 }
 
+
 const styles = StyleSheet.create({
+  scroll: { height: 108, flexGrow: 0, marginBottom: 8 },
   linha: { paddingHorizontal: 16, paddingRight: 20, gap: 14 },
   coluna: { alignItems: 'center', width: 80 },
   circulo: { width: 80, height: 80, borderRadius: 40, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

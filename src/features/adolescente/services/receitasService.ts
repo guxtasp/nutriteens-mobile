@@ -2,6 +2,7 @@
 import { supabase } from '../../../lib/supabase';
 import type { Alimento } from './alimentacaoService';
 import type { ClassificacaoEbia } from '../../ebia/data/ebiaData';
+import { valoresEbiaAceitaveis } from '../utils/ordemEbia';
 
 export type ReceitaComAlimento = {
   id: string;
@@ -33,7 +34,7 @@ async function idsPratosPermitidos(classificacao: ClassificacaoEbia): Promise<st
     .from('alimentos')
     .select('id')
     .eq('eh_prato_composto', true)
-    .gte('nivel_maximo_ebia', classificacao);
+    .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao));
 
   if (error) throw error;
   return (data ?? []).map((linha) => linha.id);
