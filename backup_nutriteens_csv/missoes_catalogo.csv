@@ -1,6 +1,0 @@
-﻿id,tipo,titulo,descricao,icone,criterio,ativa
-cced9734-4483-418f-b54c-c8e1c89e3ff5,AGUA_ML,Hidrate-se,Beba pelo menos 1 litro de água hoje,💧,{'alvo_ml': 1000},True
-fb85ca33-b454-41cc-8d30-417ca2f94a9f,ATIVIDADE_MIN,Se movimente,Registre pelo menos 20 minutos de atividade física,🏃,{'alvo_min': 20},True
-ca56bb63-f74a-48d0-a448-16a7c71b0166,ALIMENTO_NATURAL_QTD,Direto da natureza,Registre pelo menos 2 alimentos naturais hoje,🥦,{'alvo_qtd': 2},True
-e9282e5a-10e2-439f-9470-d95e9c6dccb3,REFEICAO_SEM_ULTRAPROCESSADO,Refeição limpa,Registre uma refeição sem nenhum item ultraprocessado,🍽️,{},True
-3cdc49e5-0f6d-4f68-9469-44a2ee84eee3,NUTRIENTE_LACUNA,Reforce um nutriente,Vamos equilibrar a semana com um nutriente que tem faltado,🎯,{},True
