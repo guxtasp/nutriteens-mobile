@@ -5,11 +5,12 @@ import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { Alimento, listarAlimentos } from '../services/alimentosAdminService';
+import { Alimento, listarAlimentos, precisaRevisaoNutricional } from '../services/alimentosAdminService';
 
 export default function AlimentosListScreen({ navigation }: any) {
   const [alimentos, setAlimentos] = useState<Alimento[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const pendentes = alimentos.filter(precisaRevisaoNutricional).length;
 
   useFocusEffect(
     useCallback(() => {
@@ -30,7 +31,12 @@ export default function AlimentosListScreen({ navigation }: any) {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <AppText style={styles.titulo}>Catálogo de alimentos ({alimentos.length})</AppText>
+        <View>
+          <AppText style={styles.titulo}>Catálogo de alimentos ({alimentos.length})</AppText>
+          {pendentes > 0 && (
+            <AppText style={styles.subtituloPendentes}>{pendentes} aguardando revisão nutricional</AppText>
+          )}
+        </View>
         <AppButton
           label="+ NOVO"
           backgroundColor={colors.primaryDark}
@@ -52,7 +58,16 @@ export default function AlimentosListScreen({ navigation }: any) {
               style={styles.item}
               onPress={() => navigation.navigate('AlimentoForm', { alimento: item })}
             >
-              <AppText style={styles.itemNome}>{item.nome}</AppText>
+              <View style={styles.itemTopo}>
+                <AppText style={styles.itemNome}>{item.nome}</AppText>
+                {precisaRevisaoNutricional(item) && (
+                  <View style={styles.selo}>
+                    <AppText style={styles.seloTexto}>
+                      revisar nutrientes{item.vezes_usado ? ` · usado ${item.vezes_usado}x` : ''}
+                    </AppText>
+                  </View>
+                )}
+              </View>
               <AppText style={styles.itemMeta}>
                 {item.classificacao_nova} · {item.grupos_alimentares.join(', ')}
               </AppText>
@@ -68,8 +83,12 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.white, paddingHorizontal: 24, paddingTop: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   titulo: { fontFamily: typography.bold, fontSize: 16, color: colors.primaryDark },
+  subtituloPendentes: { fontFamily: typography.regular, fontSize: 12, color: '#B8720A', marginTop: 2 },
   lista: { paddingBottom: 40 },
   item: { borderWidth: 1, borderColor: '#D9D9D9', borderRadius: 12, padding: 14, marginBottom: 10 },
+  itemTopo: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  selo: { backgroundColor: '#FFF1DB', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  seloTexto: { fontFamily: typography.bold, fontSize: 10, color: '#B8720A' },
   itemNome: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
   itemMeta: { fontFamily: typography.regular, fontSize: 12, color: '#8A8A8A', marginTop: 4 },
 });

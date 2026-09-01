@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
 import { signupState } from '../../../shared/state/signupFlag';
+import { useAuth } from '../../../shared/contexts/AuthContext';
 import {
   toIsoDate,
   validateNome,
@@ -24,6 +25,7 @@ interface SignupForm {
 export function useSignup() {
   const [loading, setLoading] = useState(false);
   const { message, type, showMessage, clearMessage } = useMessageBanner();
+  const { definirNomeCompleto } = useAuth();
 
   async function handleSignup(form: SignupForm): Promise<boolean> {
     const { nome, dataNascimento, tipoEscola, genero, email, password, aceitouTermos } = form;
@@ -73,10 +75,6 @@ export function useSignup() {
     const dataIso = toIsoDate(dataNascimento) as string;
     const { data, error } = await supabase.auth.signUp({ email, password });
 
-    console.log('[DEBUG] session existe?', !!data.session);
-    console.log('[DEBUG] user existe?', !!data.user);
-    console.log('[DEBUG] user.id:', data.user?.id);
-
     if (error) {
       setLoading(false);
       signupState.emAndamento = false;
@@ -99,15 +97,13 @@ export function useSignup() {
     }
 
     if (data.session) {
-      console.log('[DEBUG] chamando setSession...');
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         });
-        console.log('[DEBUG] setSession retornou. error:', sessionError, 'session existe?', !!sessionData?.session);
       } catch (e) {
-        console.error('[DEBUG] setSession lançou exceção:', e);
+        console.error('[useSignup] setSession lançou exceção:', e);
       }
     }
 
@@ -123,7 +119,7 @@ export function useSignup() {
     if (profileError) {
         setLoading(false);
         signupState.emAndamento = false;
-        console.error('Erro real ao salvar perfil:', profileError); // TEMP
+        console.error('Erro real ao salvar perfil:', profileError);
         showMessage('Conta criada, mas houve um erro ao salvar seu perfil', 'error');
         return false;
     }
@@ -144,7 +140,13 @@ export function useSignup() {
       return false;
     }
 
-    // profile e consentimento já existem agora — força o RootNavigator a checar de novo
+    // profile e consentimento já existem agora. Em vez de tentar buscar o
+    // nome de volta do banco (o AuthContext pode ainda não ter processado
+    // o SIGNED_IN e ter userId=null nesse instante — refrescarPerfil()
+    // viraria um no-op silencioso), seta direto: quem está cadastrando já
+    // digitou o próprio nome no formulário, não tem o que buscar de novo.
+    definirNomeCompleto(nome);
+
     await supabase.auth.refreshSession();
     signupState.emAndamento = false;
 

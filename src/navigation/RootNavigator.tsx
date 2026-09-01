@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 
 import { supabase } from '../lib/supabase';
-import OnboardingScreen from '../features/onboarding/screens/OnboardingScreen';
-import AppPresentationScreen from '../features/signup-flow/domain/presentation/AppPresentationScreen';
+import OnboardingScreen from '../features/auth/screens/OnboardingScreen';
+import AppPresentationScreen from '../features/auth/presentation/AppPresentationScreen';
 import LoginScreen from '../features/auth/screens/LoginScreen';
 import SignupScreen from '../features/auth/screens/SignupScreen';
 import LegalPlaceholderScreen from '../features/legal/screens/LegalPlaceholdersScreen';

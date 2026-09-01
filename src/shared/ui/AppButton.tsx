@@ -79,6 +79,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: typography.bold,
-    fontSize: 14,
+    fontSize: 16,
   },
 });

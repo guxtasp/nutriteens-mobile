@@ -1,10 +1,7 @@
 // src/shared/services/registroDiarioService.ts
 import { supabase } from '../../lib/supabase'; // ajuste esse caminho pro do seu client Supabase real
 
-/**
- * Retorna o id do registro_diario do usuário pra aquela data.
- * Se não existir ainda, cria e retorna o novo id.
- */
+
 export async function obterOuCriarRegistroDiario(userId: string, data: string): Promise<string> {
   const { data: existente, error: erroBusca } = await supabase
     .from('registros_diarios')

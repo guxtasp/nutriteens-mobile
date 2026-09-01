@@ -4,8 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AdminHomeScreen from '../features/admin/screens/AdminHomeScreen';
 import AlimentosListScreen from '../features/admin/screens/AlimentosListScreen';
 import AlimentoFormScreen from '../features/admin/screens/AlimentoFormScreen';
-import UsuariosPlaceholderScreen from '../features/admin/screens/UsuariosPlaceholderScreen';
-import MetricasPlaceholderScreen from '../features/admin/screens/MetricasPlaceholderScreen';
+import UsuariosScreen from '../features/admin/screens/UsuariosScreen';
+import MetricasScreen from '../features/admin/screens/MetricasScreen';
 
 export type AdminStackParamList = {
   AdminHome: undefined;
@@ -23,8 +23,8 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminHome" component={AdminHomeScreen} options={{ title: 'Administração' }} />
       <Stack.Screen name="AlimentosList" component={AlimentosListScreen} options={{ title: 'Alimentos' }} />
       <Stack.Screen name="AlimentoForm" component={AlimentoFormScreen} options={{ title: 'Alimento' }} />
-      <Stack.Screen name="Usuarios" component={UsuariosPlaceholderScreen} options={{ title: 'Usuários' }} />
-      <Stack.Screen name="Metricas" component={MetricasPlaceholderScreen} options={{ title: 'Métricas' }} />
+      <Stack.Screen name="Usuarios" component={UsuariosScreen} options={{ title: 'Usuários' }} />
+      <Stack.Screen name="Metricas" component={MetricasScreen} options={{ title: 'Métricas' }} />
     </Stack.Navigator>
   );
 }
