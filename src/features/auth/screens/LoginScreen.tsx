@@ -125,7 +125,7 @@ export default function LoginScreen({ navigation }: any) {
 
       <PasswordInput label="Senha" value={password} onChangeText={setPassword} />
 
-      <Pressable onPress={() => showMessage('Funcionalidade ainda não implementada', 'info')}>
+      <Pressable onPress={() => navigation.navigate('EsqueciSenha')}>
         <AppText style={styles.forgotPassword}>Esqueci minha senha</AppText>
       </Pressable>
 

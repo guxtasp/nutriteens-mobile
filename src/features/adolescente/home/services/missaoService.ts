@@ -4,6 +4,7 @@ import { detectarLacunaNutriente, META_SEMANAL } from '../../alimentacao/service
 import { detectarLacunaAtividade } from '../../atividade-fisica/services/atividadeService';
 import { detectarLacunaAgua } from '../../agua/services/aguaService';
 import { calcularMetaAguaMl } from '../../../../shared/utils/calcularMetaAgua';
+import { concederXp } from '../../../../shared/services/xpService';
 
 export type MissaoDoDia = {
   id: string; // id da linha em missoes_diarias
@@ -13,6 +14,7 @@ export type MissaoDoDia = {
   icone: string | null;
   criterio: Record<string, number>;
   parametros: Record<string, string>;
+  pontosRecompensa: number;
 };
 
 // A Home busca a missão de hoje uma única vez via useHomeData (que reaproveita
@@ -110,7 +112,7 @@ async function escolherTipoMissao(userId: string): Promise<{ tipo: string; param
 async function buscarOuCriarMissaoDoDia(userId: string, data: string): Promise<MissaoDoDia> {
   const { data: existente } = await supabase
     .from('missoes_diarias')
-    .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio)')
+    .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio, pontos_recompensa)')
     .eq('user_id', userId)
     .eq('data', data)
     .maybeSingle();
@@ -131,7 +133,7 @@ async function buscarOuCriarMissaoDoDia(userId: string, data: string): Promise<M
   const { data: nova, error } = await supabase
     .from('missoes_diarias')
     .insert({ user_id: userId, missao_id: catalogoRow.id, data, parametros })
-    .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio)')
+    .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio, pontos_recompensa)')
     .single();
   if (error) throw error;
 
@@ -145,6 +147,7 @@ export function mapearMissao(row: any): MissaoDoDia {
     icone: row.missoes_catalogo.icone,
     criterio: row.missoes_catalogo.criterio,
     parametros: row.parametros ?? {},
+    pontosRecompensa: row.missoes_catalogo.pontos_recompensa,
   };
 
   // NUTRIENTE_LACUNA tem texto genérico no catálogo (somente-leitura) — o título/descrição
@@ -263,4 +266,33 @@ export async function avaliarMissaoDoDia(userId: string, data: string, missao: M
     default:
       return false;
   }
+}
+
+// Concede os pontos da missão do dia — só na primeira vez que ela é
+// avaliada como cumprida. `useHomeData` reavalia `avaliarMissaoDoDia` a
+// cada vez que a Home ganha foco (é uma leitura, não um flag manual — ver
+// comentário acima), então sem essa guarda o usuário ganharia pontos de
+// novo toda vez que voltasse pra Home no mesmo dia. O UPDATE condicional
+// (`.eq('xp_concedido', false)`) é o que garante isso de forma atômica: só
+// quem "ganha a corrida" de marcar o flag é que efetivamente concede os
+// pontos — se `data` voltar vazio, outra chamada (ou uma anterior) já
+// concedeu, e essa aqui não faz nada.
+export async function concederPontosMissaoSeNecessario(
+  userId: string,
+  missaoDiariaId: string,
+  pontos: number
+): Promise<void> {
+  if (pontos <= 0) return;
+
+  const { data, error } = await supabase
+    .from('missoes_diarias')
+    .update({ xp_concedido: true })
+    .eq('id', missaoDiariaId)
+    .eq('xp_concedido', false)
+    .select('id');
+
+  if (error) throw error;
+  if (!data || data.length === 0) return; // já tinha sido concedido antes
+
+  await concederXp(userId, pontos);
 }

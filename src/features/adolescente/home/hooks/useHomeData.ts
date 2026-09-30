@@ -19,7 +19,7 @@ import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { useSemanaAtual } from './useSemanaAtual';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { calcularStatusDia, DiaSemana } from '../types/statusDia';
-import { obterOuAtribuirMissaoDoDia, avaliarMissaoDoDia, MissaoDoDia } from '../services/missaoService';
+import { obterOuAtribuirMissaoDoDia, avaliarMissaoDoDia, concederPontosMissaoSeNecessario, MissaoDoDia } from '../services/missaoService';
 import {
   calcularProximoEstadoSequencia,
   existeRegistroNoDia,
@@ -52,6 +52,13 @@ export function useHomeData() {
       // duplicado entre useSequencia, useMissaoDoDia e useStatusSemana)
       const missaoDoDia = await obterOuAtribuirMissaoDoDia(userId, hoje);
       const missaoConcluidaHoje = await avaliarMissaoDoDia(userId, hoje, missaoDoDia);
+
+      // concede os pontos da missão (só na primeira vez — ver comentário em
+      // concederPontosMissaoSeNecessario) ANTES de ler xp_total logo abaixo,
+      // pra esse total já vir atualizado nessa mesma passada
+      if (missaoConcluidaHoje) {
+        await concederPontosMissaoSeNecessario(userId, missaoDoDia.id, missaoDoDia.pontosRecompensa);
+      }
 
       // hoje contou pra sequência se a missão foi cumprida OU há qualquer
       // outro registro no dia — só checa registro se a missão ainda não

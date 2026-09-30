@@ -16,6 +16,7 @@ export default function MissaoDoDiaCard({ missao, concluida }: Props) {
       <View style={{ flex: 1 }}>
         <AppText style={styles.titulo}>{missao.titulo}</AppText>
         <AppText style={styles.descricao} numberOfLines={2}>{missao.descricao}</AppText>
+        <AppText style={styles.pontos}>+{missao.pontosRecompensa} pontos</AppText>
       </View>
       {concluida && <Ionicons name="checkmark-circle" size={22} color={colors.success} />}
     </View>
@@ -39,4 +40,5 @@ const styles = StyleSheet.create({
   icone: { fontSize: 22 },
   titulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
   descricao: { fontSize: 12, color: colors.textOnLight, marginTop: 1 },
+  pontos: { fontFamily: typography.bold, fontSize: 11, color: colors.primary, marginTop: 4 },
 });

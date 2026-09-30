@@ -16,10 +16,12 @@ import { typography } from '../../../../shared/theme/typography';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import {
   buscarDetalheLicao,
-  concluirLicao,
+  concluirLicaoComProgresso,
   verificarHabitoRecente,
   DetalheLicao,
+  NivelConclusao,
 } from '../services/trilhaService';
+import ExercicioQuizContainer from '../components/exercicios/ExercicioQuizContainer';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'LicaoDetalhe'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'LicaoDetalhe'>;
@@ -35,10 +37,6 @@ export default function LicaoDetalheScreen() {
   const [carregando, setCarregando] = useState(true);
   const [detalhe, setDetalhe] = useState<DetalheLicao | null>(null);
   const [concluindo, setConcluindo] = useState(false);
-
-  // estado do quiz
-  const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null);
-  const [respondeu, setRespondeu] = useState(false);
 
   // estado da atividade rastreável
   const [habitoConfirmado, setHabitoConfirmado] = useState(false);
@@ -68,12 +66,21 @@ export default function LicaoDetalheScreen() {
     carregar();
   }, [carregar]);
 
-  async function handleConcluir() {
+  /**
+   * Ponto único de conclusão pra qualquer tipo de lição (conteúdo,
+   * atividade rastreável ou quiz — o quiz chega aqui via
+   * `handleConcluirQuiz`, que só repassa acertos/total). Decide a
+   * navegação a partir do `nivel` devolvido pelo service: uma lição comum
+   * vai pra `LicaoCompleta`, mas se essa era a última lição pendente do
+   * módulo e/ou da trilha inteira, pula direto pra `ModuloCompleta` ou
+   * `TrilhaCompleta` — não empilha as três telas em sequência.
+   */
+  async function concluirComNavegacao(acertos: number | null, total: number | null) {
     if (!userId) return;
     setConcluindo(true);
     try {
-      await concluirLicao(userId, licaoId, xpRecompensa);
-      navigation.goBack();
+      const resultado = await concluirLicaoComProgresso(userId, licaoId, xpRecompensa, acertos, total);
+      navegarParaConclusao(resultado.nivel, resultado.xpGanhoLicao + resultado.xpGanhoBonus, resultado.acertosPercentual);
     } catch (erro) {
       console.error('Erro ao concluir lição:', erro);
       showMessage('Não foi possível salvar sua conclusão. Tenta de novo.', 'error');
@@ -82,22 +89,39 @@ export default function LicaoDetalheScreen() {
     }
   }
 
-  function handleResponderQuiz() {
-    setRespondeu(true);
+  function navegarParaConclusao(nivel: NivelConclusao, xpGanho: number, acertosPercentual: number | null) {
+    if (nivel === 'trilha') {
+      navigation.replace('TrilhaCompleta', { xpGanho, acertosPercentual: acertosPercentual ?? 0 });
+    } else if (nivel === 'modulo') {
+      navigation.replace('ModuloCompleta', { xpGanho, acertosPercentual: acertosPercentual ?? 0 });
+    } else {
+      navigation.replace('LicaoCompleta', { xpGanho });
+    }
   }
 
-  const questao = detalhe?.questoes[0];
-  const opcaoCorreta = questao?.opcoes.find((o) => o.correta);
-  const acertou = respondeu && respostaSelecionada === opcaoCorreta?.id;
+  async function handleConcluir() {
+    await concluirComNavegacao(null, null);
+  }
+
+  // usado só pelo branch de quiz (ExercicioQuizContainer chama isso depois
+  // da última questão) — repassa acertos/total pra virar o % de ACERTOS
+  // mostrado na tela de Módulo/Trilha completa (a de Lição não mostra).
+  async function handleConcluirQuiz(acertos: number, total: number) {
+    await concluirComNavegacao(acertos, total);
+  }
+
+  const ehQuiz = detalhe?.tipo === 'quiz';
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
+      <View style={[styles.cabecalho, ehQuiz && styles.cabecalhoQuiz]}>
         <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo}>{titulo}</AppText>
-          <AppText style={styles.subtitulo}>+{xpRecompensa} XP ao concluir</AppText>
-        </View>
+        {!ehQuiz && (
+          <View style={styles.tituloBloco}>
+            <AppText style={styles.titulo}>{titulo}</AppText>
+            <AppText style={styles.subtitulo}>+{xpRecompensa} XP ao concluir</AppText>
+          </View>
+        )}
       </View>
 
       <MessageBanner message={message} type={type} onClose={clearMessage} />
@@ -106,6 +130,8 @@ export default function LicaoDetalheScreen() {
         <View style={styles.centro}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
+      ) : detalhe.tipo === 'quiz' ? (
+        <ExercicioQuizContainer questoes={detalhe.questoes} onConcluirTodas={handleConcluirQuiz} />
       ) : (
         <ScrollView contentContainerStyle={styles.corpo}>
           {detalhe.tipo === 'conteudo' && (
@@ -118,63 +144,6 @@ export default function LicaoDetalheScreen() {
                   disabled={concluindo}
                 />
               </View>
-            </>
-          )}
-
-          {detalhe.tipo === 'quiz' && (
-            <>
-              {!questao ? (
-                <AppText style={styles.texto}>Esse quiz ainda não tem perguntas cadastradas.</AppText>
-              ) : (
-                <>
-                  <AppText style={styles.enunciado}>{questao.enunciado}</AppText>
-
-                  {questao.opcoes.map((opcao) => {
-                    const selecionada = respostaSelecionada === opcao.id;
-                    const mostrarCerta = respondeu && opcao.correta;
-                    const mostrarErrada = respondeu && selecionada && !opcao.correta;
-
-                    return (
-                      <Pressable
-                        key={opcao.id}
-                        disabled={respondeu}
-                        onPress={() => setRespostaSelecionada(opcao.id)}
-                        style={[
-                          styles.opcao,
-                          selecionada && !respondeu && styles.opcaoSelecionada,
-                          mostrarCerta && styles.opcaoCerta,
-                          mostrarErrada && styles.opcaoErrada,
-                        ]}
-                      >
-                        <AppText style={styles.opcaoTexto}>{opcao.texto}</AppText>
-                        {mostrarCerta && <Ionicons name="checkmark-circle" size={20} color={colors.success} />}
-                        {mostrarErrada && <Ionicons name="close-circle" size={20} color={colors.error} />}
-                      </Pressable>
-                    );
-                  })}
-
-                  <View style={styles.rodape}>
-                    {!respondeu ? (
-                      <AppButton
-                        label="Responder"
-                        onPress={handleResponderQuiz}
-                        disabled={!respostaSelecionada}
-                      />
-                    ) : (
-                      <>
-                        <AppText style={[styles.feedback, { color: acertou ? colors.success : colors.error }]}>
-                          {acertou ? 'Isso aí! Resposta certa.' : 'Não foi dessa vez — veja a resposta certa acima.'}
-                        </AppText>
-                        <AppButton
-                          label={concluindo ? 'Salvando...' : 'Concluir lição'}
-                          onPress={handleConcluir}
-                          disabled={concluindo}
-                        />
-                      </>
-                    )}
-                  </View>
-                </>
-              )}
             </>
           )}
 
@@ -238,6 +207,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
   },
+  cabecalhoQuiz: { paddingBottom: 4 },
   tituloBloco: { flex: 1 },
   titulo: {
     fontFamily: typography.bold,
@@ -265,49 +235,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23,
     color: colors.textOnLight,
-  },
-  enunciado: {
-    fontFamily: typography.semiBold,
-    fontSize: 16,
-    lineHeight: 23,
-    color: colors.textOnLight,
-    marginBottom: 16,
-  },
-  opcao: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1.5,
-    borderColor: '#E2E8DD',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 10,
-  },
-  opcaoSelecionada: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(139, 207, 74, 0.08)',
-  },
-  opcaoCerta: {
-    borderColor: colors.success,
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
-  },
-  opcaoErrada: {
-    borderColor: colors.error,
-    backgroundColor: 'rgba(192, 57, 43, 0.08)',
-  },
-  opcaoTexto: {
-    flex: 1,
-    fontFamily: typography.regular,
-    fontSize: 14,
-    color: colors.textOnLight,
-    marginRight: 8,
-  },
-  feedback: {
-    fontFamily: typography.semiBold,
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 14,
   },
   rodape: {
     marginTop: 24,

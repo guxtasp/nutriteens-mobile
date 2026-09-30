@@ -17,6 +17,19 @@ export const colors = {
   error: '#C0392B',
   info: '#3B82F6',
   success: '#10B981',
+
+  trilhaCeu: '#6ACAF0', 
+  trilhaTrilhoBloqueadoSombra: '#515151',
+  trilhaTrilhoBloqueado: '#818280',
+  
+
+
+  // Prática Real pendente (nó "em aberto" no caminho da trilha — ver
+  // seção 5 do modelo-pedagogico-trilha.md). Âmbar pra diferenciar do
+  // verde (concluída/atual normal) sem parecer erro (vermelho).
+  warning: '#F5A623',
+  warningShadow: '#B8770F',
+  warningSoft: 'rgba(245, 166, 35, 0.16)',
 } as const;
 
 export type ColorKey = keyof typeof colors;

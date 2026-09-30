@@ -10,6 +10,9 @@ import SequenciaScreen from '../features/adolescente/home/screens/SequenciaScree
 import AlimentacaoHomeScreen from '../features/adolescente/alimentacao/screens/AlimentacaoHomeScreen';
 import TrilhaScreen from '../features/adolescente/trilha/screens/TrilhaScreen';
 import LicaoDetalheScreen from '../features/adolescente/trilha/screens/LicaoDetalheScreen';
+import LicaoCompletaScreen from '../features/adolescente/trilha/screens/LicaoCompletaScreen';
+import ModuloCompletaScreen from '../features/adolescente/trilha/screens/ModuloCompletaScreen';
+import TrilhaCompletaScreen from '../features/adolescente/trilha/screens/TrilhaCompletaScreen';
 import SocialScreen from '../features/adolescente/social/screens/SocialScreen';
 import MaisScreen from '../features/adolescente/_shared/screens/MaisScreen';
 import AtividadeFisicaScreen from '../features/adolescente/atividade-fisica/screens/AtividadeFisicaScreen';
@@ -43,6 +46,14 @@ export type AdolescenteStackParamList = {
     titulo: string;
     xpRecompensa: number;
   };
+  // Lição comum — não fechou módulo nem trilha.
+  LicaoCompleta: { xpGanho: number };
+  // Essa era a última lição pendente do módulo (a Revisão dele) — mostra
+  // ACERTOS além do XP (decisão 3 do histórico de desenho).
+  ModuloCompleta: { xpGanho: number; acertosPercentual: number };
+  // Essa era a última lição pendente da trilha inteira (o "Fechamento do
+  // Capítulo" do módulo 3) — também mostra ACERTOS.
+  TrilhaCompleta: { xpGanho: number; acertosPercentual: number };
   Social: undefined;
   Mais: undefined;
   AtividadeFisica: undefined;
@@ -91,6 +102,9 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
+                    <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
+                    <Stack.Screen name="ModuloCompleta" component={ModuloCompletaScreen} />
+                    <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
@@ -112,6 +126,9 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
+                    <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
+                    <Stack.Screen name="ModuloCompleta" component={ModuloCompletaScreen} />
+                    <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />

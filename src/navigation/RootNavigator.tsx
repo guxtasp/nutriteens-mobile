@@ -6,10 +6,13 @@ import OnboardingScreen from '../features/auth/screens/OnboardingScreen';
 import AppPresentationScreen from '../features/auth/presentation/AppPresentationScreen';
 import LoginScreen from '../features/auth/screens/LoginScreen';
 import SignupScreen from '../features/auth/screens/SignupScreen';
+import EsqueciSenhaScreen from '../features/auth/screens/EsqueciSenhaScreen';
+import RedefinirSenhaScreen from '../features/auth/screens/RedefinirSenhaScreen';
 import LegalPlaceholderScreen from '../features/legal/screens/LegalPlaceholdersScreen';
 import SplashScreen from '../shared/ui/SplashScreen';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { signupState } from '../shared/state/signupFlag';
+import { useAuth } from '../shared/contexts/AuthContext';
 import AdolescenteNavigator from './AdolescenteNavigator';
 import NutricionistaNavigator from './NutricionistaNavigator';
 import AdminNavigator from './AdminNavigator';
@@ -19,9 +22,13 @@ export type RootStackParamList = {
   AppPresentation: undefined;
   Login: undefined;
   Signup: undefined;
+  EsqueciSenha: undefined;
+  RedefinirSenha: undefined;
   TermosDeUso: { title: string };
   PoliticaPrivacidade: { title: string };
 };
+
+const StackRecuperacao = createNativeStackNavigator<{ RedefinirSenha: undefined }>();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -36,6 +43,7 @@ export default function RootNavigator() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [papel, setPapel] = useState<Papel | null>(null);
   const [etapaOnboarding, setEtapaOnboarding] = useState<EtapaOnboarding | null>(null);
+  const { emRecuperacaoSenha } = useAuth();
 
   // Retorna false se a sessão for órfã (profile não existe mesmo depois de
   // uma segunda tentativa) — quem chamar deve tratar isso como "não logado".
@@ -120,6 +128,20 @@ if (error?.code === 'PGRST116') {
     };
   }, []);
 
+  // Prioridade máxima: veio de um link de "esqueci minha senha". Ignora
+  // isLoggedIn/papel de propósito — mesmo que a sessão do link pertença a
+  // uma conta válida, não deixamos cair direto no app sem antes trocar a
+  // senha (ver comentário em AuthContext.emRecuperacaoSenha).
+  if (emRecuperacaoSenha) {
+    return (
+      <NavigationContainer>
+        <StackRecuperacao.Navigator screenOptions={{ headerShown: false }}>
+          <StackRecuperacao.Screen name="RedefinirSenha" component={RedefinirSenhaScreen} />
+        </StackRecuperacao.Navigator>
+      </NavigationContainer>
+    );
+  }
+
   if (isLoggedIn === null || (isLoggedIn && papel === null)) {
     return <SplashScreen />;
   }
@@ -146,6 +168,7 @@ if (error?.code === 'PGRST116') {
           <Stack.Screen name="AppPresentation" component={AppPresentationScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Signup" component={SignupScreen} />
+          <Stack.Screen name="EsqueciSenha" component={EsqueciSenhaScreen} />
           <Stack.Screen
             name="TermosDeUso"
             component={LegalPlaceholderScreen}
