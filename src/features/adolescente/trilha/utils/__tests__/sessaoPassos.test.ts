@@ -3,8 +3,8 @@ import { contarPontuadas, ehPassoPontuado, filaAposResposta, montarFila } from '
 const q = (id: string, formato: string) => ({ id, formato });
 
 describe('sessaoPassos', () => {
-  it('cartão, enquete e meta não são pontuados; os demais formatos são', () => {
-    ['cartao', 'enquete', 'meta'].forEach((f) => expect(ehPassoPontuado(f)).toBe(false));
+  it('cartão, enquete, meta, memória e prato não são pontuados; os demais formatos são', () => {
+    ['cartao', 'enquete', 'meta', 'memoria', 'prato'].forEach((f) => expect(ehPassoPontuado(f)).toBe(false));
     ['multipla_escolha', 'verdadeiro_falso', 'completar', 'ordene', 'associe', 'classifique'].forEach((f) =>
       expect(ehPassoPontuado(f)).toBe(true)
     );
@@ -31,6 +31,18 @@ describe('sessaoPassos', () => {
     const fila = filaAposResposta(montarFila([q('1', 'multipla_escolha')]), 0, false);
     expect(filaAposResposta(fila, 1, false)).toBe(fila);
     expect(fila).toHaveLength(2);
+  });
+
+  it('monte seu prato é sem nota e nunca gera retentativa', () => {
+    expect(ehPassoPontuado('prato')).toBe(false);
+    const fila = montarFila([q('1', 'prato')]);
+    expect(filaAposResposta(fila, 0, false)).toBe(fila);
+  });
+
+  it('jogo da memória é sem nota e nunca gera retentativa', () => {
+    expect(ehPassoPontuado('memoria')).toBe(false);
+    const fila = montarFila([q('1', 'memoria')]);
+    expect(filaAposResposta(fila, 0, false)).toBe(fila);
   });
 
   it('passo sem nota nunca gera retentativa', () => {

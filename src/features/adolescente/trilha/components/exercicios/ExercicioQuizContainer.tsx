@@ -1,11 +1,13 @@
 // src/features/adolescente/trilha/components/exercicios/ExercicioQuizContainer.tsx
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ScrollView, View, StyleSheet } from 'react-native';
 import { AppText } from '../../../../../shared/ui/AppText';
 import { AppButton } from '../../../../../shared/ui/AppButton';
 import { colors } from '../../../../../shared/theme/colors';
+import { layout } from '../../../../../shared/theme/layout';
 import { typography } from '../../../../../shared/theme/typography';
 import type { QuestaoQuiz, ParAssocie } from '../../services/trilhaService';
+import { AlimentoPrato, CriterioPrato, MINIMO_ITENS_PADRAO, avaliarPrato, normalizarCapacidade } from '../../utils/prato';
 import BarraProgresso from './BarraProgresso';
 import MascoteFala, { EnunciadoSimples } from './MascoteFala';
 import FeedbackExercicio from './FeedbackExercicio';
@@ -14,6 +16,8 @@ import VerdadeiroFalso from './VerdadeiroFalso';
 import BancoDePalavras, { FraseComLacuna } from './CompletarFrase';
 import Ordene from './Ordene';
 import Associe from './Associe';
+import Memoria from './Memoria';
+import Prato from './Prato';
 import Classifique from './Classifique';
 import CartaoConteudo from './CartaoConteudo';
 import { contarPontuadas, ehPassoPontuado, filaAposResposta, montarFila } from '../../utils/sessaoPassos';
@@ -44,8 +48,9 @@ type RespostaMapa = Record<string, string>;
  * é responsabilidade de quem usa esse container, via `onConcluirTodas`).
  *
  * Sessão de ~10 passos (ver modelo-pedagogico-trilha.md): além dos 6 formatos
- * pontuados, roda 3 passos SEM NOTA — `cartao` (ensino), `enquete` e `meta`
- * (escolha sem certo/errado, com mensagem neutra). Questão pontuada errada
+ * pontuados, roda 5 passos SEM NOTA — `cartao` (ensino), `enquete` e `meta`
+ * (escolha sem certo/errado, com mensagem neutra), `memoria` (jogo da memória) e
+ * `prato` (monte seu prato). Questão pontuada errada
  * na 1ª tentativa volta UMA vez no fim (ver utils/sessaoPassos.ts).
  *
  * Pontuação: cada questão vale certo/errado inteiro (bate com a tabela do
@@ -66,8 +71,17 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
   const [selecionada, setSelecionada] = useState<string | null>(null);
   // ordene
   const [respostaOrdene, setRespostaOrdene] = useState<string[]>([]);
-  // associe / classifique
+  // associe / classifique / memoria (pares já achados)
   const [respostaMapa, setRespostaMapa] = useState<RespostaMapa>({});
+
+  const scrollRef = useRef<ScrollView>(null);
+  // altura do painel de feedback (medida por ele); começa com um chute razoável
+  const [alturaFeedback, setAlturaFeedback] = useState(260);
+
+  // cada passo novo começa no topo (o passo anterior pode ter sido rolado)
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [indice]);
 
   const passo = fila[indice];
   const questao = passo?.questao;
@@ -81,6 +95,16 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
   const opcaoEscolhida = questao.opcoes.find((o) => o.id === selecionada);
   const pares: ParAssocie[] = questao.dadosExtra?.pares ?? [];
   const categorias: string[] = questao.dadosExtra?.categorias ?? [];
+  const alimentosPrato: AlimentoPrato[] = questao.dadosExtra?.alimentos ?? [];
+  const criteriosPrato: CriterioPrato[] = questao.dadosExtra?.criterios ?? [];
+
+  // prato cumprido: a missão bate e há alimentos suficientes (só vale pro formato `prato`)
+  function pratoCompleto(): boolean {
+    const cap = normalizarCapacidade(questao.dadosExtra?.capacidade);
+    const minimo = Math.min(questao.dadosExtra?.minimoItens ?? MINIMO_ITENS_PADRAO, cap);
+    const noPrato = alimentosPrato.filter((a) => respostaMapa[a.id] !== undefined);
+    return avaliarPrato(noPrato, criteriosPrato, minimo).completo;
+  }
 
   function podeResponder(): boolean {
     switch (questao.formato) {
@@ -89,7 +113,10 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
       case 'ordene':
         return questao.opcoes.length > 0 && respostaOrdene.length === questao.opcoes.length;
       case 'associe':
+      case 'memoria':
         return pares.length > 0 && pares.every((p) => !!respostaMapa[p.id]);
+      case 'prato':
+        return pratoCompleto();
       case 'classifique':
         return questao.opcoes.length > 0 && questao.opcoes.every((o) => !!respostaMapa[o.id]);
       default:
@@ -107,7 +134,10 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
         );
       }
       case 'associe':
+      case 'memoria': // sem nota: só chega aqui com todos os pares achados
         return pares.length > 0 && pares.every((p) => respostaMapa[p.id] === p.id);
+      case 'prato': // sem nota: só chega aqui com a missão cumprida
+        return pratoCompleto();
       case 'classifique':
         return questao.opcoes.length > 0 && questao.opcoes.every((o) => respostaMapa[o.id] === o.categoria);
       default:
@@ -179,6 +209,29 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
         return (
           <Associe pares={pares} resposta={respostaMapa} respondido={respondido} onMudar={setRespostaMapa} />
         );
+      case 'memoria':
+        return (
+          <Memoria
+            key={`${questao.id}-${indice}`}
+            pares={pares}
+            resposta={respostaMapa}
+            respondido={respondido}
+            onMudar={setRespostaMapa}
+          />
+        );
+      case 'prato':
+        return (
+          <Prato
+            alimentos={alimentosPrato}
+            criterios={criteriosPrato}
+            capacidade={questao.dadosExtra?.capacidade}
+            minimoItens={questao.dadosExtra?.minimoItens}
+            resposta={respostaMapa}
+            respondido={respondido}
+            mensagemFinal={questao.dadosExtra?.feedback}
+            onMudar={setRespostaMapa}
+          />
+        );
       case 'classifique':
         return (
           <Classifique
@@ -214,43 +267,62 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
     }
   }
 
-  const mensagemNeutra = semNota && !!selecionada ? questao.dadosExtra?.feedback : null;
+  // enquete/meta mostram a mensagem ao escolher; o jogo da memória, ao achar todos os pares
+  const mensagemNeutra =
+    semNota && (!!selecionada || (questao.formato === 'memoria' && podeResponder()))
+      ? questao.dadosExtra?.feedback
+      : null;
 
   return (
     <View style={styles.container}>
-      <BarraProgresso atual={indice + 1} total={fila.length} />
+      {/* barra fixa no topo, como no cabeçalho do Recordatório/EBIA */}
+      <View style={styles.barra}>
+        <BarraProgresso atual={indice + 1} total={fila.length} />
+      </View>
 
-      {passo.ehRetentativa && <AppText style={styles.retentativa}>Vamos tentar de novo! 💪</AppText>}
+      {/* o conteúdo rola: exercícios longos (classifique com muitos itens,
+          jogo da memória, explicação grande) não cabem na tela */}
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={[styles.conteudo, respondido && { paddingBottom: alturaFeedback + 24 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {passo.ehRetentativa && <AppText style={styles.retentativa}>Vamos tentar de novo! 💪</AppText>}
 
-      {questao.formato === 'cartao' ? (
-        <CartaoConteudo titulo={questao.enunciado} texto={questao.dadosExtra?.texto} />
-      ) : (
-        <>
-          <MascoteFala>
-            {questao.formato === 'completar' ? (
-              <FraseComLacuna enunciado={questao.enunciado} opcaoEscolhida={opcaoEscolhida} />
-            ) : (
-              <EnunciadoSimples texto={questao.enunciado} />
-            )}
-          </MascoteFala>
+        {questao.formato === 'cartao' ? (
+          <CartaoConteudo titulo={questao.enunciado} texto={questao.dadosExtra?.texto} />
+        ) : (
+          <>
+            <MascoteFala>
+              {questao.formato === 'completar' ? (
+                <FraseComLacuna enunciado={questao.enunciado} opcaoEscolhida={opcaoEscolhida} />
+              ) : (
+                <EnunciadoSimples texto={questao.enunciado} />
+              )}
+            </MascoteFala>
 
-          {renderExercicio()}
-        </>
-      )}
+            {renderExercicio()}
+          </>
+        )}
 
-      {!!mensagemNeutra && (
-        <View style={styles.mensagemNeutra}>
-          <AppText style={styles.mensagemNeutraTexto}>{mensagemNeutra}</AppText>
-        </View>
-      )}
+        {!!mensagemNeutra && (
+          <View style={styles.mensagemNeutra}>
+            <AppText style={styles.mensagemNeutraTexto}>{mensagemNeutra}</AppText>
+          </View>
+        )}
+      </ScrollView>
 
+      {/* botão ancorado embaixo (mesma posição do CONTINUAR do Recordatório);
+          some quando o painel de feedback aparece no lugar dele */}
       {!respondido && (
         <View style={styles.rodape}>
           <AppButton
             label="CONTINUAR"
-            backgroundColor={colors.primary}
+            backgroundColor={podeResponder() ? colors.primary : '#B8B8B8'}
             textColor={colors.white}
-            shadowColor={colors.primaryShadow}
+            shadowColor={podeResponder() ? colors.primaryShadow : '#9A9A9A'}
             fullWidth
             disabled={!podeResponder()}
             onPress={semNota ? handleContinuar : handleResponder}
@@ -263,6 +335,7 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
           acertou={calcularAcertou()}
           explicacao={questao.dadosExtra?.explicacao}
           onContinuar={handleContinuar}
+          onAltura={setAlturaFeedback}
         />
       )}
     </View>
@@ -270,8 +343,15 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 20 },
-  rodape: { marginTop: 32 },
+  container: { flex: 1 },
+  barra: { paddingHorizontal: layout.margemFluxoH, paddingBottom: 4 },
+  scroll: { flex: 1 },
+  conteudo: { paddingHorizontal: layout.margemFluxoH, paddingBottom: 24 },
+  rodape: {
+    paddingHorizontal: layout.margemFluxoH,
+    paddingTop: 12,
+    paddingBottom: layout.rodapeBotaoMargemInferior,
+  },
   retentativa: {
     fontFamily: typography.bold,
     fontSize: 13,

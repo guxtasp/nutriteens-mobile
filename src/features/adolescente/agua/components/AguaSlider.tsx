@@ -1,6 +1,14 @@
-// src/features/adolescente/components/AguaSlider.tsx
+// src/features/adolescente/agua/components/AguaSlider.tsx
 import React, { useRef, useEffect, useState } from 'react';
-import { View, StyleSheet, Animated, NativeSyntheticEvent, NativeScrollEvent, LayoutChangeEvent } from 'react-native';
+import {
+  View,
+  Pressable,
+  StyleSheet,
+  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  LayoutChangeEvent,
+} from 'react-native';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -14,6 +22,8 @@ type Props = {
 };
 
 const ITEM_WIDTH = 90;
+// abaixo dessa velocidade ao soltar, não haverá "momentum": o valor é fixado na hora
+const VELOCIDADE_PARADA = 0.05;
 
 export default function AguaSlider({ min = 0, max = 1000, step = 100, valor, onChange }: Props) {
   const scrollRef = useRef<any>(null);
@@ -45,11 +55,31 @@ export default function AguaSlider({ min = 0, max = 1000, step = 100, valor, onC
     }
   }, [larguraContainer]);
 
-  function aoSoltarScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    const offsetX = e.nativeEvent.contentOffset.x;
+  // converte a posição do scroll no valor mais próximo e avisa a tela
+  function fixarValor(offsetX: number) {
     const indice = Math.round(offsetX / ITEM_WIDTH);
     const indiceClamp = Math.max(0, Math.min(valores.length - 1, indice));
     onChange(valores[indiceClamp]);
+  }
+
+  // terminou o "empurrão" depois de soltar
+  function aoTerminarMomentum(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    fixarValor(e.nativeEvent.contentOffset.x);
+  }
+
+  // soltou o dedo: se já estava praticamente parado, o momentum NUNCA dispara
+  // (acontecia no iPhone ao arrastar devagar) — fixa o valor aqui
+  function aoSoltarDedo(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    const velocidade = e.nativeEvent.velocity?.x ?? 0;
+    if (Math.abs(velocidade) < VELOCIDADE_PARADA) {
+      fixarValor(e.nativeEvent.contentOffset.x);
+    }
+  }
+
+  // tocar direto num número também seleciona
+  function aoTocarNumero(indice: number) {
+    scrollRef.current?.scrollTo?.({ x: indice * ITEM_WIDTH, animated: true });
+    onChange(valores[indice]);
   }
 
   return (
@@ -76,7 +106,8 @@ export default function AguaSlider({ min = 0, max = 1000, step = 100, valor, onC
               { useNativeDriver: true }
             )}
             scrollEventThrottle={16}
-            onMomentumScrollEnd={aoSoltarScroll}
+            onScrollEndDrag={aoSoltarDedo}
+            onMomentumScrollEnd={aoTerminarMomentum}
           >
             {valores.map((v, indice) => {
               const inputRange = [
@@ -98,7 +129,7 @@ export default function AguaSlider({ min = 0, max = 1000, step = 100, valor, onC
               });
 
               return (
-                <View key={v} style={styles.item} collapsable={false}>
+                <Pressable key={v} style={styles.item} onPress={() => aoTocarNumero(indice)}>
                   <Animated.Text
                     style={[
                       styles.numero,
@@ -107,7 +138,7 @@ export default function AguaSlider({ min = 0, max = 1000, step = 100, valor, onC
                   >
                     {v}
                   </Animated.Text>
-                </View>
+                </Pressable>
               );
             })}
           </Animated.ScrollView>

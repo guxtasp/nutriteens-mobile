@@ -1,11 +1,14 @@
 // src/features/adolescente/trilha/components/exercicios/Ordene.tsx
 import React, { useMemo } from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
+import { MotiView } from 'moti';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../../shared/ui/AppText';
 import { colors } from '../../../../../shared/theme/colors';
 import { typography } from '../../../../../shared/theme/typography';
 import type { OpcaoQuiz } from '../../services/trilhaService';
+import { BALANCO, PULINHO, atrasoCascata } from './animacoes';
 
 type Props = {
   opcoes: OpcaoQuiz[]; // já vêm ordenadas por `ordem` — essa ORDEM é o gabarito
@@ -35,12 +38,17 @@ function embaralhar<T extends { id: string }>(itens: T[]): T[] {
  * numerado remove ele da resposta (permite corrigir sem precisar de botão
  * de reset). Feedback de certo/errado (ver ExercicioQuizContainer) compara
  * a ordem inteira contra `opcoes` na ordem original.
+ *
+ * Animações: os itens entram em cascata, o número da posição "estoura"
+ * (mola) ao ser escolhido e, ao responder, o item certo pulsa e o errado
+ * balança.
  */
 export default function Ordene({ opcoes, resposta, respondido, onMudar }: Props) {
   const itensEmbaralhados = useMemo(() => embaralhar(opcoes), [opcoes]);
 
   function handleTocar(id: string) {
     if (respondido) return;
+    Haptics.selectionAsync();
     if (resposta.includes(id)) {
       onMudar(resposta.filter((r) => r !== id));
     } else {
@@ -51,7 +59,7 @@ export default function Ordene({ opcoes, resposta, respondido, onMudar }: Props)
   return (
     <View style={styles.lista}>
       <AppText style={styles.instrucao}>Toque na ordem certa</AppText>
-      {itensEmbaralhados.map((opcao) => {
+      {itensEmbaralhados.map((opcao, indice) => {
         const posicao = resposta.indexOf(opcao.id);
         const selecionado = posicao !== -1;
         // depois de respondido, avalia esse item específico contra o
@@ -61,33 +69,54 @@ export default function Ordene({ opcoes, resposta, respondido, onMudar }: Props)
         const errouEsseItem = respondido && (!selecionado || posicao !== posicaoCorreta);
 
         return (
-          <Pressable
+          // externo: entrada em cascata; interno: pulso (certo) / balanço (errado)
+          <MotiView
             key={opcao.id}
-            disabled={respondido}
-            onPress={() => handleTocar(opcao.id)}
-            style={[
-              styles.item,
-              selecionado && !respondido && styles.itemSelecionado,
-              acertouEsseItem && styles.itemCerto,
-              errouEsseItem && styles.itemErrado,
-            ]}
+            from={{ opacity: 0, translateY: 14 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'timing', duration: 280, delay: atrasoCascata(indice) }}
+            style={styles.itemExterno}
           >
-            <View
-              style={[
-                styles.badge,
-                selecionado ? styles.badgePreenchido : styles.badgeVazio,
-                acertouEsseItem && styles.badgeCerto,
-                errouEsseItem && selecionado && styles.badgeErrado,
-              ]}
+            <MotiView
+              animate={{
+                scale: acertouEsseItem ? PULINHO : 1,
+                translateX: errouEsseItem ? BALANCO : 0,
+              }}
+              transition={{ type: 'timing', duration: errouEsseItem ? 380 : 320 }}
             >
-              {selecionado ? (
-                <AppText style={styles.badgeTexto}>{posicao + 1}</AppText>
-              ) : (
-                <Ionicons name="ellipse-outline" size={14} color={colors.placeholder} />
-              )}
-            </View>
-            <AppText style={styles.itemTexto}>{opcao.texto}</AppText>
-          </Pressable>
+              <Pressable
+                disabled={respondido}
+                onPress={() => handleTocar(opcao.id)}
+                style={[
+                  styles.item,
+                  selecionado && !respondido && styles.itemSelecionado,
+                  acertouEsseItem && styles.itemCerto,
+                  errouEsseItem && styles.itemErrado,
+                ]}
+              >
+                {/* a `key` muda quando entra/sai/troca de posição: o número estoura de novo */}
+                <MotiView
+                  key={`${selecionado}-${posicao}`}
+                  from={{ scale: selecionado ? 0.4 : 1 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', damping: 10, stiffness: 240 }}
+                  style={[
+                    styles.badge,
+                    selecionado ? styles.badgePreenchido : styles.badgeVazio,
+                    acertouEsseItem && styles.badgeCerto,
+                    errouEsseItem && selecionado && styles.badgeErrado,
+                  ]}
+                >
+                  {selecionado ? (
+                    <AppText style={styles.badgeTexto}>{posicao + 1}</AppText>
+                  ) : (
+                    <Ionicons name="ellipse-outline" size={14} color={colors.placeholder} />
+                  )}
+                </MotiView>
+                <AppText style={styles.itemTexto}>{opcao.texto}</AppText>
+              </Pressable>
+            </MotiView>
+          </MotiView>
         );
       })}
     </View>
@@ -103,21 +132,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 14,
   },
+  itemExterno: { marginBottom: 12 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderWidth: 1.5,
-    borderColor: '#B9C2B6',
+    borderColor: colors.exercicioBorda,
     borderBottomWidth: 4,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    marginBottom: 12,
   },
   itemSelecionado: { borderColor: colors.primary },
-  itemCerto: { borderColor: colors.success, backgroundColor: 'rgba(16, 185, 129, 0.08)' },
-  itemErrado: { borderColor: colors.error, backgroundColor: 'rgba(192, 57, 43, 0.08)', borderBottomColor: colors.error },
+  itemCerto: { borderColor: colors.primary, backgroundColor: 'rgba(139, 207, 74, 0.16)' },
+  itemErrado: { borderColor: colors.exercicioErro, backgroundColor: 'rgba(255, 69, 64, 0.10)', borderBottomColor: colors.exercicioErro },
   badge: {
     width: 26,
     height: 26,
@@ -126,15 +155,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
   },
-  badgeVazio: { borderColor: '#B9C2B6' },
+  badgeVazio: { borderColor: colors.exercicioBorda },
   badgePreenchido: { borderColor: colors.primary, backgroundColor: colors.primary },
-  badgeCerto: { borderColor: colors.success, backgroundColor: colors.success },
-  badgeErrado: { borderColor: colors.error, backgroundColor: colors.error },
+  badgeCerto: { borderColor: colors.primary, backgroundColor: colors.primary },
+  badgeErrado: { borderColor: colors.exercicioErro, backgroundColor: colors.exercicioErro },
   badgeTexto: { fontFamily: typography.bold, fontSize: 13, color: colors.white },
   itemTexto: {
     flex: 1,
     fontFamily: typography.semiBold,
     fontSize: 14,
-    color: colors.textOnLight,
+    color: colors.exercicioTexto,
   },
 });

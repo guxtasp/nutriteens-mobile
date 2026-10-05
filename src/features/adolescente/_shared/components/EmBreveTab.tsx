@@ -10,12 +10,14 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import HomeBottomBar, { HomeTabKey } from './HomeBottomBar';
+import TabHeader from './TabHeader';
 import QuickActionsMenu from './QuickActionsMenu';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;
 
 interface Props {
   activeTab: HomeTabKey;
+  tituloTela: string; // título do cabeçalho padrão da aba (ex.: "Social")
   titulo: string;
   subtitulo: string;
   icone: keyof typeof Ionicons.glyphMap;
@@ -23,7 +25,7 @@ interface Props {
 
 // Aviso "em breve" como conteúdo normal da página (não é modal/popup) —
 // usado nas abas que ainda não têm funcionalidade própria.
-export function EmBreveTab({ activeTab, titulo, subtitulo, icone }: Props) {
+export function EmBreveTab({ activeTab, tituloTela, titulo, subtitulo, icone }: Props) {
   const navigation = useNavigation<NavigationProp>();
   const [menuAberto, setMenuAberto] = useState(false);
 
@@ -36,6 +38,7 @@ export function EmBreveTab({ activeTab, titulo, subtitulo, icone }: Props) {
 
   return (
     <SafeAreaView style={styles.tela}>
+      <TabHeader titulo={tituloTela} />
       <View style={styles.conteudo}>
         <View style={styles.iconeCirculo}>
           <Ionicons name={icone} size={32} color={colors.primary} />
@@ -52,7 +55,7 @@ export function EmBreveTab({ activeTab, titulo, subtitulo, icone }: Props) {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white ?? '#fff' },
-  conteudo: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
+  conteudo: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingBottom: 104 },
   iconeCirculo: {
     width: 72, height: 72, borderRadius: 36,
     backgroundColor: '#EAF6D9', alignItems: 'center', justifyContent: 'center', marginBottom: 16,

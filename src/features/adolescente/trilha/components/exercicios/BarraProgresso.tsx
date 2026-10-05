@@ -1,6 +1,7 @@
 // src/features/adolescente/trilha/components/exercicios/BarraProgresso.tsx
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { LayoutChangeEvent, View, StyleSheet } from 'react-native';
+import { MotiView } from 'moti';
 import { colors } from '../../../../../shared/theme/colors';
 
 type Props = {
@@ -8,21 +9,37 @@ type Props = {
   total: number;
 };
 
-/** Barra de progresso da sequência de exercícios dentro de uma lição de quiz. */
+/**
+ * Barra de progresso da sequência de exercícios dentro de uma lição.
+ * O preenchimento cresce com animação suave a cada passo (mede a largura
+ * do trilho e anima em pixels).
+ */
 export default function BarraProgresso({ atual, total }: Props) {
+  const [larguraTrilho, setLarguraTrilho] = useState(0);
   const proporcao = total > 0 ? Math.min(1, atual / total) : 0;
+
+  function handleLayout(e: LayoutChangeEvent) {
+    setLarguraTrilho(e.nativeEvent.layout.width);
+  }
+
   return (
-    <View style={styles.trilho}>
-      <View style={[styles.preenchido, { width: `${proporcao * 100}%` }]} />
+    <View style={styles.trilho} onLayout={handleLayout}>
+      <MotiView
+        animate={{ width: larguraTrilho * proporcao }}
+        transition={{ type: 'timing', duration: 450 }}
+        style={styles.preenchido}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   trilho: {
-    height: 10,
+    height: 12,
     borderRadius: 6,
-    backgroundColor: '#E2E8DD',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: '#9CA3AF',
     overflow: 'hidden',
   },
   preenchido: {

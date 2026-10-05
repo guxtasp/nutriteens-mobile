@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
 import { MessageBanner } from '../../../../shared/ui/MessageBanner';
@@ -27,6 +27,9 @@ import { typography } from '../../../../shared/theme/typography';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { supabase } from '../../../../lib/supabase';
 import { GrupoModuloTrilha, NoTrilha, TrilhaCaminho } from '../components/TrilhaPath';
+import EstatisticaPill from '../../home/components/EstatisticaPill';
+import TabHeader from '../../_shared/components/TabHeader';
+import { layout } from '../../../../shared/theme/layout';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
@@ -34,6 +37,11 @@ import { buscarTrilhaComProgresso, ModuloDaTrilha, Trilha, LicaoDaTrilha } from 
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;
 const LICOES_POR_MODULO = 5;
+
+// mesmas cores e ícones do cabeçalho da Home (HomeHeader): XP = presente verde,
+// sequência = chama laranja
+const COR_XP = colors.primary;
+const COR_SEQUENCIA = '#EA580C';
 
 export default function TrilhaScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -239,22 +247,32 @@ export default function TrilhaScreen() {
 
   return (
     <SafeAreaView style={styles.tela} edges={['top']}>
-      <View style={styles.estatisticas}>
-        <View style={styles.chip}>
-          <Ionicons name="leaf" size={22} color={colors.primary} />
-          <AppText numberOfLines={1} style={[styles.chipTexto, styles.chipTrilha]}>
-            {trilha?.titulo ?? 'Trilha'}
-          </AppText>
-        </View>
-        <View style={styles.chip} accessibilityLabel={`Sequência de ${sequencia} dias`}>
-          <Ionicons name="flame" size={22} color={colors.trilhaFogo} />
-          <AppText style={styles.chipTexto}>{sequencia}</AppText>
-        </View>
-        <View style={styles.chip} accessibilityLabel={`${xpTotal} pontos de experiência`}>
-          <Ionicons name="flash" size={22} color={colors.info} />
-          <AppText style={styles.chipTexto}>{xpTotal}</AppText>
-        </View>
-      </View>
+      <TabHeader
+        titulo="Trilhas de Ensino"
+        direita={
+          <>
+            <EstatisticaPill
+              icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
+              valor={xpTotal}
+              sufixo="XP"
+              cor={COR_XP}
+            />
+            {sequencia > 0 && (
+              <Pressable
+                onPress={() => navigation.navigate('Sequencia')}
+                accessibilityRole="button"
+                accessibilityLabel="Ver sequência"
+              >
+                <EstatisticaPill
+                  icone={<Ionicons name="flame" size={20} color={COR_SEQUENCIA} />}
+                  valor={sequencia}
+                  cor={COR_SEQUENCIA}
+                />
+              </Pressable>
+            )}
+          </>
+        }
+      />
 
       {!!moduloNaFaixa && !carregando && (
         <View style={styles.faixa}>
@@ -278,7 +296,7 @@ export default function TrilhaScreen() {
         </View>
       )}
 
-      <MessageBanner message={message} type={type} onClose={clearMessage} />
+      <MessageBanner message={message} type={type} onClose={clearMessage} style={styles.avisoSobreposto} />
 
       {!!licaoPraticaPendente && (
         <Pressable style={styles.bannerPendente} onPress={abrirPraticaPendente}>
@@ -327,25 +345,17 @@ export default function TrilhaScreen() {
 }
 
 const styles = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: colors.white },
+  tela: { flex: 1, backgroundColor: colors.white},
 
-  estatisticas: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 12,
-  },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  chipTexto: { fontFamily: typography.bold, fontSize: 16, color: colors.trilhaChipTexto },
-  chipTrilha: { maxWidth: 130 },
+  // MessageBanner reserva 56px + margem em branco no fluxo; aqui ele aparece
+  // por cima do caminho (como um aviso) e não empurra nem corta nada
+  avisoSobreposto: { minHeight: 0, height: 0, marginTop: 0, marginHorizontal: layout.margemH, zIndex: 20 },
 
   // faixa fixa do módulo (fica parada enquanto o caminho rola por baixo)
   faixa: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: layout.margemH,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 16,
@@ -372,8 +382,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginHorizontal: 20,
-    marginTop: 10,
+    marginHorizontal: layout.margemH,
+    marginTop: layout.gapEntreBlocos,
     padding: 12,
     borderRadius: 14,
     backgroundColor: colors.warningSoft,

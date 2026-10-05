@@ -14,6 +14,8 @@ interface AppButtonProps extends TouchableOpacityProps {
   selected?: boolean;
   fullWidth?: boolean;
   borderWidth?: number;
+  // 'compact' = botão mais baixo, com fonte e relevo menores (usado nos exercícios)
+  size?: 'normal' | 'compact';
 }
 
 export function AppButton({
@@ -25,13 +27,16 @@ export function AppButton({
   selected,
   fullWidth = true,
   borderWidth,
+  size = 'normal',
   style,
   ...props
 }: AppButtonProps) {
   const isDeselected = selected === false;
-  // Se o botão estiver marcado como "outline" (outlineColor definido) 
-  // ou se estiver desmarcado (selected === false), 
-  // ele será renderizado como um botão outline, caso contrário, 
+  const compact = size === 'compact';
+  const relevo = compact ? 3 : 4;
+  // Se o botão estiver marcado como "outline" (outlineColor definido)
+  // ou se estiver desmarcado (selected === false),
+  // ele será renderizado como um botão outline, caso contrário,
   // será renderizado como um botão preenchido com relevo embaixo.
   const isOutline = !!outlineColor || isDeselected;
 
@@ -39,6 +44,7 @@ export function AppButton({
     <TouchableOpacity
       style={[
         styles.base,
+        compact && styles.baseCompact,
         fullWidth && styles.fullWidth,
         isOutline
           ? {
@@ -48,20 +54,25 @@ export function AppButton({
               // Se outlineColor não for definido, usa a cor primária como padrão
               borderColor: outlineColor ?? colors.primary,
               borderBottomColor: shadowColor,
-              borderBottomWidth: 4,
-
+              borderBottomWidth: relevo,
             }
           : {
               // botão preenchido: sem borda nos lados, só relevo embaixo
               backgroundColor,
-              borderBottomWidth: 4,
+              borderBottomWidth: relevo,
               borderBottomColor: shadowColor,
             },
         style,
       ]}
       {...props}
     >
-      <AppText style={[styles.text, { color: isOutline ? (outlineColor ?? colors.primary) : textColor }]}>
+      <AppText
+        style={[
+          styles.text,
+          compact && styles.textCompact,
+          { color: isOutline ? (outlineColor ?? colors.primary) : textColor },
+        ]}
+      >
         {label}
       </AppText>
     </TouchableOpacity>
@@ -74,11 +85,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
+  baseCompact: {
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
   fullWidth: {
     width: '100%',
   },
   text: {
     fontFamily: typography.bold,
     fontSize: 16,
+  },
+  textCompact: {
+    fontSize: 14,
+    letterSpacing: 0.4,
   },
 });

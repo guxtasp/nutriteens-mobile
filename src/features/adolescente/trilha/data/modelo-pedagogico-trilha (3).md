@@ -111,6 +111,8 @@ Legenda: **C** = cartão de conteúdo · **E** = enquete/reflexão sem nota · *
 | **Cartão de conteúdo** (título + texto curto + imagem opcional) | não | 🆕 |
 | **Enquete/reflexão** (escolher opção, sem certo/errado, com feedback neutro) | não | 🆕 |
 | **Meta/compromisso** (escolher um plano "se… então…") | não | 🆕 |
+| **Monte seu prato** (toca nos alimentos e eles vão para um prato ilustrado; missão em pílulas; só libera o CONTINUAR ao cumprir) | não | ✅ |
+| **Jogo da memória** (virar cartas e achar os pares; termina quando acha todos) | não | ✅ |
 | Registro real (Prática Real) | não | ✅ |
 
 O percentual de acertos considera **só os passos pontuados**.

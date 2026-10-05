@@ -6,6 +6,7 @@ export default function AlimentacaoHomeScreen() {
   return (
     <EmBreveTab
       activeTab="alimentacao"
+      tituloTela="Comer"
       icone="restaurant-outline"
       titulo="Essa área está a caminho"
       subtitulo="Em breve você acompanha por aqui o que já registrou de refeições."

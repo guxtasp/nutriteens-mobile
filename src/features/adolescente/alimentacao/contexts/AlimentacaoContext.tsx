@@ -1,10 +1,11 @@
-// src/features/adolescente/contexts/AlimentacaoContext.tsx
+// src/features/adolescente/alimentacao/contexts/AlimentacaoContext.tsx
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Alimento, TipoRefeicao, registrarRefeicao } from '../services/alimentacaoService';
 import type { FeedbackRefeicao } from '../utils/regraFeedbackRefeicao';
 import { ItemCarrinhoAlimento } from '../types/alimentacao';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
+import { tocarSom } from '../../../../shared/audio/sons';
 
 interface AlimentacaoContextValue {
   carrinho: ItemCarrinhoAlimento[];
@@ -26,6 +27,8 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
 
   // toca em "+" num alimento já no carrinho -> incrementa em vez de duplicar linha
   const adicionarAoCarrinho = useCallback((alimento: Alimento) => {
+    // o som fica fora do setCarrinho: o atualizador pode rodar mais de uma vez
+    tocarSom('pop');
     setCarrinho((atual) => {
       const existente = atual.find((item) => item.alimento.id === alimento.id);
       if (existente) {
@@ -38,6 +41,7 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const incrementarItem = useCallback((alimentoId: string) => {
+    tocarSom('pop');
     setCarrinho((atual) =>
       atual.map((item) => (item.alimento.id === alimentoId ? { ...item, quantidade: item.quantidade + 1 } : item))
     );
@@ -70,6 +74,7 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
         });
         const quantidade = carrinho.length;
         setCarrinho([]);
+        tocarSom('registro');
         const { refeicaoId, ...feedback } = resultado;
         return { quantidade, ...feedback };
       } finally {

@@ -23,13 +23,19 @@ export const colors = {
   trilhaTrilhoBloqueado: '#818280',
 
   // Trilha no estilo "caminho sobre fundo branco": nós bloqueados em cinza
-  // claro, balão de ação ("COMEÇAR") e chips do cabeçalho.
+  // claro e balão de ação ("COMEÇAR").
+  // Exercícios da trilha (valores tirados dos prints do Figma)
+  exercicioTexto: '#1B4332', // textos dos exercícios: verde-escuro do app, nunca preto
+  exercicioBorda: '#8B8989', // borda, relevo e texto das opções ainda não escolhidas
+  exercicioErro: '#FF4540', // opção errada, título/texto/botão do feedback de erro
+  exercicioErroSuave: '#FFAAA8', // fundo do painel de erro e relevo da opção errada
+  exercicioAcertoFundo: '#E2F3D3', // fundo do painel de acerto
+
   trilhaNoBloqueadoFace: '#E5E5E5',
   trilhaNoBloqueadoBorda: '#CFCFCF',
   trilhaNoBloqueadoIcone: '#AFAFAF',
   trilhaBalaoBorda: '#E5E5E5',
-  trilhaChipTexto: '#4B4B4B',
-  trilhaFogo: '#FF9600',
+  trilhaChipTexto: '#4B4B4B', // texto da divisória "Módulo N"
   
 
 

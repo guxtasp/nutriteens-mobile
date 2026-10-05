@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { layout } from '../../../../shared/theme/layout';
 import { useSaudacao } from '../hooks/useSaudacao';
 import EstatisticaPill from './EstatisticaPill';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
@@ -90,9 +91,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
+    paddingHorizontal: layout.margemH,
+    paddingTop: layout.cabecalhoPaddingTop,
+    paddingBottom: layout.cabecalhoPaddingBottom,
   },
   esquerda: {
     flex: 1,

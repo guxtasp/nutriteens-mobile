@@ -2,13 +2,18 @@
 //
 // Regras de uma sessão de nó (~10 passos), sem React/Supabase pra poder ser
 // testada. Ver modelo-pedagogico-trilha.md (seções 3 a 5):
-//  - passos SEM NOTA (cartao, enquete, meta) só avançam; não entram na conta
+//  - passos SEM NOTA (cartao, enquete, meta, memoria, prato) só avançam; não entram na conta
 //    de acertos
 //  - passos PONTUADOS errados na 1ª tentativa voltam UMA vez no fim da
 //    sessão; na 2ª tentativa a questão segue, certa ou errada (ninguém
 //    fica preso, e não existe "vida" a perder)
 //  - % de acertos = acertos na PRIMEIRA tentativa ÷ nº de questões pontuadas
-export const FORMATOS_SEM_NOTA = ['cartao', 'enquete', 'meta'];
+// `memoria` é sem nota porque só termina quando todos os pares são achados:
+// não existe "errar" o jogo, só demorar mais tentativas.
+// `prato` também: só libera o CONTINUAR quando a missão está cumprida, então
+// não existe prato "errado" — e dizer isso a um adolescente sobre a comida
+// dele não é o tom do app.
+export const FORMATOS_SEM_NOTA = ['cartao', 'enquete', 'meta', 'memoria', 'prato'];
 
 export function ehPassoPontuado(formato: string): boolean {
   return !FORMATOS_SEM_NOTA.includes(formato);

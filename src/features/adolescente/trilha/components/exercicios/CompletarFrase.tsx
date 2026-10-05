@@ -1,10 +1,12 @@
 // src/features/adolescente/trilha/components/exercicios/CompletarFrase.tsx
 import React from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
+import { MotiView } from 'moti';
 import { AppText } from '../../../../../shared/ui/AppText';
 import { colors } from '../../../../../shared/theme/colors';
 import { typography } from '../../../../../shared/theme/typography';
 import type { OpcaoQuiz } from '../../services/trilhaService';
+import { BALANCO, PULINHO, atrasoCascata } from './animacoes';
 
 // Convenção de conteúdo (ver migration_formato_exercicios.sql): o enunciado
 // carrega esse token literal no lugar da lacuna.
@@ -40,30 +42,49 @@ type BancoProps = {
   onSelecionar: (opcaoId: string) => void;
 };
 
-/** O banco de palavras pra tocar e preencher a lacuna — fica fora do balão. */
+/**
+ * O banco de palavras pra tocar e preencher a lacuna — fica fora do balão.
+ * Animações: as palavras entram em cascata, a escolhida dá um pulinho e, ao
+ * responder, a certa pulsa e a errada balança.
+ */
 export default function BancoDePalavras({ opcoes, selecionada, respondido, onSelecionar }: BancoProps) {
   return (
     <View>
       <AppText style={styles.instrucao}>Complete minha frase</AppText>
       <View style={styles.banco}>
-        {opcoes.map((opcao) => {
+        {opcoes.map((opcao, indice) => {
           const estaSelecionada = selecionada === opcao.id;
           const mostrarCerta = respondido && estaSelecionada && opcao.correta;
           const mostrarErrada = respondido && estaSelecionada && !opcao.correta;
 
           return (
-            <Pressable key={opcao.id} disabled={respondido} onPress={() => onSelecionar(opcao.id)}>
-              <AppText
-                style={[
-                  styles.chip,
-                  estaSelecionada && !respondido && styles.chipSelecionado,
-                  mostrarCerta && styles.chipCerto,
-                  mostrarErrada && styles.chipErrado,
-                ]}
+            <MotiView
+              key={opcao.id}
+              from={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'timing', duration: 260, delay: atrasoCascata(indice, 100, 70) }}
+            >
+              <MotiView
+                animate={{
+                  scale: mostrarCerta ? PULINHO : estaSelecionada && !respondido ? [1, 1.18, 1] : 1,
+                  translateX: mostrarErrada ? BALANCO : 0,
+                }}
+                transition={{ type: 'timing', duration: mostrarErrada ? 380 : 240 }}
               >
-                {opcao.texto}
-              </AppText>
-            </Pressable>
+                <Pressable disabled={respondido} onPress={() => onSelecionar(opcao.id)}>
+                  <AppText
+                    style={[
+                      styles.chip,
+                      estaSelecionada && !respondido && styles.chipSelecionado,
+                      mostrarCerta && styles.chipCerto,
+                      mostrarErrada && styles.chipErrado,
+                    ]}
+                  >
+                    {opcao.texto}
+                  </AppText>
+                </Pressable>
+              </MotiView>
+            </MotiView>
           );
         })}
       </View>
@@ -76,7 +97,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.bold,
     fontSize: 14,
     lineHeight: 20,
-    color: colors.textOnLight,
+    color: colors.exercicioTexto,
     textAlign: 'center',
   },
   lacuna: { color: colors.placeholder },
@@ -94,19 +115,19 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 10,
-    borderWidth: 1.5,
-    borderColor: '#E2E8DD',
+    borderWidth: 1,
+    borderColor: colors.exercicioBorda,
     borderRadius: 14,
     padding: 16,
   },
   chip: {
     fontFamily: typography.bold,
     fontSize: 14,
-    color: colors.textOnLight,
+    color: colors.exercicioTexto,
     paddingVertical: 6,
     paddingHorizontal: 4,
   },
   chipSelecionado: { color: colors.primary },
-  chipCerto: { color: colors.success },
-  chipErrado: { color: colors.error },
+  chipCerto: { color: colors.primary },
+  chipErrado: { color: colors.exercicioErro },
 });

@@ -1,6 +1,6 @@
-// src/features/adolescente/screens/ConsumoAguaScreen.tsx
+// src/features/adolescente/agua/screens/ConsumoAguaScreen.tsx
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { BackButton } from '../../../../shared/ui/BackButton';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { tocarSom } from '../../../../shared/audio/sons';
 import { useAguaHoje } from '../../agua/hooks/useAguaHoje';
 import GarrafaAnimada from '../../agua/components/GarrafaAnimada';
 import AguaSlider from '../../agua/components/AguaSlider';
@@ -37,14 +38,23 @@ export default function ConsumoAguaScreen() {
   const [sheetGuia, setSheetGuia] = useState(false);
   const [sucessoVisivel, setSucessoVisivel] = useState(false);
   const [metaAtingidaAgora, setMetaAtingidaAgora] = useState(false);
+  // "Agora não" no modal de peso: a tela segue usável com a meta padrão
+  const [pesoDispensado, setPesoDispensado] = useState(false);
 
   const handleRegistrar = useCallback(async () => {
-    const novoTotal = await registrar(quantidadeSelecionada);
-    if (novoTotal != null) {
+    try {
+      const novoTotal = await registrar(quantidadeSelecionada);
+      if (novoTotal == null) return;
       setMetaAtingidaAgora(novoTotal >= metaMl);
+      // fanfarra só na hora em que a meta é batida; nos outros registros, a gota
+      const cruzouAMeta = mlHoje < metaMl && novoTotal >= metaMl;
+      tocarSom(cruzouAMeta ? 'fanfarra' : 'gota');
+      setSucessoVisivel(true);
+    } catch (erro) {
+      console.error('Erro ao registrar água:', erro);
+      Alert.alert('Ops', 'Não foi possível registrar agora. Tente de novo.');
     }
-    setSucessoVisivel(true);
-  }, [registrar, quantidadeSelecionada, metaMl]);
+  }, [registrar, quantidadeSelecionada, metaMl, mlHoje]);
 
   return (
     <SafeAreaView style={styles.tela}>
@@ -62,7 +72,7 @@ export default function ConsumoAguaScreen() {
 
           <View style={styles.infoDireita}>
             <Pressable style={styles.botaoInfo} onPress={() => setSheetGuia(true)}>
-            <Ionicons name="information" size={18} color="#fff" />
+              <Ionicons name="information" size={18} color="#fff" />
             </Pressable>
             <AppText style={styles.rotuloHoje}>Hoje</AppText>
             <AppText style={styles.valorHoje}>{mlHoje} ml</AppText>
@@ -106,7 +116,11 @@ export default function ConsumoAguaScreen() {
         </Pressable>
       </View>
 
-      <PesoAlturaModal visivel={precisaPesoAltura} onConfirmar={salvarPesoAltura} />
+      <PesoAlturaModal
+        visivel={precisaPesoAltura && !pesoDispensado}
+        onConfirmar={salvarPesoAltura}
+        onFechar={() => setPesoDispensado(true)}
+      />
       <GuiaAguaSheet visivel={sheetGuia} onFechar={() => setSheetGuia(false)} />
       <SucessoRegistroModal
         visivel={sucessoVisivel}

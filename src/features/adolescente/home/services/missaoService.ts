@@ -135,6 +135,19 @@ async function buscarOuCriarMissaoDoDia(userId: string, data: string): Promise<M
     .insert({ user_id: userId, missao_id: catalogoRow.id, data, parametros })
     .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio, pontos_recompensa)')
     .single();
+
+  // duas chamadas simultâneas (ex.: render duplo) tentam criar a mesma missão do dia:
+  // a perdedora bate na unique (user_id, data) -> só relê a que a outra criou
+  if (error?.code === '23505') {
+    const { data: criada, error: erroRelida } = await supabase
+      .from('missoes_diarias')
+      .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio, pontos_recompensa)')
+      .eq('user_id', userId)
+      .eq('data', data)
+      .single();
+    if (erroRelida) throw erroRelida;
+    return mapearMissao(criada);
+  }
   if (error) throw error;
 
   return mapearMissao(nova);

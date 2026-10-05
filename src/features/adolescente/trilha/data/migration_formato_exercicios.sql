@@ -21,4 +21,4 @@ alter table public.opcoes_quiz
 -- Não precisa de coluna nova pra isso — só essa convenção de conteúdo.
 
 comment on column public.questoes_quiz.formato is
-  'multipla_escolha | verdadeiro_falso | completar | ordene | associe | classifique';
+  'multipla_escolha | verdadeiro_falso | completar | ordene | associe | classifique | cartao | enquete | meta | memoria | prato';

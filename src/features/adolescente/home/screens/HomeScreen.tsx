@@ -134,6 +134,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  tela: { marginTop: 16, flex: 1, backgroundColor: colors.white ?? '#A9C7B8' },
+  tela: { flex: 1, backgroundColor: colors.white ?? '#A9C7B8' },
   
 });

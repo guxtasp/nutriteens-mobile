@@ -58,11 +58,12 @@ const MASCOTE = require('../../../../../assets/img/mascot/broxis-aceno.png');
 const MASCOTE_LARGURA = 64;
 const MASCOTE_ALTURA = Math.round((MASCOTE_LARGURA * 463) / 292);
 
-const ALTURA_LINHA = 96;
+const ALTURA_LINHA = 100;
+const ESPACO_BALAO = 52; // folga extra ACIMA do nó atual: o balão "COMEÇAR" não pode cobrir o nó anterior
 const TOPO = 104; // folga pro balão "COMEÇAR" caber acima do primeiro nó
-const NODE_SIZE = 68;
-const NODE_SIZE_ATUAL = 72;
-const PROFUNDIDADE = 8; // espessura do "botão" 3D (borda de baixo)
+const NODE_SIZE = 72;
+const NODE_SIZE_ATUAL = 76;
+const PROFUNDIDADE = 7; // espessura do "botão" 3D (borda de baixo)
 const CAIXA_LARGURA = 128;
 const ALTURA_DIVISORIA = 96; // etiqueta "Módulo N" + folga pro balão do primeiro nó do módulo
 const PERIODO_ONDA = 8; // nós por ciclo completo da onda
@@ -94,6 +95,8 @@ export function TrilhaCaminho({ grupos, onPressNo, onMedirGrupos, onMedirNoAtual
       offsets[grupo.moduloId] = Math.max(0, topoGrupo - 16);
 
       grupo.nos.forEach((no, i) => {
+        // o nó atual leva o balão por cima: abre espaço antes dele
+        if (no.status === 'atual' && indiceGlobal > 0) y += ESPACO_BALAO;
         // onda suave: começa no centro, vai pra direita, volta, vai pra esquerda
         const x = width / 2 + amplitude * Math.sin((indiceGlobal * 2 * Math.PI) / PERIODO_ONDA);
         pts.push({ no, x, y, inicioDeGrupo: i === 0 ? grupo.titulo : null });
@@ -351,7 +354,7 @@ const styles = StyleSheet.create({
   balaoCorpo: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: 20,
     backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: colors.trilhaBalaoBorda,

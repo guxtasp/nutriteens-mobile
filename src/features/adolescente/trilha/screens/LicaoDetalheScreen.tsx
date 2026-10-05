@@ -1,4 +1,4 @@
-// src/features/adolescente/screens/LicaoDetalheScreen.tsx
+// src/features/adolescente/trilha/screens/LicaoDetalheScreen.tsx
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +13,8 @@ import { MessageBanner } from '../../../../shared/ui/MessageBanner';
 import { useMessageBanner } from '../../../../shared/hooks/useMessageBanner';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { layout } from '../../../../shared/theme/layout';
+import { tocarSom } from '../../../../shared/audio/sons';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import {
   buscarDetalheLicao,
@@ -91,6 +93,9 @@ export default function LicaoDetalheScreen() {
   }
 
   function navegarParaConclusao(nivel: NivelConclusao, xpGanho: number, acertosPercentual: number | null) {
+    // quanto maior a conquista, maior a comemoração sonora
+    tocarSom(nivel === 'trilha' ? 'fanfarraTrilha' : nivel === 'modulo' ? 'fanfarra' : 'conquista');
+
     if (nivel === 'trilha') {
       navigation.replace('TrilhaCompleta', { xpGanho, acertosPercentual: acertosPercentual ?? 0 });
     } else if (nivel === 'modulo') {
@@ -117,7 +122,9 @@ export default function LicaoDetalheScreen() {
   const pratica = configPraticaReal(detalhe?.tipoHabito ?? null);
 
   return (
-    <SafeAreaView style={styles.tela}>
+    // nas sessões só o topo respeita a área segura: o painel de feedback precisa
+    // chegar até a borda de baixo da tela
+    <SafeAreaView style={styles.tela} edges={usaSessao ? ['top'] : undefined}>
       <View style={[styles.cabecalho, usaSessao && styles.cabecalhoQuiz]}>
         <BackButton onPress={() => navigation.goBack()} />
         {!usaSessao && (
@@ -128,7 +135,7 @@ export default function LicaoDetalheScreen() {
         )}
       </View>
 
-      <MessageBanner message={message} type={type} onClose={clearMessage} />
+      <MessageBanner message={message} type={type} onClose={clearMessage} style={styles.avisoSobreposto} />
 
       {carregando || !detalhe ? (
         <View style={styles.centro}>
@@ -206,12 +213,14 @@ const styles = StyleSheet.create({
   cabecalho: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: layout.margemFluxoH,
+    paddingTop: 20,
     paddingBottom: 12,
     gap: 12,
   },
-  cabecalhoQuiz: { paddingBottom: 4 },
+  cabecalhoQuiz: { paddingBottom: 16 },
+  // o aviso aparece por cima do conteúdo, sem reservar espaço em branco no topo
+  avisoSobreposto: { minHeight: 0, height: 0, marginTop: 0, marginHorizontal: layout.margemFluxoH, zIndex: 20 },
   tituloBloco: { flex: 1 },
   titulo: {
     fontFamily: typography.bold,
@@ -231,14 +240,14 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   corpo: {
-    paddingHorizontal: 20,
+    paddingHorizontal: layout.margemFluxoH,
     paddingBottom: 40,
   },
   texto: {
     fontFamily: typography.regular,
     fontSize: 15,
     lineHeight: 23,
-    color: colors.textOnLight,
+    color: colors.exercicioTexto,
   },
   rodape: {
     marginTop: 24,
