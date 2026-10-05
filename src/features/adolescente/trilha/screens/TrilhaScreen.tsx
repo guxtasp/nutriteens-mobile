@@ -1,21 +1,31 @@
 // src/features/adolescente/trilha/screens/TrilhaScreen.tsx
 //
-// Caminho contínuo de aprendizado, com o módulo atual no card do topo e
-// os demais módulos separados ao longo da trilha (TrilhaCaminho). O botão
-// de voltar do cabeçalho leva para a Home.
-import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+// Caminho contínuo de aprendizado sobre fundo branco (estilo Duolingo):
+// barra de sequência/XP no topo, faixa verde FIXA com o módulo que está na
+// vista (troca conforme o usuário rola) e o caminho de nós logo abaixo
+// (TrilhaCaminho). A tela abre já rolada até o nó atual.
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
 import { MessageBanner } from '../../../../shared/ui/MessageBanner';
 import { useMessageBanner } from '../../../../shared/hooks/useMessageBanner';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { formatarDataISO } from '../../../../shared/utils/data';
+import { supabase } from '../../../../lib/supabase';
 import { GrupoModuloTrilha, NoTrilha, TrilhaCaminho } from '../components/TrilhaPath';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
@@ -36,10 +46,44 @@ export default function TrilhaScreen() {
   const [modulos, setModulos] = useState<ModuloDaTrilha[]>([]);
   const [nos, setNos] = useState<NoTrilha[]>([]);
   const [licoes, setLicoes] = useState<LicaoDaTrilha[]>([]);
+  const [xpTotal, setXpTotal] = useState(0);
+  const [sequencia, setSequencia] = useState(0);
+  // módulo que está na vista (null = ainda não rolou: usa o do nó atual)
+  const [moduloVisivelId, setModuloVisivelId] = useState<string | null>(null);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const offsetsModulosRef = useRef<Record<string, number>>({});
+  const jaRolouAteAtualRef = useRef(false);
+
+  // Sequência e XP do cabeçalho. Falhar aqui não pode derrubar a trilha, por
+  // isso fica fora do try principal. A sequência vem direto do perfil: vale
+  // se o último dia mantido foi hoje ou ontem (senão a sequência quebrou) —
+  // a Home é quem grava/atualiza esse valor.
+  const carregarEstatisticas = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const [{ data: perfil, error: erroPerfil }, { data: xp, error: erroXp }] = await Promise.all([
+        supabase.from('profiles').select('sequencia_atual, ultimo_dia_mantido').eq('id', userId).single(),
+        supabase.from('xp_usuario').select('xp_total').eq('usuario_id', userId).maybeSingle(),
+      ]);
+      if (erroPerfil) throw erroPerfil;
+      if (erroXp) throw erroXp;
+
+      const hoje = formatarDataISO(new Date());
+      const ontem = formatarDataISO(new Date(Date.now() - 86400000));
+      const ativa = perfil.ultimo_dia_mantido === hoje || perfil.ultimo_dia_mantido === ontem;
+      setSequencia(ativa ? perfil.sequencia_atual ?? 0 : 0);
+      setXpTotal(xp?.xp_total ?? 0);
+    } catch (erro) {
+      console.error('Erro ao carregar sequência/XP da trilha:', erro);
+    }
+  }, [userId]);
 
   const carregar = useCallback(async () => {
     if (!userId) return;
     setCarregando(true);
+    jaRolouAteAtualRef.current = false;
+    carregarEstatisticas();
     try {
       const resultado = await buscarTrilhaComProgresso(userId);
       setTrilha(resultado?.trilha ?? null);
@@ -52,7 +96,7 @@ export default function TrilhaScreen() {
     } finally {
       setCarregando(false);
     }
-  }, [userId, showMessage]);
+  }, [userId, showMessage, carregarEstatisticas]);
 
   // recarrega toda vez que a aba ganha foco, pra refletir lição recém-concluída
   useFocusEffect(
@@ -96,7 +140,7 @@ export default function TrilhaScreen() {
 
         return {
           moduloId: modulo.id,
-          titulo: `Módulo ${modulo.ordem}`,
+          titulo: modulo.titulo,
           nos: [...nosDoModulo, ...espacosDeTeste],
         };
       }),
@@ -107,6 +151,49 @@ export default function TrilhaScreen() {
     const noAtual = nos.find((no) => no.status === 'atual');
     return modulos.find((modulo) => modulo.id === noAtual?.moduloId) ?? modulos[modulos.length - 1] ?? null;
   }, [modulos, nos]);
+
+  // progresso (concluídas/total) de cada módulo, mostrado na faixa fixa
+  const progressoPorModulo = useMemo(() => {
+    const mapa: Record<string, { feitas: number; total: number }> = {};
+    nos.forEach((no) => {
+      const atual = mapa[no.moduloId] ?? { feitas: 0, total: 0 };
+      atual.total += 1;
+      if (no.status === 'concluida') atual.feitas += 1;
+      mapa[no.moduloId] = atual;
+    });
+    return mapa;
+  }, [nos]);
+
+  const moduloNaFaixa = useMemo(
+    () => modulos.find((m) => m.id === moduloVisivelId) ?? moduloEmDestaque,
+    [modulos, moduloVisivelId, moduloEmDestaque]
+  );
+
+  const aoMedirGrupos = useCallback((offsets: Record<string, number>) => {
+    offsetsModulosRef.current = offsets;
+  }, []);
+
+  // abre já rolado até o nó atual (uma vez por carregamento)
+  const aoMedirNoAtual = useCallback((y: number) => {
+    if (jaRolouAteAtualRef.current) return;
+    jaRolouAteAtualRef.current = true;
+    setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, y - 280), animated: false }), 50);
+  }, []);
+
+  // troca o módulo da faixa fixa quando o início de outro módulo chega ao topo
+  function aoRolar(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    const y = e.nativeEvent.contentOffset.y;
+    let escolhido: string | null = null;
+    let melhor = -Infinity;
+    Object.entries(offsetsModulosRef.current).forEach(([id, offset]) => {
+      if (offset <= y + 60 && offset > melhor) {
+        melhor = offset;
+        escolhido = id;
+      }
+    });
+    if (!escolhido) escolhido = modulos[0]?.id ?? null;
+    setModuloVisivelId((anterior) => (anterior === escolhido ? anterior : escolhido));
+  }
 
   function handleSelecionarAcao(opcao: 'alimentacao' | 'agua' | 'atividade') {
     setMenuAberto(false);
@@ -148,9 +235,49 @@ export default function TrilhaScreen() {
     });
   }
 
+  const progressoDaFaixa = moduloNaFaixa ? progressoPorModulo[moduloNaFaixa.id] : undefined;
+
   return (
     <SafeAreaView style={styles.tela} edges={['top']}>
-     
+      <View style={styles.estatisticas}>
+        <View style={styles.chip}>
+          <Ionicons name="leaf" size={22} color={colors.primary} />
+          <AppText numberOfLines={1} style={[styles.chipTexto, styles.chipTrilha]}>
+            {trilha?.titulo ?? 'Trilha'}
+          </AppText>
+        </View>
+        <View style={styles.chip} accessibilityLabel={`Sequência de ${sequencia} dias`}>
+          <Ionicons name="flame" size={22} color={colors.trilhaFogo} />
+          <AppText style={styles.chipTexto}>{sequencia}</AppText>
+        </View>
+        <View style={styles.chip} accessibilityLabel={`${xpTotal} pontos de experiência`}>
+          <Ionicons name="flash" size={22} color={colors.info} />
+          <AppText style={styles.chipTexto}>{xpTotal}</AppText>
+        </View>
+      </View>
+
+      {!!moduloNaFaixa && !carregando && (
+        <View style={styles.faixa}>
+          <View style={styles.faixaTextos}>
+            <AppText style={styles.faixaRotulo}>{moduloNaFaixa.titulo}</AppText>
+            <AppText numberOfLines={2} style={styles.faixaTitulo}>
+              {trilha?.titulo ?? moduloNaFaixa.subtitulo}
+            </AppText>
+          </View>
+          {!!progressoDaFaixa && progressoDaFaixa.total > 0 && (
+            <>
+              <View style={styles.faixaDivisor} />
+              <View style={styles.faixaProgresso}>
+                <AppText style={styles.faixaProgressoNumero}>
+                  {progressoDaFaixa.feitas}/{progressoDaFaixa.total}
+                </AppText>
+                <AppText style={styles.faixaProgressoRotulo}>lições</AppText>
+              </View>
+            </>
+          )}
+        </View>
+      )}
+
       <MessageBanner message={message} type={type} onClose={clearMessage} />
 
       {!!licaoPraticaPendente && (
@@ -176,28 +303,21 @@ export default function TrilhaScreen() {
           <AppText style={styles.vazioSubtitulo}>Assim que uma trilha for aprovada, ela aparece por aqui.</AppText>
         </View>
       ) : (
-        <>
-          <View pointerEvents="none" style={styles.imagemObstaculosFixa}>
-            <Image
-              source={require('../../../../../assets/img/trilha/fundo-obstaculos.png')}
-              resizeMode="cover"
-              style={styles.imagemObstaculos}
-            />
-          </View>
-          <ScrollView contentContainerStyle={styles.scrollConteudo} showsVerticalScrollIndicator={false} style={styles.scroll}>
-          {!!moduloEmDestaque && (
-            <View style={styles.moduloCard}>
-              <View style={styles.moduloTextos}>
-                <AppText style={styles.moduloTitulo}>{moduloEmDestaque.titulo}</AppText>
-                <AppText style={styles.moduloSubtitulo}>{moduloEmDestaque.subtitulo}</AppText>
-              </View>
-              <View style={styles.moduloDivisor} />
-              <Ionicons name="book-outline" size={30} color={colors.white} />
-            </View>
-          )}
-          <TrilhaCaminho grupos={grupos} onPressNo={onPressNo} />
-          </ScrollView>
-        </>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollConteudo}
+          onScroll={aoRolar}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          style={styles.scroll}
+        >
+          <TrilhaCaminho
+            grupos={grupos}
+            onPressNo={onPressNo}
+            onMedirGrupos={aoMedirGrupos}
+            onMedirNoAtual={aoMedirNoAtual}
+          />
+        </ScrollView>
       )}
 
       <QuickActionsMenu aberto={menuAberto} onFechar={() => setMenuAberto(false)} onSelecionar={handleSelecionarAcao} />
@@ -207,14 +327,53 @@ export default function TrilhaScreen() {
 }
 
 const styles = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: colors.trilhaCeu },
+  tela: { flex: 1, backgroundColor: colors.white },
+
+  estatisticas: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 12,
+  },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  chipTexto: { fontFamily: typography.bold, fontSize: 16, color: colors.trilhaChipTexto },
+  chipTrilha: { maxWidth: 130 },
+
+  // faixa fixa do módulo (fica parada enquanto o caminho rola por baixo)
+  faixa: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    borderBottomWidth: 5,
+    borderBottomColor: colors.primaryShadow,
+  },
+  faixaTextos: { flex: 1 },
+  faixaRotulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark, opacity: 0.8 },
+  faixaTitulo: { fontFamily: typography.bold, fontSize: 19, color: colors.primaryDark, marginTop: 2 },
+  faixaDivisor: {
+    width: 2,
+    alignSelf: 'stretch',
+    marginHorizontal: 14,
+    borderRadius: 1,
+    backgroundColor: colors.primaryShadow,
+    opacity: 0.45,
+  },
+  faixaProgresso: { alignItems: 'center', minWidth: 44 },
+  faixaProgressoNumero: { fontFamily: typography.bold, fontSize: 17, color: colors.primaryDark },
+  faixaProgressoRotulo: { fontFamily: typography.medium, fontSize: 11, color: colors.primaryDark, opacity: 0.8 },
 
   bannerPendente: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginHorizontal: 20,
-    marginBottom: 8,
+    marginTop: 10,
     padding: 12,
     borderRadius: 14,
     backgroundColor: colors.warningSoft,
@@ -224,17 +383,10 @@ const styles = StyleSheet.create({
   bannerTextos: { flex: 1 },
   bannerTitulo: { fontFamily: typography.bold, fontSize: 13, color: colors.warningShadow },
   bannerSubtitulo: { fontFamily: typography.regular, fontSize: 12, color: colors.warningShadow, marginTop: 2, lineHeight: 16 },
+
+  scroll: { flex: 1 },
   scrollConteudo: { paddingBottom: 104 },
-  scroll: { zIndex: 1 },
-  imagemObstaculosFixa: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    left: 0,
-    height: 280,
-    zIndex: 0,
-  },
-  imagemObstaculos: { width: '100%', height: '100%' },
+
   centro: {
     flex: 1,
     alignItems: 'center',
@@ -254,26 +406,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 6,
     lineHeight: 19,
-  },
-  moduloCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 18,
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: colors.primaryDark,
-    borderBottomWidth: 6,
-    borderBottomColor: '#0D3425',
-  },
-  moduloTextos: { flex: 1 },
-  moduloTitulo: { fontFamily: typography.bold, fontSize: 20, color: colors.white },
-  moduloSubtitulo: { fontFamily: typography.regular, fontSize: 15, color: 'rgba(255,255,255,0.88)', marginTop: 3 },
-  moduloDivisor: {
-    width: 1,
-    height: 32,
-    marginHorizontal: 14,
-    backgroundColor: 'rgba(255,255,255,0.35)',
   },
 });

@@ -16,6 +16,7 @@ import { Divider } from '../../../shared/ui/Divider';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { TIPO_ESCOLA_OPTIONS } from '../constants/tipoEscolaOptions';
 import { useSignup } from '../hooks/useSignup';
+import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import {
   validateNome,
   validateDataNascimento,
@@ -35,6 +36,7 @@ export default function SignupScreen({ navigation }: any) {
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [genero, setGenero] = useState<string | null>(null);
   const { loading, message, type, showMessage, clearMessage, handleSignup } = useSignup();
+  const { carregandoGoogle, continuarComGoogle } = useGoogleAuth(showMessage);
 
   // dispara a validação de um campo no onBlur e mostra o erro no toast do topo
   function handleFieldBlur(validator: (value: string) => string | null, value: string) {
@@ -46,10 +48,6 @@ export default function SignupScreen({ navigation }: any) {
 
   function onSubmit() {
     handleSignup({ nome, dataNascimento, tipoEscola, genero,  email, password, aceitouTermos });
-  }
-
-  async function handleGoogleSignup() {
-    showMessage('Cadastro com Google ainda não disponível', 'info');
   }
 
   return (
@@ -155,14 +153,14 @@ export default function SignupScreen({ navigation }: any) {
         <Divider />
 
         <AppButton
-          label="G  CADASTRAR COM O GOOGLE"
+          label={carregandoGoogle ? 'ABRINDO O GOOGLE...' : 'G  CADASTRAR COM O GOOGLE'}
           backgroundColor={colors.white}
           fullWidth
           borderWidth={0.5}
           outlineColor="#000000"
           textColor={colors.primaryDark}
           shadowColor={colors.primaryDark}
-          onPress={handleGoogleSignup}
+          onPress={continuarComGoogle}
         />
       </ScrollView>
     </View>

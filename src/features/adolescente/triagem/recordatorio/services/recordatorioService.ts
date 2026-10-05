@@ -1,4 +1,5 @@
 import { supabase } from '../../../../../lib/supabase';
+import { avaliarRecordatorio } from '../utils/avaliacaoRecordatorio';
 
 export interface AlimentoCatalogo {
   id: string;
@@ -82,32 +83,34 @@ export async function salvarRefeicao(
   alimentoIds: string[],
   realizada: boolean
 ) {
-  const { data: existente } = await supabase
+  const { data: existente, error: erroBusca } = await supabase
     .from('refeicoes')
     .select('id')
     .eq('recordatorio_id', recordatorioId)
     .eq('tipo', tipoRefeicao)
     .maybeSingle();
+  if (erroBusca) throw erroBusca;
 
-  const refeicaoId =
-    existente?.id ??
-    (
-      await supabase
-        .from('refeicoes')
-        .insert({ recordatorio_id: recordatorioId, tipo: tipoRefeicao, realizada })
-        .select('id')
-        .single()
-    ).data?.id;
-
-  if (!refeicaoId) return;
+  let refeicaoId = existente?.id as string | undefined;
+  if (!refeicaoId) {
+    const { data: nova, error: erroInsert } = await supabase
+      .from('refeicoes')
+      .insert({ recordatorio_id: recordatorioId, tipo: tipoRefeicao, realizada })
+      .select('id')
+      .single();
+    if (erroInsert || !nova) throw erroInsert ?? new Error('Refeição não foi criada');
+    refeicaoId = nova.id as string;
+  }
 
   // limpa seleção anterior (caso o usuário volte e edite) e regrava
-  await supabase.from('refeicao_alimentos').delete().eq('refeicao_id', refeicaoId);
+  const { error: erroDelete } = await supabase.from('refeicao_alimentos').delete().eq('refeicao_id', refeicaoId);
+  if (erroDelete) throw erroDelete;
 
   if (alimentoIds.length > 0) {
-    await supabase.from('refeicao_alimentos').insert(
+    const { error: erroItens } = await supabase.from('refeicao_alimentos').insert(
       alimentoIds.map((alimentoId) => ({ refeicao_id: refeicaoId, alimento_id: alimentoId }))
     );
+    if (erroItens) throw erroItens;
   }
 }
 
@@ -158,35 +161,45 @@ export function calcularMarcadoresSisvan(alimentos: AlimentoParaEscore[]) {
   return { escoreSaudavel, escoreNaoSaudavel, marcadores };
 }
 
-// Busca todos os alimentos marcados em qualquer refeição do recordatório
-// (todas as refeições daquele dia) e aplica os marcadores Sisvan.
-async function calcularEscoreSisvanDoRecordatorio(recordatorioId: string) {
+// Busca tudo que o adolescente marcou no dia e calcula, de uma vez, os escores
+// Sisvan e a avaliação (ultraprocessados + Sisvan). Lança erro se a leitura
+// falhar — o chamador não pode seguir como se tivesse dado certo.
+async function calcularFechamentoDoRecordatorio(recordatorioId: string) {
   const { data, error } = await supabase
     .from('refeicoes')
-    .select('refeicao_alimentos(alimentos(classificacao_nova, grupos_alimentares))')
+    .select('realizada, refeicao_alimentos ( alimentos ( classificacao_nova, grupos_alimentares ) )')
     .eq('recordatorio_id', recordatorioId);
 
-  if (error || !data) return { escoreSaudavel: 0, escoreNaoSaudavel: 0 };
+  if (error || !data) throw error ?? new Error('Não foi possível ler o recordatório');
 
-  const alimentosDoDia: AlimentoParaEscore[] = data.flatMap((refeicao: any) =>
-    (refeicao.refeicao_alimentos ?? [])
-      .map((ra: any) => ra.alimentos)
-      .filter(Boolean)
-  );
+  const alimentosDoDia: AlimentoParaEscore[] = [];
+  for (const refeicao of data as any[]) {
+    for (const ra of refeicao.refeicao_alimentos ?? []) {
+      if (ra.alimentos) alimentosDoDia.push(ra.alimentos);
+    }
+  }
+  const refeicoesRealizadas = (data as any[]).filter((r) => r.realizada).length;
 
-  const { escoreSaudavel, escoreNaoSaudavel } = calcularMarcadoresSisvan(alimentosDoDia);
-  return { escoreSaudavel, escoreNaoSaudavel };
+  const { escoreSaudavel, escoreNaoSaudavel, marcadores } = calcularMarcadoresSisvan(alimentosDoDia);
+  const avaliacao = {
+    ...avaliarRecordatorio(alimentosDoDia, refeicoesRealizadas),
+    sisvan: { escore_saudavel: escoreSaudavel, escore_nao_saudavel: escoreNaoSaudavel, marcadores },
+  };
+  return { escoreSaudavel, escoreNaoSaudavel, avaliacao };
 }
 
 export async function marcarRecordatorioConcluido(recordatorioId: string) {
-  const { escoreSaudavel, escoreNaoSaudavel } = await calcularEscoreSisvanDoRecordatorio(recordatorioId);
+  const { escoreSaudavel, escoreNaoSaudavel, avaliacao } = await calcularFechamentoDoRecordatorio(recordatorioId);
 
-  await supabase
-    .from('recordatorios_alimentares')
-    .update({
-      concluido: true,
-      escore_saudavel: escoreSaudavel,
-      escore_nao_saudavel: escoreNaoSaudavel,
-    })
-    .eq('id', recordatorioId);
+  const base = { concluido: true, escore_saudavel: escoreSaudavel, escore_nao_saudavel: escoreNaoSaudavel };
+  let { error } = await supabase.from('recordatorios_alimentares').update({ ...base, avaliacao }).eq('id', recordatorioId);
+
+  // Coluna `avaliacao` ainda não criada (migration_avaliacao_recordatorio.sql
+  // não rodou): não trava a triagem de todo mundo — grava só o que já existia
+  // e avisa no console. 42703 = Postgres; PGRST204 = cache de schema do PostgREST.
+  if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+    console.warn('Coluna recordatorios_alimentares.avaliacao não existe — rode a migration. Salvando sem a avaliação.');
+    ({ error } = await supabase.from('recordatorios_alimentares').update(base).eq('id', recordatorioId));
+  }
+  if (error) throw error;
 }

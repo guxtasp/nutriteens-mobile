@@ -13,10 +13,7 @@ import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
 import { supabase } from '../../../lib/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-
-WebBrowser.maybeCompleteAuthSession();
+import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
 const LARGURA_DESKTOP = 760;
 
@@ -25,6 +22,7 @@ export default function LoginScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { message, type, showMessage, clearMessage } = useMessageBanner();
+  const { carregandoGoogle, continuarComGoogle } = useGoogleAuth(showMessage);
   const { width } = useWindowDimensions();
   const ehDesktop = Platform.OS === 'web' && width >= LARGURA_DESKTOP;
 
@@ -52,53 +50,6 @@ export default function LoginScreen({ navigation }: any) {
     }
 
     showMessage('Você entrou no app!', 'success');
-  }
-
-  async function handleGoogleLogin() {
-    if (Platform.OS === 'web') {
-      // No web não tem deep link nem WebBrowser: o próprio navegador é
-      // redirecionado pro Google e depois volta pra cá com os tokens na
-      // URL. Quem processa isso é o recuperarSessaoDaUrlWeb() no
-      // AuthContext (roda em qualquer tela que a página recarregar).
-      const redirectTo = window.location.origin + window.location.pathname;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo },
-      });
-
-      if (error) {
-        showMessage('Erro ao entrar com Google: ' + error.message, 'error');
-      }
-      // se não deu erro, o navegador já está saindo desta página
-      return;
-    }
-
-    const redirectTo = Linking.createURL('auth/callback');
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo, skipBrowserRedirect: true },
-    });
-
-    if (error) {
-      showMessage('Erro ao entrar com Google: ' + error.message, 'error');
-      return;
-    }
-
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-
-    if (result.type === 'success') {
-      const { url } = result;
-      const params = Linking.parse(url).queryParams;
-
-      if (params?.access_token && params?.refresh_token) {
-        await supabase.auth.setSession({
-          access_token: params.access_token as string,
-          refresh_token: params.refresh_token as string,
-        });
-      }
-    }
   }
 
   return (
@@ -132,14 +83,14 @@ export default function LoginScreen({ navigation }: any) {
       <Divider />
 
       <AppButton
-        label="G  ENTRAR COM O GOOGLE"
+        label={carregandoGoogle ? 'ABRINDO O GOOGLE...' : 'G  ENTRAR COM O GOOGLE'}
         backgroundColor={colors.white}
         fullWidth
         borderWidth={0.5}
         outlineColor="#000000"
         textColor={colors.primaryDark}
         shadowColor={colors.primaryDark}
-        onPress={handleGoogleLogin}
+        onPress={continuarComGoogle}
       />
 
       <View style={styles.spacer} />

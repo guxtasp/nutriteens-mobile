@@ -208,7 +208,11 @@ export type FormatoExercicio =
   | 'completar'
   | 'ordene'
   | 'associe'
-  | 'classifique';
+  | 'classifique'
+  // passos SEM NOTA (ver modelo-pedagogico-trilha.md):
+  | 'cartao' // ensino: enunciado = título, dadosExtra.texto = corpo
+  | 'enquete' // escolha sem certo/errado; dadosExtra.feedback = mensagem neutra
+  | 'meta'; // plano "se… então…"; mesma convenção da enquete
 
 export type QuestaoQuiz = {
   id: string;
@@ -264,7 +268,10 @@ export async function buscarDetalheLicao(licaoId: string): Promise<DetalheLicao>
     janelaHoras: licao.criterio_conclusao?.janela_horas ?? null,
   };
 
-  if (licao.tipo === 'quiz') {
+  // Lição de conteúdo também pode ser uma SESSÃO de passos (cartões + exercícios).
+  // Se não tiver nenhum passo cadastrado, volta vazio e a tela usa o texto
+  // antigo (conteudo.texto) — lições já existentes continuam funcionando.
+  if (licao.tipo === 'quiz' || licao.tipo === 'conteudo') {
     const { data: questoes, error: erroQuestoes } = await supabase
       .from('questoes_quiz')
       .select('id, enunciado, ordem, formato, dados_extra, opcoes_quiz ( id, texto, correta, ordem, categoria )')
@@ -543,18 +550,23 @@ async function resolverNivelConclusao(licaoId: string): Promise<NivelConclusao> 
 
   if (idsLicoesModulo.length === 0 || !trilhaId) return 'licao';
 
-  const { data: modulosDaTrilha } = await supabase.from('modulos_trilha').select('id').eq('trilha_id', trilhaId);
-  const idsModulosTrilha = (modulosDaTrilha ?? []).map((m) => m.id);
-  const { data: licoesDaTrilha } = await supabase.from('licoes').select('id').in('modulo_id', idsModulosTrilha);
-  const idsLicoesTrilha = (licoesDaTrilha ?? []).map((l) => l.id);
-
-  // essa lição é a de maior `ordem` do módulo/trilha? (proxy simples pra
-  // "é a última" sem precisar reconferir progresso de todo mundo de novo)
+  // essa lição é a última do módulo? (maior `ordem` DENTRO do módulo)
   const ehUltimaDoModulo = await ehUltimaLicao(licaoId, idsLicoesModulo);
   if (!ehUltimaDoModulo) return 'licao';
 
-  const ehUltimaDaTrilha = await ehUltimaLicao(licaoId, idsLicoesTrilha);
-  return ehUltimaDaTrilha ? 'trilha' : 'modulo';
+  // e é a última da trilha? `licoes.ordem` reinicia a cada módulo (1 a 5), então
+  // comparar a `ordem` entre módulos empata: a última da trilha é a de maior
+  // `ordem` do ÚLTIMO módulo.
+  const { data: ultimoModulo } = await supabase
+    .from('modulos_trilha')
+    .select('id')
+    .eq('trilha_id', trilhaId)
+    .order('ordem', { ascending: false })
+    .limit(1);
+  const ultimoModuloId = ultimoModulo?.[0]?.id;
+  if (!ultimoModuloId || ultimoModuloId !== moduloId) return 'modulo';
+
+  return 'trilha';
 }
 
 async function ehUltimaLicao(licaoId: string, idsCandidatos: string[]): Promise<boolean> {

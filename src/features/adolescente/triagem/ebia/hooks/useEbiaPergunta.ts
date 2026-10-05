@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '../../../../../lib/supabase';
 import { PERGUNTAS_EBIA, calcularPontuacaoEbia, classificarEbia } from '../data/ebiaData';
-import { concluirOnboarding, salvarResultadoEbia } from '../services/ebiaService';
+import { concluirOnboarding, fecharAvaliacaoNutricional, salvarResultadoEbia } from '../services/ebiaService';
+import { useMessageBanner } from '../../../../../shared/hooks/useMessageBanner';
 
 // Renomeado de useTriagemPergunta: a lógica é sobre a EBIA especificamente,
 // não sobre "a triagem" como um todo — triagem é só quem decide a ordem
@@ -18,6 +19,7 @@ interface UseEbiaPerguntaParams {
 // (ver features/triagem/navigation/triagemStack.ts).
 export function useEbiaPergunta({ navigation, indice, respostasAnteriores }: UseEbiaPerguntaParams) {
   const [selecionado, setSelecionado] = useState<boolean | null>(null); // armazena a resposta selecionada (true/false) pra pergunta atual
+  const { message, type, showMessage, clearMessage } = useMessageBanner();
   const [salvando, setSalvando] = useState(false); // armazena se o resultado da triagem está sendo salvo no banco, usado pra mostrar um indicador de carregamento e evitar múltiplos cliques no botão "Avançar"
 
   const pergunta = PERGUNTAS_EBIA[indice]; // armazena a pergunta atual (objeto com id e texto) buscada do array PERGUNTAS_EBIA, usado pra exibir o texto da pergunta na tela 
@@ -35,33 +37,41 @@ export function useEbiaPergunta({ navigation, indice, respostasAnteriores }: Use
       return;
     }
 
-    // se for a última pergunta, calcula a pontuação e classificação final da EBIA, salva o resultado no banco e finaliza a triagem
+    // se for a última pergunta, calcula a pontuação e classificação final da EBIA, salva tudo e finaliza a triagem
+    if (salvando) return;
     setSalvando(true);
 
-    // calcula a pontuação e classificação final da EBIA usando as respostas do usuário
-    const pontuacao = calcularPontuacaoEbia(respostas);
-    const classificacao = classificarEbia(pontuacao);
-    // salva o resultado da triagem no banco de dados usando o supabase, passando o id do usuário, as respostas, a pontuação e a classificação final da EBIA
-    const { data: userData } = await supabase.auth.getUser();
+    try {
+      const pontuacao = calcularPontuacaoEbia(respostas);
+      const classificacao = classificarEbia(pontuacao);
 
-    // se o usuário estiver logado, salva o resultado da triagem no banco de dados e conclui o onboarding, atualizando a sessão do usuário pra refletir a mudança de etapa_onboarding no banco
-    if (userData.user) {
-      await salvarResultadoEbia(userData.user.id, respostas, pontuacao, classificacao);
-      await concluirOnboarding(userData.user.id);
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        showMessage('Sua sessão expirou. Entre de novo para continuar.', 'error');
+        return;
+      }
+      const userId = userData.user.id;
+
+      // cada passo lança erro se falhar; o adolescente fica nesta tela e pode
+      // tocar de novo (ver a ordem e a idempotência em ebiaService.ts)
+      const avaliacaoNutricionalId = await salvarResultadoEbia(userId, respostas, pontuacao, classificacao);
+      await concluirOnboarding(userId);
+      await fecharAvaliacaoNutricional(avaliacaoNutricionalId);
+
       // avisa o RootNavigator que etapa_onboarding mudou no banco — sem isso
       // ele continua achando que ainda está em TRIAGEM (só reage a eventos
-      // de auth, não a updates de tabela), e o AdolescenteNavigator manteria
-      // TriagemIntro como raiz da stack pra sempre nessa sessão
-      await supabase.auth.refreshSession(); // atualiza a sessão do usuário pra refletir a mudança de etapa_onboarding no banco, garantindo que o RootNavigator saiba que o usuário concluiu a triagem e deve ser redirecionado pro fluxo principal do app
+      // de auth, não a updates de tabela)
+      const { error: erroSessao } = await supabase.auth.refreshSession();
+      if (erroSessao) throw erroSessao;
+
+      // reset(), não navigate(): descarta toda a cadeia de triagem da stack.
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+    } catch (e) {
+      console.error('Erro ao salvar a EBIA:', e);
+      showMessage('Não conseguimos salvar suas respostas. Confira a conexão e toque em finalizar de novo.', 'error');
+    } finally {
+      setSalvando(false);
     }
-
-    setSalvando(false);
-
-    // reset(), não navigate(): descarta toda a cadeia de triagem
-    // (TriagemIntro → ... → EbiaPergunta) da stack. Sem isso, Home fica
-    // empilhado EM CIMA da triagem inteira, e popToTop()/voltar da Trilha
-    // te leva de volta pra dentro do fluxo de triagem em vez do Início.
-    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   }
 
   return {
@@ -71,5 +81,8 @@ export function useEbiaPergunta({ navigation, indice, respostasAnteriores }: Use
     setSelecionado,
     salvando,
     avancar,
+    message,
+    type,
+    clearMessage,
   };
 }

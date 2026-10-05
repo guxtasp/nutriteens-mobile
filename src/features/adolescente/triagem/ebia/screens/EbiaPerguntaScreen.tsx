@@ -9,6 +9,7 @@ import { AppButton } from '../../../../../shared/ui/AppButton';
 import { AppText } from '../../../../../shared/ui/AppText';
 import { BroxisMascot } from '../../../../../shared/ui/BroxisMascot';
 import { SpeechBubble } from '../../../../../shared/ui/SpeechBubble';
+import { MessageBanner } from '../../../../../shared/ui/MessageBanner';
 import { OpcaoSimNao } from '../components/OpcaoSimNao';
 import { useEbiaPergunta } from '../hooks/useEbiaPergunta';
 import { colors } from '../../../../../shared/theme/colors';
@@ -17,7 +18,7 @@ import { typography } from '../../../../../shared/theme/typography';
 export default function EbiaPerguntaScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
 
-  const { pergunta, ehUltima, selecionado, setSelecionado, salvando, avancar } = useEbiaPergunta({
+  const { pergunta, ehUltima, selecionado, setSelecionado, salvando, avancar, message, type, clearMessage } = useEbiaPergunta({
     navigation,
     indice: route.params?.indice ?? 0,
     respostasAnteriores: route.params?.respostas ?? [],
@@ -25,6 +26,7 @@ export default function EbiaPerguntaScreen({ navigation, route }: any) {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 20 }]}>
+      <MessageBanner message={message} type={type} onClose={clearMessage} style={[styles.topBanner, { top: insets.top + 12 }]} />
       <BackButton onPress={() => navigation.goBack()} style={styles.backButton} />
 
       <View style={styles.header}>
@@ -51,6 +53,7 @@ export default function EbiaPerguntaScreen({ navigation, route }: any) {
 }
 
 const styles = StyleSheet.create({
+  topBanner: { position: 'absolute', width: '90%', alignSelf: 'center', zIndex: 20 },
   root: {
     flex: 1,
     backgroundColor: colors.white,

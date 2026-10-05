@@ -15,6 +15,8 @@ import BancoDePalavras, { FraseComLacuna } from './CompletarFrase';
 import Ordene from './Ordene';
 import Associe from './Associe';
 import Classifique from './Classifique';
+import CartaoConteudo from './CartaoConteudo';
+import { contarPontuadas, ehPassoPontuado, filaAposResposta, montarFila } from '../../utils/sessaoPassos';
 
 type Props = {
   questoes: QuestaoQuiz[];
@@ -41,6 +43,11 @@ type RespostaMapa = Record<string, string>;
  * concede XP por questão individual, só ao fechar a lição inteira (isso
  * é responsabilidade de quem usa esse container, via `onConcluirTodas`).
  *
+ * Sessão de ~10 passos (ver modelo-pedagogico-trilha.md): além dos 6 formatos
+ * pontuados, roda 3 passos SEM NOTA — `cartao` (ensino), `enquete` e `meta`
+ * (escolha sem certo/errado, com mensagem neutra). Questão pontuada errada
+ * na 1ª tentativa volta UMA vez no fim (ver utils/sessaoPassos.ts).
+ *
  * Pontuação: cada questão vale certo/errado inteiro (bate com a tabela do
  * modelo-pedagogico-trilha.md — "compara a ordem toda"/"por par"/"por
  * item" descreve o FEEDBACK visual durante a questão, não uma pontuação
@@ -48,8 +55,11 @@ type RespostaMapa = Record<string, string>;
  * certa se TUDO nela estiver certo).
  */
 export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Props) {
+  // fila de passos: cresce quando uma questão errada é reapresentada
+  const [fila, setFila] = useState(() => montarFila(questoes));
   const [indice, setIndice] = useState(0);
   const [respondido, setRespondido] = useState(false);
+  // acertos na PRIMEIRA tentativa (retentativa não conta)
   const [acertos, setAcertos] = useState(0);
 
   // multipla_escolha / verdadeiro_falso / completar
@@ -59,12 +69,14 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
   // associe / classifique
   const [respostaMapa, setRespostaMapa] = useState<RespostaMapa>({});
 
-  const questao = questoes[indice];
+  const passo = fila[indice];
+  const questao = passo?.questao;
 
   if (!questao) {
     return <AppText style={styles.vazio}>Esse quiz ainda não tem perguntas cadastradas.</AppText>;
   }
 
+  const semNota = !ehPassoPontuado(questao.formato);
   const opcaoCorreta = questao.opcoes.find((o) => o.correta);
   const opcaoEscolhida = questao.opcoes.find((o) => o.id === selecionada);
   const pares: ParAssocie[] = questao.dadosExtra?.pares ?? [];
@@ -72,6 +84,8 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
 
   function podeResponder(): boolean {
     switch (questao.formato) {
+      case 'cartao':
+        return true;
       case 'ordene':
         return questao.opcoes.length > 0 && respostaOrdene.length === questao.opcoes.length;
       case 'associe':
@@ -108,18 +122,21 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
 
   function handleResponder() {
     if (!podeResponder()) return;
-    if (calcularAcertou()) setAcertos((a) => a + 1);
+    const acertou = calcularAcertou();
+    if (acertou && !passo.ehRetentativa) setAcertos((a) => a + 1);
+    // errou na 1ª tentativa → a questão volta uma vez no fim da fila
+    setFila((f) => filaAposResposta(f, indice, acertou));
     setRespondido(true);
   }
 
   function handleContinuar() {
     const proximoIndice = indice + 1;
-    if (proximoIndice >= questoes.length) {
-      // `acertos` aqui já reflete a questão atual: handleResponder chamou
-      // setAcertos e setRespondido juntos, então o React já re-renderizou
-      // com o valor atualizado antes desse handleContinuar (criado de novo
-      // a cada render) ser chamado.
-      onConcluirTodas(acertos, questoes.length);
+    if (proximoIndice >= fila.length) {
+      // `acertos` e `fila` aqui já refletem a questão atual: handleResponder
+      // chamou setAcertos/setFila/setRespondido juntos, então o React já
+      // re-renderizou antes desse handleContinuar (criado de novo a cada
+      // render) ser chamado. Passos sem nota não mexem em nenhum dos dois.
+      onConcluirTodas(acertos, contarPontuadas(questoes));
       return;
     }
     setIndice(proximoIndice);
@@ -172,6 +189,18 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
             onMudar={setRespostaMapa}
           />
         );
+      case 'enquete':
+      case 'meta':
+        // escolha sem certo/errado: `respondido` fica sempre false, então a
+        // opção tocada só ganha o destaque neutro de seleção
+        return (
+          <MultiplaEscolha
+            opcoes={questao.opcoes}
+            selecionada={selecionada}
+            respondido={false}
+            onSelecionar={handleSelecionar}
+          />
+        );
       case 'multipla_escolha':
       default:
         return (
@@ -185,19 +214,35 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
     }
   }
 
+  const mensagemNeutra = semNota && !!selecionada ? questao.dadosExtra?.feedback : null;
+
   return (
     <View style={styles.container}>
-      <BarraProgresso atual={indice + 1} total={questoes.length} />
+      <BarraProgresso atual={indice + 1} total={fila.length} />
 
-      <MascoteFala>
-        {questao.formato === 'completar' ? (
-          <FraseComLacuna enunciado={questao.enunciado} opcaoEscolhida={opcaoEscolhida} />
-        ) : (
-          <EnunciadoSimples texto={questao.enunciado} />
-        )}
-      </MascoteFala>
+      {passo.ehRetentativa && <AppText style={styles.retentativa}>Vamos tentar de novo! 💪</AppText>}
 
-      {renderExercicio()}
+      {questao.formato === 'cartao' ? (
+        <CartaoConteudo titulo={questao.enunciado} texto={questao.dadosExtra?.texto} />
+      ) : (
+        <>
+          <MascoteFala>
+            {questao.formato === 'completar' ? (
+              <FraseComLacuna enunciado={questao.enunciado} opcaoEscolhida={opcaoEscolhida} />
+            ) : (
+              <EnunciadoSimples texto={questao.enunciado} />
+            )}
+          </MascoteFala>
+
+          {renderExercicio()}
+        </>
+      )}
+
+      {!!mensagemNeutra && (
+        <View style={styles.mensagemNeutra}>
+          <AppText style={styles.mensagemNeutraTexto}>{mensagemNeutra}</AppText>
+        </View>
+      )}
 
       {!respondido && (
         <View style={styles.rodape}>
@@ -208,7 +253,7 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
             shadowColor={colors.primaryShadow}
             fullWidth
             disabled={!podeResponder()}
-            onPress={handleResponder}
+            onPress={semNota ? handleContinuar : handleResponder}
           />
         </View>
       )}
@@ -227,6 +272,26 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20 },
   rodape: { marginTop: 32 },
+  retentativa: {
+    fontFamily: typography.bold,
+    fontSize: 13,
+    color: colors.primaryDark,
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  mensagemNeutra: {
+    marginTop: 4,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#EEF6E8',
+  },
+  mensagemNeutraTexto: {
+    fontFamily: typography.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.primaryDark,
+    textAlign: 'center',
+  },
   vazio: {
     fontFamily: typography.regular,
     fontSize: 15,

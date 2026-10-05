@@ -12,6 +12,7 @@ import { useRecordatorioRefeicao } from '../hooks/useRecordatorioRefeicao';
 import { colors } from '../../../../../shared/theme/colors';
 import { typography } from '../../../../../shared/theme/typography';
 import { OptionButton } from '../../../../../shared/ui/OptionButton';
+import { MessageBanner } from '../../../../../shared/ui/MessageBanner';
 
 export default function RecordatorioRefeicaoScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
@@ -28,6 +29,9 @@ export default function RecordatorioRefeicaoScreen({ navigation, route }: any) {
     alternarSelecao,
     marcarNaoComeuNada,
     avancar,
+    message,
+    type,
+    clearMessage,
   } = useRecordatorioRefeicao({
     navigation,
     indice: route.params?.indice ?? 0,
@@ -36,6 +40,7 @@ export default function RecordatorioRefeicaoScreen({ navigation, route }: any) {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 20 }]}>
+      <MessageBanner message={message} type={type} onClose={clearMessage} style={[styles.topBanner, { top: insets.top + 12 }]} />
       <BackButton onPress={() => navigation.goBack()} style={styles.backButton} />
 
       <View style={styles.header}>
@@ -75,6 +80,7 @@ export default function RecordatorioRefeicaoScreen({ navigation, route }: any) {
 }
 
 const styles = StyleSheet.create({
+  topBanner: { position: 'absolute', width: '90%', alignSelf: 'center', zIndex: 20 },
   root: {
     flex: 1,
     backgroundColor: colors.white,

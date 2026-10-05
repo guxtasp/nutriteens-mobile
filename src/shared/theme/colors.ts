@@ -21,6 +21,15 @@ export const colors = {
   trilhaCeu: '#6ACAF0', 
   trilhaTrilhoBloqueadoSombra: '#515151',
   trilhaTrilhoBloqueado: '#818280',
+
+  // Trilha no estilo "caminho sobre fundo branco": nós bloqueados em cinza
+  // claro, balão de ação ("COMEÇAR") e chips do cabeçalho.
+  trilhaNoBloqueadoFace: '#E5E5E5',
+  trilhaNoBloqueadoBorda: '#CFCFCF',
+  trilhaNoBloqueadoIcone: '#AFAFAF',
+  trilhaBalaoBorda: '#E5E5E5',
+  trilhaChipTexto: '#4B4B4B',
+  trilhaFogo: '#FF9600',
   
 
 

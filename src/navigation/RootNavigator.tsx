@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import type { User } from '@supabase/supabase-js';
 
 import { supabase } from '../lib/supabase';
 import OnboardingScreen from '../features/auth/screens/OnboardingScreen';
@@ -8,6 +9,7 @@ import LoginScreen from '../features/auth/screens/LoginScreen';
 import SignupScreen from '../features/auth/screens/SignupScreen';
 import EsqueciSenhaScreen from '../features/auth/screens/EsqueciSenhaScreen';
 import RedefinirSenhaScreen from '../features/auth/screens/RedefinirSenhaScreen';
+import CompletarCadastroScreen from '../features/auth/screens/CompletarCadastroScreen';
 import LegalPlaceholderScreen from '../features/legal/screens/LegalPlaceholdersScreen';
 import SplashScreen from '../shared/ui/SplashScreen';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -29,6 +31,7 @@ export type RootStackParamList = {
 };
 
 const StackRecuperacao = createNativeStackNavigator<{ RedefinirSenha: undefined }>();
+const StackCompletarCadastro = createNativeStackNavigator<{ CompletarCadastro: undefined }>();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -43,11 +46,15 @@ export default function RootNavigator() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [papel, setPapel] = useState<Papel | null>(null);
   const [etapaOnboarding, setEtapaOnboarding] = useState<EtapaOnboarding | null>(null);
+  // Sessão de login social (Google) que ainda não tem profile: em vez de
+  // tratar como sessão órfã e deslogar, pede os dados que faltam.
+  const [perfilPendente, setPerfilPendente] = useState<{ user: User; nomeSugerido: string } | null>(null);
   const { emRecuperacaoSenha } = useAuth();
 
   // Retorna false se a sessão for órfã (profile não existe mesmo depois de
   // uma segunda tentativa) — quem chamar deve tratar isso como "não logado".
- async function carregarPerfil(userId: string): Promise<boolean> {
+ async function carregarPerfil(user: User): Promise<boolean> {
+  const userId = user.id;
   async function buscar() {
     return supabase
       .from('profiles')
@@ -57,6 +64,16 @@ export default function RootNavigator() {
   }
 
   let { data, error } = await buscar();
+
+  // Login social sem profile = cadastro com Google ainda incompleto, não sessão órfã.
+  if (error?.code === 'PGRST116' && !signupState.emAndamento) {
+    const providers: string[] = user.app_metadata?.providers ?? [user.app_metadata?.provider ?? 'email'];
+    if (providers.some((p) => p !== 'email')) {
+      const meta = user.user_metadata ?? {};
+      setPerfilPendente({ user, nomeSugerido: String(meta.full_name ?? meta.name ?? '') });
+      return true;
+    }
+  }
 
 if (error?.code === 'PGRST116') {
     if (signupState.emAndamento) {
@@ -86,6 +103,7 @@ if (error?.code === 'PGRST116') {
     return false;
   }
 
+  setPerfilPendente(null);
   setPapel(data.papel as Papel);
   setEtapaOnboarding(data.etapa_onboarding as EtapaOnboarding);
   return true;
@@ -101,7 +119,7 @@ if (error?.code === 'PGRST116') {
 
       let logado = false;
       if (data.session) {
-        logado = await carregarPerfil(data.session.user.id);
+        logado = await carregarPerfil(data.session.user);
       }
 
       setTimeout(() => {
@@ -114,11 +132,12 @@ if (error?.code === 'PGRST116') {
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        const logado = await carregarPerfil(session.user.id);
+        const logado = await carregarPerfil(session.user);
         setIsLoggedIn(logado);
       } else {
         setPapel(null);
         setEtapaOnboarding(null);
+        setPerfilPendente(null);
         setIsLoggedIn(false);
       }
     });
@@ -138,6 +157,30 @@ if (error?.code === 'PGRST116') {
         <StackRecuperacao.Navigator screenOptions={{ headerShown: false }}>
           <StackRecuperacao.Screen name="RedefinirSenha" component={RedefinirSenhaScreen} />
         </StackRecuperacao.Navigator>
+      </NavigationContainer>
+    );
+  }
+
+  if (perfilPendente) {
+    const { user, nomeSugerido } = perfilPendente;
+    return (
+      <NavigationContainer>
+        <StackCompletarCadastro.Navigator screenOptions={{ headerShown: false }}>
+          <StackCompletarCadastro.Screen name="CompletarCadastro">
+            {() => (
+              <CompletarCadastroScreen
+                userId={user.id}
+                nomeSugerido={nomeSugerido}
+                onConcluido={async () => {
+                  await carregarPerfil(user);
+                }}
+                onSair={() => {
+                  supabase.auth.signOut();
+                }}
+              />
+            )}
+          </StackCompletarCadastro.Screen>
+        </StackCompletarCadastro.Navigator>
       </NavigationContainer>
     );
   }

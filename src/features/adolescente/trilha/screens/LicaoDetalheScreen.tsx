@@ -22,6 +22,7 @@ import {
   NivelConclusao,
 } from '../services/trilhaService';
 import ExercicioQuizContainer from '../components/exercicios/ExercicioQuizContainer';
+import { configPraticaReal } from '../utils/praticaReal';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'LicaoDetalhe'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'LicaoDetalhe'>;
@@ -110,13 +111,16 @@ export default function LicaoDetalheScreen() {
     await concluirComNavegacao(acertos, total);
   }
 
-  const ehQuiz = detalhe?.tipo === 'quiz';
+  // quiz, ou lição de conteúdo que virou sessão de passos (tem questões
+  // cadastradas): ambos rodam no mesmo container de exercícios
+  const usaSessao = detalhe?.tipo === 'quiz' || (detalhe?.tipo === 'conteudo' && detalhe.questoes.length > 0);
+  const pratica = configPraticaReal(detalhe?.tipoHabito ?? null);
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={[styles.cabecalho, ehQuiz && styles.cabecalhoQuiz]}>
+      <View style={[styles.cabecalho, usaSessao && styles.cabecalhoQuiz]}>
         <BackButton onPress={() => navigation.goBack()} />
-        {!ehQuiz && (
+        {!usaSessao && (
           <View style={styles.tituloBloco}>
             <AppText style={styles.titulo}>{titulo}</AppText>
             <AppText style={styles.subtitulo}>+{xpRecompensa} XP ao concluir</AppText>
@@ -130,7 +134,7 @@ export default function LicaoDetalheScreen() {
         <View style={styles.centro}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
-      ) : detalhe.tipo === 'quiz' ? (
+      ) : usaSessao ? (
         <ExercicioQuizContainer questoes={detalhe.questoes} onConcluirTodas={handleConcluirQuiz} />
       ) : (
         <ScrollView contentContainerStyle={styles.corpo}>
@@ -172,16 +176,16 @@ export default function LicaoDetalheScreen() {
               ) : (
                 <>
                   <View style={styles.iconeCentro}>
-                    <Ionicons name="walk-outline" size={48} color={colors.primary} />
+                    <Ionicons name={pratica.icone} size={48} color={colors.primary} />
                   </View>
                   <AppText style={styles.texto}>
-                    Ainda não encontramos um registro de atividade física nas últimas {detalhe.janelaHoras ?? 24}h.
+                    Ainda não encontramos um registro de {pratica.registroDe} nas últimas {detalhe.janelaHoras ?? 24}h.
                     Registre sua atividade e volte aqui pra concluir a lição.
                   </AppText>
                   <View style={styles.rodape}>
                     <AppButton
-                      label="Registrar atividade física"
-                      onPress={() => navigation.navigate('AtividadeFisica')}
+                      label={pratica.botao}
+                      onPress={() => navigation.navigate(pratica.rota)}
                     />
                     <Pressable style={styles.botaoAtualizar} onPress={carregar}>
                       <AppText style={styles.textoAtualizar}>Já registrei, verificar de novo</AppText>
