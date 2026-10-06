@@ -75,6 +75,7 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
   const [respostaMapa, setRespostaMapa] = useState<RespostaMapa>({});
 
   const scrollRef = useRef<ScrollView>(null);
+  const finalizouRef = useRef(false);
   // altura do painel de feedback (medida por ele); começa com um chute razoável
   const [alturaFeedback, setAlturaFeedback] = useState(260);
 
@@ -162,6 +163,9 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
   function handleContinuar() {
     const proximoIndice = indice + 1;
     if (proximoIndice >= fila.length) {
+      // duplo toque no último CONTINUAR não pode concluir duas vezes
+      if (finalizouRef.current) return;
+      finalizouRef.current = true;
       // `acertos` e `fila` aqui já refletem a questão atual: handleResponder
       // chamou setAcertos/setFila/setRespondido juntos, então o React já
       // re-renderizou antes desse handleContinuar (criado de novo a cada

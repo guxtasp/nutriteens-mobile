@@ -248,7 +248,7 @@ export default function TrilhaScreen() {
   return (
     <SafeAreaView style={styles.tela} edges={['top']}>
       <TabHeader
-        titulo="Trilhas de Ensino"
+        titulo="Trilhas"
         direita={
           <>
             <EstatisticaPill

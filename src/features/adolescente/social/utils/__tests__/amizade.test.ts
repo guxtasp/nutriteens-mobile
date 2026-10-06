@@ -1,5 +1,6 @@
 import {
   AVATARES_SOCIAIS,
+  avatarSocialValido,
   codigoCompleto,
   formatarCodigo,
   normalizarApelido,
@@ -58,6 +59,12 @@ describe('apelido', () => {
 describe('avatar', () => {
   it('toda chave de avatar é aceita pelo banco (minúsculas, sem espaço)', () => {
     AVATARES_SOCIAIS.forEach((a) => expect(a).toMatch(/^[a-z0-9_-]{1,30}$/));
+  });
+
+  it('chave removida (aceno) ou vazia não é um avatar válido', () => {
+    expect(avatarSocialValido('aceno')).toBe(false);
+    expect(avatarSocialValido(null)).toBe(false);
+    expect(avatarSocialValido('calmo')).toBe(true);
   });
 
   it('traduz a chave para a pose do Broxis e cai no padrão se for desconhecida', () => {

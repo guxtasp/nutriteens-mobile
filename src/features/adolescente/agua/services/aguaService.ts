@@ -2,6 +2,7 @@
 import { supabase } from '../../../../lib/supabase';
 import { obterOuCriarRegistroDiario } from '../../../../shared/services/registroDiarioService';
 import { calcularMetaAguaMl } from '../../../../shared/utils/calcularMetaAgua';
+import { formatarDataISO } from '../../../../shared/utils/data';
 
 export type RegistroAguaDoDia = {
   id: string;
@@ -59,7 +60,7 @@ export async function buscarMediaConsumoAgua(
 ): Promise<number> {
   const dataLimite = new Date();
   dataLimite.setDate(dataLimite.getDate() - diasAtras);
-  const dataLimiteIso = dataLimite.toISOString().slice(0, 10);
+  const dataLimiteIso = formatarDataISO(dataLimite);
 
   const { data: registrosDiarios, error: erroDiarios } = await supabase
     .from('registros_diarios')
@@ -98,8 +99,8 @@ export async function diasComAguaSuficienteNaSemana(userId: string, metaMlPorDia
   const hoje = new Date();
   const seteDiasAtras = new Date(hoje);
   seteDiasAtras.setDate(hoje.getDate() - 6);
-  const seteDiasAtrasIso = seteDiasAtras.toISOString().slice(0, 10);
-  const hojeIso = hoje.toISOString().slice(0, 10);
+  const seteDiasAtrasIso = formatarDataISO(seteDiasAtras);
+  const hojeIso = formatarDataISO(hoje);
 
   const { data, error } = await supabase
     .from('registros_diarios')

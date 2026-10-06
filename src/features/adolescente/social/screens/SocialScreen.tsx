@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   RefreshControl,
   ScrollView,
@@ -24,7 +25,9 @@ import type { AdolescenteStackParamList } from '../../../../navigation/Adolescen
 
 import {
   AVATARES_SOCIAIS,
+  AVATAR_SOCIAL_PADRAO,
   type AvatarSocial,
+  avatarSocialValido,
   formatarCodigo,
   normalizarCodigo,
   poseDoAvatar,
@@ -52,6 +55,7 @@ import {
 
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
 
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
@@ -73,17 +77,12 @@ const AVATAR_LABELS: Record<AvatarSocial, string> = {
   calmo: 'Calmo',
   pensando: 'Pensando',
   surpreso: 'Surpreso',
-  aceno: 'Aceno',
 };
 
 /**
- * O banco guarda apenas a chave do avatar:
- * "supercontente", "curioso", etc.
- *
- * Enquanto o componente visual definitivo do Broxis não está
- * acoplado aqui, usamos uma representação neutra com ícone.
- *
- * O valor salvo continua sendo exatamente a chave esperada pelo banco.
+ * O banco guarda apenas a chave do avatar ("supercontente", "curioso", etc.).
+ * `poseDoAvatar` traduz a chave para a pose do Broxis, que é desenhada
+ * dentro de um círculo. Sem avatar válido, aparece um placeholder.
  */
 function AvatarSocialView({
   avatar,
@@ -92,26 +91,23 @@ function AvatarSocialView({
   avatar: string | null | undefined;
   size?: 'small' | 'medium' | 'large';
 }) {
-  const pose = poseDoAvatar(avatar);
-
   const sizes = {
     small: 42,
     medium: 64,
     large: 82,
   };
 
-  const iconSizes = {
-    small: 20,
-    medium: 30,
-    large: 38,
-  };
-
   const diameter = sizes[size];
+
+  // Chave vazia ou de um avatar que não existe mais (ex.: "aceno"):
+  // mostra um placeholder neutro até a pessoa escolher outro.
+  const valido = avatarSocialValido(avatar);
 
   return (
     <View
       style={[
         styles.avatar,
+        !valido && styles.avatarPlaceholder,
         {
           width: diameter,
           height: diameter,
@@ -119,20 +115,19 @@ function AvatarSocialView({
         },
       ]}
     >
-      <Ionicons
-        name="leaf"
-        size={iconSizes[size]}
-        color={colors.primaryDark}
-      />
-
-      {pose === 'supercontente' && (
-        <View style={styles.avatarBadge}>
-          <Ionicons
-            name="sparkles"
-            size={size === 'small' ? 9 : 12}
-            color={colors.primaryDark}
-          />
-        </View>
+      {valido ? (
+        <BroxisMascot
+          pose={poseDoAvatar(avatar)}
+          size={diameter}
+          entrance="nenhuma"
+          showParticles={false}
+        />
+      ) : (
+        <Ionicons
+          name="person"
+          size={Math.round(diameter * 0.5)}
+          color="#9DB08C"
+        />
       )}
     </View>
   );
@@ -230,6 +225,8 @@ export default function SocialScreen() {
   const [atualizando, setAtualizando] = useState(false);
   const [buscando, setBuscando] = useState(false);
   const [salvandoPerfil, setSalvandoPerfil] = useState(false);
+  const [editandoPerfil, setEditandoPerfil] = useState(false);
+  const [erroPerfil, setErroPerfil] = useState<string | null>(null);
   const [renovandoCodigo, setRenovandoCodigo] = useState(false);
   const [ocupado, setOcupado] = useState(false);
 
@@ -345,10 +342,11 @@ export default function SocialScreen() {
         telefone: 'Não coloque telefone no apelido.',
       };
 
-      mostrarBanner(mensagens[resultado.erro], 'error');
+      setErroPerfil(mensagens[resultado.erro]);
       return;
     }
 
+    setErroPerfil(null);
     setSalvandoPerfil(true);
 
     try {
@@ -358,12 +356,12 @@ export default function SocialScreen() {
       );
 
       if (status === 'apelido_invalido') {
-        mostrarBanner('Esse apelido não é válido.', 'error');
+        setErroPerfil('Esse apelido não é válido.');
         return;
       }
 
       if (status === 'avatar_invalido') {
-        mostrarBanner('Esse avatar não é válido.', 'error');
+        setErroPerfil('Esse avatar não é válido.');
         return;
       }
 
@@ -371,6 +369,8 @@ export default function SocialScreen() {
         apelido: resultado.valor,
         avatar: avatarSelecionado,
       });
+
+      setEditandoPerfil(false);
 
       mostrarBanner('Seu perfil social foi atualizado!', 'success');
 
@@ -382,13 +382,33 @@ export default function SocialScreen() {
     } catch (error) {
       console.error(error);
 
-      mostrarBanner(
-        'Não foi possível salvar seu perfil. Tente novamente.',
-        'error',
-      );
+      setErroPerfil('Não foi possível salvar seu perfil. Tente novamente.');
     } finally {
       setSalvandoPerfil(false);
     }
+  }
+
+  function restaurarFormularioPerfil() {
+    setApelidoDigitado(perfil.apelido ?? '');
+    setErroPerfil(null);
+
+    // Avatar salvo que não existe mais (ex.: "aceno"): volta ao padrão
+    // e a pessoa escolhe outro.
+    setAvatarSelecionado(
+      avatarSocialValido(perfil.avatar)
+        ? perfil.avatar
+        : AVATAR_SOCIAL_PADRAO,
+    );
+  }
+
+  function iniciarEdicaoPerfil() {
+    restaurarFormularioPerfil();
+    setEditandoPerfil(true);
+  }
+
+  function cancelarEdicaoPerfil() {
+    setEditandoPerfil(false);
+    restaurarFormularioPerfil();
   }
 
   // ---------------------------------------------------------
@@ -968,6 +988,123 @@ export default function SocialScreen() {
     );
   }
 
+  /** Campos de apelido e avatar + botões. Usado no cadastro inicial e no popup. */
+  function renderFormularioPerfil() {
+    return (
+      <>
+        <Text style={styles.inputLabel}>
+          Seu apelido
+        </Text>
+
+        <TextInput
+          value={apelidoDigitado}
+          onChangeText={(texto) => {
+            setApelidoDigitado(texto);
+            setErroPerfil(null);
+          }}
+          placeholder="Ex.: Guuh"
+          placeholderTextColor="#9AA5AA"
+          maxLength={20}
+          autoCapitalize="words"
+          autoCorrect={false}
+          style={styles.nicknameInput}
+        />
+
+        <Text style={styles.inputCounter}>
+          {apelidoDigitado.length}/20
+        </Text>
+
+        <Text style={styles.inputLabel}>
+          Escolha seu avatar
+        </Text>
+
+        <View style={styles.avatarGrid}>
+          {AVATARES_SOCIAIS.map((avatar) => {
+            const selecionado = avatarSelecionado === avatar;
+
+            return (
+              <TouchableOpacity
+                key={avatar}
+                style={[
+                  styles.avatarOption,
+                  selecionado && styles.avatarOptionSelected,
+                ]}
+                onPress={() => {
+                  setAvatarSelecionado(avatar);
+                  setErroPerfil(null);
+                }}
+              >
+                <AvatarSocialView
+                  avatar={avatar}
+                  size="small"
+                />
+
+                <Text
+                  style={[
+                    styles.avatarOptionText,
+                    selecionado && styles.avatarOptionTextSelected,
+                  ]}
+                >
+                  {AVATAR_LABELS[avatar]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {erroPerfil && (
+          <View style={styles.formError}>
+            <Ionicons
+              name="alert-circle"
+              size={17}
+              color="#B23A3A"
+            />
+
+            <Text style={styles.formErrorText}>
+              {erroPerfil}
+            </Text>
+          </View>
+        )}
+
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={salvarPerfilSocial}
+          disabled={salvandoPerfil}
+        >
+          {salvandoPerfil ? (
+            <ActivityIndicator
+              color={colors.primaryDark}
+            />
+          ) : (
+            <>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={20}
+                color={colors.primaryDark}
+              />
+
+              <Text style={styles.primaryButtonText}>
+                Salvar perfil
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {editandoPerfil && (
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={cancelarEdicaoPerfil}
+            disabled={salvandoPerfil}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Cancelar
+            </Text>
+          </TouchableOpacity>
+        )}
+      </>
+    );
+  }
+
   function renderPerfilSocial() {
     const precisaConfigurar = !perfil.apelido;
 
@@ -979,7 +1116,7 @@ export default function SocialScreen() {
 
         <View style={styles.profileCard}>
           <AvatarSocialView
-            avatar={perfil.avatar ?? avatarSelecionado}
+            avatar={precisaConfigurar ? avatarSelecionado : perfil.avatar}
             size="large"
           />
 
@@ -1006,6 +1143,20 @@ export default function SocialScreen() {
               </>
             )}
           </View>
+
+          {!precisaConfigurar && (
+            <TouchableOpacity
+              style={styles.editProfileButton}
+              onPress={iniciarEdicaoPerfil}
+              accessibilityLabel="Editar apelido e avatar"
+            >
+              <Ionicons
+                name="create-outline"
+                size={20}
+                color={colors.primaryDark}
+              />
+            </TouchableOpacity>
+          )}
         </View>
 
         {precisaConfigurar && (
@@ -1019,95 +1170,70 @@ export default function SocialScreen() {
               perfil social.
             </Text>
 
-            <Text style={styles.inputLabel}>
-              Seu apelido
-            </Text>
-
-            <TextInput
-              value={apelidoDigitado}
-              onChangeText={setApelidoDigitado}
-              placeholder="Ex.: Guuh"
-              placeholderTextColor="#9AA5AA"
-              maxLength={20}
-              autoCapitalize="words"
-              autoCorrect={false}
-              style={styles.nicknameInput}
-            />
-
-            <Text style={styles.inputCounter}>
-              {apelidoDigitado.length}/20
-            </Text>
-
-            <Text style={styles.inputLabel}>
-              Escolha seu avatar
-            </Text>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.avatarSelector}
-            >
-              {AVATARES_SOCIAIS.map((avatar) => {
-                const selecionado =
-                  avatarSelecionado === avatar;
-
-                return (
-                  <TouchableOpacity
-                    key={avatar}
-                    style={[
-                      styles.avatarOption,
-                      selecionado &&
-                        styles.avatarOptionSelected,
-                    ]}
-                    onPress={() =>
-                      setAvatarSelecionado(avatar)
-                    }
-                  >
-                    <AvatarSocialView
-                      avatar={avatar}
-                      size="small"
-                    />
-
-                    <Text
-                      style={[
-                        styles.avatarOptionText,
-                        selecionado &&
-                          styles.avatarOptionTextSelected,
-                      ]}
-                    >
-                      {AVATAR_LABELS[avatar]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={salvarPerfilSocial}
-              disabled={salvandoPerfil}
-            >
-              {salvandoPerfil ? (
-                <ActivityIndicator
-                  color={colors.primaryDark}
-                />
-              ) : (
-                <>
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={20}
-                    color={colors.primaryDark}
-                  />
-
-                  <Text style={styles.primaryButtonText}>
-                    Salvar perfil
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {renderFormularioPerfil()}
           </View>
         )}
       </>
+    );
+  }
+
+  function renderModalEditarPerfil() {
+    return (
+      <Modal
+        visible={editandoPerfil}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelarEdicaoPerfil}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          {/* Toque fora do cartão fecha o popup */}
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={cancelarEdicaoPerfil}
+            disabled={salvandoPerfil}
+          />
+
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Editar perfil social
+              </Text>
+
+              <TouchableOpacity
+                style={styles.modalClose}
+                onPress={cancelarEdicaoPerfil}
+                disabled={salvandoPerfil}
+                hitSlop={10}
+                accessibilityLabel="Fechar"
+              >
+                <Ionicons
+                  name="close"
+                  size={20}
+                  color="#68777D"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modalPreview}>
+                <AvatarSocialView
+                  avatar={avatarSelecionado}
+                  size="large"
+                />
+              </View>
+
+              {renderFormularioPerfil()}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     );
   }
 
@@ -1547,7 +1673,7 @@ export default function SocialScreen() {
 
                 <View style={styles.personInfo}>
                   <Text style={styles.personName}>
-                    @{amigo.apelido}
+                    {amigo.apelido}
                   </Text>
 
                   {amigo.desde && (
@@ -1651,6 +1777,8 @@ export default function SocialScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {renderModalEditarPerfil()}
 
       <QuickActionsMenu
         aberto={menuAberto}
@@ -1870,17 +1998,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#E6F4D5',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    overflow: 'hidden',
   },
 
-  avatarBadge: {
-    position: 'absolute',
-    right: -1,
-    bottom: -1,
-    width: 19,
-    height: 19,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
+  avatarPlaceholder: {
+    backgroundColor: '#EEF3EA',
+  },
+
+  editProfileButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#E8F5DA',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1941,11 +2070,84 @@ const styles = StyleSheet.create({
     color: '#8A969A',
   },
 
-  avatarSelector: {
+  avatarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 9,
     paddingVertical: 5,
-    paddingRight: 10,
-    marginBottom: 15,
+    marginBottom: 6,
+  },
+
+  formError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#FCEAEA',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 8,
+  },
+
+  formErrorText: {
+    flex: 1,
+    fontFamily: typography.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#8F2F2F',
+  },
+
+  // ----------------------------------------------------------
+  // POPUP DE EDIÇÃO
+  // ----------------------------------------------------------
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(20, 35, 28, 0.55)',
+  },
+
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+    maxHeight: '88%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+  },
+
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+
+  modalTitle: {
+    fontFamily: typography.bold,
+    fontSize: 18,
+    color: colors.primaryDark,
+  },
+
+  modalClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F0F3F1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalPreview: {
+    alignItems: 'center',
+    marginVertical: 10,
   },
 
   avatarOption: {

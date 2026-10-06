@@ -1,8 +1,8 @@
-// src/features/adolescente/trilha/screens/LicaoDetalheScreen.tsx
-import React, { useCallback, useEffect, useState } from 'react';
+// src/features/adolescente/screens/LicaoDetalheScreen.tsx
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
@@ -14,7 +14,6 @@ import { useMessageBanner } from '../../../../shared/hooks/useMessageBanner';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { layout } from '../../../../shared/theme/layout';
-import { tocarSom } from '../../../../shared/audio/sons';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import {
   buscarDetalheLicao,
@@ -40,6 +39,7 @@ export default function LicaoDetalheScreen() {
   const [carregando, setCarregando] = useState(true);
   const [detalhe, setDetalhe] = useState<DetalheLicao | null>(null);
   const [concluindo, setConcluindo] = useState(false);
+  const concluindoRef = useRef(false);
 
   // estado da atividade rastreável
   const [habitoConfirmado, setHabitoConfirmado] = useState(false);
@@ -53,9 +53,13 @@ export default function LicaoDetalheScreen() {
 
       if (resultado.tipo === 'atividade_rastreavel' && userId && resultado.tipoHabito) {
         setVerificandoHabito(true);
-        const ok = await verificarHabitoRecente(userId, resultado.tipoHabito, resultado.janelaHoras ?? 24);
-        setHabitoConfirmado(ok);
-        setVerificandoHabito(false);
+        try {
+          const ok = await verificarHabitoRecente(userId, resultado.tipoHabito, resultado.janelaHoras ?? 24);
+          setHabitoConfirmado(ok);
+        } finally {
+          // sem isso, um erro na checagem deixaria o spinner girando pra sempre
+          setVerificandoHabito(false);
+        }
       }
     } catch (erro) {
       console.error('Erro ao carregar lição:', erro);
@@ -69,6 +73,26 @@ export default function LicaoDetalheScreen() {
     carregar();
   }, [carregar]);
 
+  // Ao voltar da tela de registro (água, atividade, refeição), confere de novo
+  // sozinho — antes só atualizava se a pessoa tocasse em "verificar de novo".
+  useFocusEffect(
+    useCallback(() => {
+      if (!detalhe || detalhe.tipo !== 'atividade_rastreavel') return;
+      if (!userId || !detalhe.tipoHabito || habitoConfirmado) return;
+
+      let ativo = true;
+      verificarHabitoRecente(userId, detalhe.tipoHabito, detalhe.janelaHoras ?? 24)
+        .then((ok) => {
+          if (ativo && ok) setHabitoConfirmado(true);
+        })
+        .catch((erro) => console.warn('Falha ao reverificar hábito:', erro));
+
+      return () => {
+        ativo = false;
+      };
+    }, [detalhe, userId, habitoConfirmado]),
+  );
+
   /**
    * Ponto único de conclusão pra qualquer tipo de lição (conteúdo,
    * atividade rastreável ou quiz — o quiz chega aqui via
@@ -80,6 +104,10 @@ export default function LicaoDetalheScreen() {
    */
   async function concluirComNavegacao(acertos: number | null, total: number | null) {
     if (!userId) return;
+    // `setConcluindo` só vale no próximo render; a trava abaixo é síncrona e
+    // impede que um duplo toque dispare duas conclusões
+    if (concluindoRef.current) return;
+    concluindoRef.current = true;
     setConcluindo(true);
     try {
       const resultado = await concluirLicaoComProgresso(userId, licaoId, xpRecompensa, acertos, total);
@@ -88,14 +116,12 @@ export default function LicaoDetalheScreen() {
       console.error('Erro ao concluir lição:', erro);
       showMessage('Não foi possível salvar sua conclusão. Tenta de novo.', 'error');
     } finally {
+      concluindoRef.current = false;
       setConcluindo(false);
     }
   }
 
   function navegarParaConclusao(nivel: NivelConclusao, xpGanho: number, acertosPercentual: number | null) {
-    // quanto maior a conquista, maior a comemoração sonora
-    tocarSom(nivel === 'trilha' ? 'fanfarraTrilha' : nivel === 'modulo' ? 'fanfarra' : 'conquista');
-
     if (nivel === 'trilha') {
       navigation.replace('TrilhaCompleta', { xpGanho, acertosPercentual: acertosPercentual ?? 0 });
     } else if (nivel === 'modulo') {
@@ -247,7 +273,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.regular,
     fontSize: 15,
     lineHeight: 23,
-    color: colors.exercicioTexto,
+    color: colors.textOnLight,
   },
   rodape: {
     marginTop: 24,

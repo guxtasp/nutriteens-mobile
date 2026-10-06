@@ -2,6 +2,7 @@
 import { supabase } from '../../../../lib/supabase';
 import { concederXp } from '../../../../shared/services/xpService';
 import type { NoTrilha } from '../components/TrilhaPath';
+import { dataInicioJanela } from '../utils/janelaHabito';
 
 // Fallbacks usados quando `xp_bonus` está nulo no banco (ver
 // migration_progresso_modulo_trilha.sql) — combinados com o Figma.
@@ -307,10 +308,8 @@ export async function verificarHabitoRecente(
   tipoHabito: string,
   janelaHoras: number
 ): Promise<boolean> {
-  const diasParaChecar = Math.max(1, Math.ceil(janelaHoras / 24));
-  const dataLimite = new Date();
-  dataLimite.setDate(dataLimite.getDate() - (diasParaChecar - 1));
-  const dataLimiteStr = dataLimite.toISOString().slice(0, 10);
+  // Data LOCAL (igual à gravada em registros_diarios.data), não UTC.
+  const dataLimiteStr = dataInicioJanela(janelaHoras);
 
   const { data: registrosDiarios, error: erroRegistros } = await supabase
     .from('registros_diarios')
@@ -421,12 +420,12 @@ export async function concluirLicaoComProgresso(
   const acertosPercentualDaQuestao =
     acertos != null && totalQuestoes ? Math.round((100 * acertos) / totalQuestoes) : null;
 
-  if (jaEstavaConcluida) {
-    // Não é a primeira conclusão: não concede XP de novo (nem de lição, nem
-    // de bônus — o bônus só é dado no instante em que o nível fecha pela
-    // primeira vez). Só devolve o nível bruto pra navegação continuar
-    // fazendo sentido (reabrir a última lição de um módulo já visto ainda
-    // deve levar pra "Módulo completo!", só que sem XP).
+  // Não é a primeira conclusão: não concede XP de novo (nem de lição, nem de
+  // bônus — o bônus só é dado no instante em que o nível fecha pela primeira
+  // vez). Só devolve o nível bruto pra navegação continuar fazendo sentido
+  // (reabrir a última lição de um módulo já visto ainda deve levar pra
+  // "Módulo completo!", só que sem XP).
+  const resultadoSemXp = async (): Promise<ResultadoConclusao> => {
     const nivel = await resolverNivelConclusao(licaoId);
     return {
       nivel,
@@ -434,13 +433,22 @@ export async function concluirLicaoComProgresso(
       xpGanhoBonus: 0,
       acertosPercentual: nivel === 'licao' ? null : acertosPercentualDaQuestao,
     };
-  }
+  };
+
+  if (jaEstavaConcluida) return resultadoSemXp();
 
   // 2. grava o progresso da lição e concede o XP normal dela
   const { error: erroProgresso } = await supabase
     .from('progresso_licao')
     .insert({ usuario_id: usuarioId, licao_id: licaoId, xp_ganho: xpRecompensa });
-  if (erroProgresso) throw erroProgresso;
+  if (erroProgresso) {
+    // 23505 = unique_violation: outra chamada gravou o mesmo progresso entre o
+    // "já concluiu?" de cima e este insert (duplo toque, por exemplo). Quem
+    // gravou primeiro já concedeu o XP, então aqui não se concede de novo e
+    // também não se mostra erro.
+    if ((erroProgresso as { code?: string }).code === '23505') return resultadoSemXp();
+    throw erroProgresso;
+  }
 
   await concederXp(usuarioId, xpRecompensa);
 

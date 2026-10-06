@@ -129,13 +129,6 @@ export default function Prato({
         </View>
 
         <View style={styles.palco}>
-          <Text style={[styles.talher, styles.talherEsquerda]} allowFontScaling={false}>
-            🍴
-          </Text>
-          <Text style={[styles.talher, styles.talherDireita]} allowFontScaling={false}>
-            🥄
-          </Text>
-
           <View
             style={[
               styles.prato,
@@ -379,9 +372,6 @@ const styles = StyleSheet.create({
   contadorTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
 
   palco: { alignItems: 'center', justifyContent: 'center' },
-  talher: { position: 'absolute', top: '50%', marginTop: -14, fontSize: 24, opacity: 0.85 },
-  talherEsquerda: { left: -4 },
-  talherDireita: { right: -4 },
 
   prato: {
     backgroundColor: colors.white,

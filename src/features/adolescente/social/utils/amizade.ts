@@ -63,12 +63,12 @@ export function validarApelido(texto: string): ResultadoApelido {
 // (profiles.avatar_social); `poseDoAvatar` traduz pra pose do BroxisMascot.
 // ---------------------------------------------------------------------------
 
-export const AVATARES_SOCIAIS = ['supercontente', 'orgulhoso', 'curioso', 'calmo', 'pensando', 'surpreso', 'aceno'] as const;
+export const AVATARES_SOCIAIS = ['supercontente', 'orgulhoso', 'curioso', 'calmo', 'pensando', 'surpreso'] as const;
 export type AvatarSocial = (typeof AVATARES_SOCIAIS)[number];
 
 export const AVATAR_SOCIAL_PADRAO: AvatarSocial = 'supercontente';
 
-type PoseBroxis = 'aceno' | 'pensando' | 'orgulhoso' | 'supercontente' | 'surpresoPositivo' | 'curioso' | 'calmo';
+type PoseBroxis = 'pensando' | 'orgulhoso' | 'supercontente' | 'surpresoPositivo' | 'curioso' | 'calmo';
 
 const POSE_POR_AVATAR: Record<AvatarSocial, PoseBroxis> = {
   supercontente: 'supercontente',
@@ -77,8 +77,15 @@ const POSE_POR_AVATAR: Record<AvatarSocial, PoseBroxis> = {
   calmo: 'calmo',
   pensando: 'pensando',
   surpreso: 'surpresoPositivo',
-  aceno: 'aceno',
 };
+
+/**
+ * A chave é um avatar que ainda existe? Chaves antigas (ex.: "aceno", removido)
+ * ou vazias não são válidas: a tela mostra um placeholder no lugar.
+ */
+export function avatarSocialValido(chave: string | null | undefined): chave is AvatarSocial {
+  return (AVATARES_SOCIAIS as readonly string[]).includes(chave ?? '');
+}
 
 /** Pose do BroxisMascot para a chave de avatar (chave desconhecida cai no padrão). */
 export function poseDoAvatar(chave: string | null | undefined): PoseBroxis {
