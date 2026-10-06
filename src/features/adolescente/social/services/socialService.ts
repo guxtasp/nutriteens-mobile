@@ -4,6 +4,7 @@
 // data/migration_social_amizades.sql). As tabelas sociais não são acessíveis
 // direto: tudo passa por `supabase.rpc`, e o banco filtra por quem está logado.
 import { supabase } from '../../../../lib/supabase';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 
 export type PerfilSocial = { apelido: string | null; avatar: string | null };
 
@@ -79,6 +80,8 @@ export async function consultarCodigo(codigo: string): Promise<ResultadoConsulta
 export async function solicitarAmizadePorCodigo(codigo: string): Promise<StatusSolicitacao> {
   const { data, error } = await supabase.rpc('social_solicitar_por_codigo', { p_codigo: codigo });
   if (error) throw error;
+  if (data === 'enviada' || data === 'aceita') registrarEvento('amizade_solicitada');
+  if (data === 'aceita') registrarEvento('amizade_aceita');
   return data as StatusSolicitacao;
 }
 
@@ -112,6 +115,7 @@ export async function responderSolicitacao(amizadeId: string, aceitar: boolean):
     p_aceitar: aceitar,
   });
   if (error) throw error;
+  if (aceitar && data === 'ok') registrarEvento('amizade_aceita');
   return data === 'ok';
 }
 

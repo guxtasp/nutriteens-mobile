@@ -66,11 +66,22 @@ export async function listarAlimentos(): Promise<Alimento[]> {
     return [];
   }
 
-  const lista: Alimento[] = (data ?? []).map((linha: any) => ({
-    ...linha,
-    nutrientes_fonte: linha.alimento_nutrientes?.fonte ?? null,
-    vezes_usado: linha.refeicao_alimentos?.[0]?.count ?? 0,
-  }));
+  const lista: Alimento[] = (data ?? []).map((linha: any) => {
+    const item = linha as any;
+    const nutrienteJoin = item.alimento_nutrientes as
+      | Array<{ fonte?: FonteNutrientes }>
+      | { fonte?: FonteNutrientes }
+      | null
+      | undefined;
+
+    return {
+      ...item,
+      nutrientes_fonte: Array.isArray(nutrienteJoin)
+        ? nutrienteJoin[0]?.fonte ?? null
+        : nutrienteJoin?.fonte ?? null,
+      vezes_usado: item.refeicao_alimentos?.[0]?.count ?? 0,
+    };
+  });
 
   // pendentes de revisão primeiro, e entre eles os mais usados primeiro —
   // prioriza revisar o que mais aparece no dia a dia, não ordem alfabética às cegas
@@ -114,8 +125,14 @@ export async function buscarNutrientesDoAlimento(alimentoId: string): Promise<{ 
     .maybeSingle();
   if (error) throw error;
   if (!data) return { nutrientes: {}, fonte: null };
-  const { fonte, ...nutrientes } = data;
-  return { nutrientes, fonte };
+
+  const dados = data as Record<string, any>;
+  const { fonte, ...nutrientes } = dados;
+
+  return {
+    nutrientes: nutrientes as NutrientesAlimento,
+    fonte: fonte as FonteNutrientes,
+  };
 }
 
 // chamado sempre que um nutricionista salva o formulário com pelo menos um

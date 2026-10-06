@@ -5,6 +5,7 @@
 // na tabela `amizades` — as regras (consentimento mútuo, limite de pedidos,
 // só adolescente) ficam no banco.
 import { supabase } from '../../../../lib/supabase';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 import {
   LinhaAmizade,
   RelacaoComPerfil,
@@ -44,6 +45,8 @@ export async function enviarPedidoAmizade(entrada: string): Promise<ResultadoPed
     console.error('Erro ao enviar pedido de amizade:', error.message);
     throw error;
   }
+  if (data === 'enviado' || data === 'aceito_automaticamente') registrarEvento('amizade_solicitada');
+  if (data === 'aceito_automaticamente') registrarEvento('amizade_aceita');
   return data as ResultadoPedido;
 }
 
@@ -57,6 +60,7 @@ export async function responderPedidoAmizade(amizadeId: string, aceitar: boolean
     console.error('Erro ao responder pedido de amizade:', error.message);
     throw error;
   }
+  if (aceitar && data === true) registrarEvento('amizade_aceita');
   return data === true;
 }
 

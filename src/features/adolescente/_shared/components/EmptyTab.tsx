@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { colors } from '../../../../shared/theme/colors';
-import HomeBottomBar, { HomeTabKey } from '../HomeBottomBar';
+import HomeBottomBar, { HomeTabKey } from './HomeBottomBar';
 import QuickActionsMenu from './QuickActionsMenu';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;

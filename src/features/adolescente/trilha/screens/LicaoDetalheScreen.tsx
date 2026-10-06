@@ -24,6 +24,7 @@ import {
 } from '../services/trilhaService';
 import ExercicioQuizContainer from '../components/exercicios/ExercicioQuizContainer';
 import { configPraticaReal } from '../utils/praticaReal';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'LicaoDetalhe'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'LicaoDetalhe'>;
@@ -40,6 +41,8 @@ export default function LicaoDetalheScreen() {
   const [detalhe, setDetalhe] = useState<DetalheLicao | null>(null);
   const [concluindo, setConcluindo] = useState(false);
   const concluindoRef = useRef(false);
+  const carregouRef = useRef(false);
+  const concluidaRef = useRef(false);
 
   // estado da atividade rastreável
   const [habitoConfirmado, setHabitoConfirmado] = useState(false);
@@ -50,6 +53,7 @@ export default function LicaoDetalheScreen() {
     try {
       const resultado = await buscarDetalheLicao(licaoId);
       setDetalhe(resultado);
+      carregouRef.current = true;
 
       if (resultado.tipo === 'atividade_rastreavel' && userId && resultado.tipoHabito) {
         setVerificandoHabito(true);
@@ -72,6 +76,16 @@ export default function LicaoDetalheScreen() {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  // saiu da lição já carregada sem concluir => abandono
+  useEffect(
+    () => () => {
+      if (carregouRef.current && !concluidaRef.current) {
+        registrarEvento('conteudo_abandonado', { tipo: 'licao', licao_id: licaoId });
+      }
+    },
+    [licaoId]
+  );
 
   // Ao voltar da tela de registro (água, atividade, refeição), confere de novo
   // sozinho — antes só atualizava se a pessoa tocasse em "verificar de novo".
@@ -111,6 +125,7 @@ export default function LicaoDetalheScreen() {
     setConcluindo(true);
     try {
       const resultado = await concluirLicaoComProgresso(userId, licaoId, xpRecompensa, acertos, total);
+      concluidaRef.current = true;
       navegarParaConclusao(resultado.nivel, resultado.xpGanhoLicao + resultado.xpGanhoBonus, resultado.acertosPercentual);
     } catch (erro) {
       console.error('Erro ao concluir lição:', erro);

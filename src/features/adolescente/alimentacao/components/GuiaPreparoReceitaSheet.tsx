@@ -24,12 +24,14 @@ type Props = {
   tituloReceita: string;
   passos: PassoReceita[];
   onFechar: () => void;
+  /** tocou em "PRONTO!" no último passo */
+  onConcluir?: () => void;
 };
 
 const DURACAO_AUTO_AVANCO = 6000;
 const LARGURA_TELA = Dimensions.get('window').width;
 
-export default function GuiaPreparoReceitaSheet({ visivel, tituloReceita, passos, onFechar }: Props) {
+export default function GuiaPreparoReceitaSheet({ visivel, tituloReceita, passos, onFechar, onConcluir }: Props) {
   const [montado, setMontado] = useState(visivel);
   const [passoAtual, setPassoAtual] = useState(0);
 
@@ -134,7 +136,7 @@ export default function GuiaPreparoReceitaSheet({ visivel, tituloReceita, passos
           </View>
 
           {ehUltimoPasso && (
-            <Pressable style={styles.botaoConcluir} onPress={onFechar}>
+            <Pressable style={styles.botaoConcluir} onPress={() => { onConcluir?.(); onFechar(); }}>
               <AppText style={styles.botaoConcluirTexto}>PRONTO!</AppText>
             </Pressable>
           )}

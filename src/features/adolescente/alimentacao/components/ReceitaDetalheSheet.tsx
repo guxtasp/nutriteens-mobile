@@ -1,5 +1,5 @@
 // src/features/adolescente/components/ReceitaDetalheSheet.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, View, Pressable, StyleSheet, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
@@ -10,6 +10,7 @@ import { typography } from '../../../../shared/theme/typography';
 import type { ReceitaComAlimento, PassoReceita } from '../services/receitasService';
 import { buscarPassosDaReceita } from '../services/receitasService';
 import GuiaPreparoReceitaSheet from './GuiaPreparoReceitaSheet';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 
 type Props = {
   receita: ReceitaComAlimento | null;
@@ -24,6 +25,22 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
   const [guiaVisivel, setGuiaVisivel] = useState(false);
   const [carregandoPassos, setCarregandoPassos] = useState(false);
   const { message, type, showMessage, clearMessage } = useMessageBanner();
+  const guiaAbertaRef = useRef(false);
+  const concluidaRef = useRef(false);
+  const receitaId = receita?.id;
+
+  // visualizada ao abrir; abandonada se abriu o passo a passo e saiu sem concluir
+  useEffect(() => {
+    if (!receitaId) return;
+    guiaAbertaRef.current = false;
+    concluidaRef.current = false;
+    registrarEvento('receita_visualizada', { receita_id: receitaId });
+    return () => {
+      if (guiaAbertaRef.current && !concluidaRef.current) {
+        registrarEvento('conteudo_abandonado', { tipo: 'receita', receita_id: receitaId });
+      }
+    };
+  }, [receitaId]);
 
   if (!receita) return null;
 
@@ -35,6 +52,7 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
       setPassos(dados);
       if (dados.length > 0) {
         setGuiaVisivel(true);
+        guiaAbertaRef.current = true;
       } else {
         // sem isso o botão só piscava "Carregando..." e voltava ao normal
         // sem avisar nada — parecia que tinha travado
@@ -108,6 +126,11 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
         tituloReceita={receita.titulo}
         passos={passos}
         onFechar={() => setGuiaVisivel(false)}
+        onConcluir={() => {
+          if (concluidaRef.current) return;
+          concluidaRef.current = true;
+          registrarEvento('receita_concluida', { receita_id: receita.id });
+        }}
       />
     </>
   );

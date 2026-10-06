@@ -64,6 +64,31 @@ export function inferirNutrientesPorGrupo(grupoAlimentar: string): Partial<Recor
   return NUTRIENTES_POR_GRUPO[grupoAlimentar] ?? {};
 }
 
+const NIVEIS_BOA_FONTE = new Set<string>(['FONTE', 'ALTO_TEOR']);
+
+/**
+ * "Esse alimento é boa fonte de <nutriente>?" — usado pelas missões.
+ *
+ * 1º vale o que está gravado em alimento_nutrientes (nutricionista ou
+ * inferência já salva). Só quando NÃO há dado (linha ausente ou coluna
+ * NULL = "não sabemos") caímos na inferência pelo grupo alimentar.
+ *
+ * Por que existe: alimento cadastrado pelo adolescente precisa gravar a
+ * inferência em alimento_nutrientes, mas se a RLS bloquear esse INSERT
+ * (erro 42501) o alimento nasce sem nenhuma linha — e a missão "Reforce
+ * proteína" nunca contava, mesmo ele registrando ovo/carne. Com este
+ * fallback a missão funciona independente do estado da RLS.
+ */
+export function alimentoEBoaFonte(alimento: any, coluna: NutrienteChave): boolean {
+  const bruto = alimento?.alimento_nutrientes;
+  const linha = Array.isArray(bruto) ? bruto[0] : bruto;
+  const nivelGravado = linha?.[coluna];
+  if (nivelGravado != null) return NIVEIS_BOA_FONTE.has(nivelGravado);
+
+  const grupos: string[] = alimento?.grupos_alimentares ?? [];
+  return grupos.some((g) => NIVEIS_BOA_FONTE.has(inferirNutrientesPorGrupo(g)[coluna] ?? ''));
+}
+
 /** Mesma ideia, mas pra escala de atenção (sódio/carboidrato/gordura) — deliberadamente quase vazia, ver comentário acima. */
 export function inferirAtencaoPorGrupo(grupoAlimentar: string): Partial<Record<NutrienteAtencaoChave, NivelAtencao>> {
   return NUTRIENTES_ATENCAO_POR_GRUPO[grupoAlimentar] ?? {};

@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
 import { signupState } from '../../../shared/state/signupFlag';
 import { useAuth } from '../../../shared/contexts/AuthContext';
+import { registrarEvento } from '../../../shared/analytics/analytics';
 import {
   toIsoDate,
   validateNome,
@@ -123,6 +124,8 @@ export function useSignup() {
         showMessage('Conta criada, mas houve um erro ao salvar seu perfil', 'error');
         return false;
     }
+
+    registrarEvento('cadastro_concluido', undefined, { userId });
 
     const { error: consentError } = await supabase.from('consentimentos').insert({
       user_id: userId,

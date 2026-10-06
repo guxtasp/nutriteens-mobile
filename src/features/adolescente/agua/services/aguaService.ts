@@ -3,6 +3,7 @@ import { supabase } from '../../../../lib/supabase';
 import { obterOuCriarRegistroDiario } from '../../../../shared/services/registroDiarioService';
 import { calcularMetaAguaMl } from '../../../../shared/utils/calcularMetaAgua';
 import { formatarDataISO } from '../../../../shared/utils/data';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 
 export type RegistroAguaDoDia = {
   id: string;
@@ -49,6 +50,7 @@ export async function registrarConsumoAgua(params: {
   });
 
   if (error) throw error;
+  registrarEvento('agua_registrada', undefined, { userId });
 
   return buscarConsumoAguaHoje(userId, data);
 }

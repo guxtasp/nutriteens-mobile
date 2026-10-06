@@ -3,6 +3,7 @@ import { supabase } from '../../../../lib/supabase';
 import { concederXp } from '../../../../shared/services/xpService';
 import type { NoTrilha } from '../components/TrilhaPath';
 import { dataInicioJanela } from '../utils/janelaHabito';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 
 // Fallbacks usados quando `xp_bonus` está nulo no banco (ver
 // migration_progresso_modulo_trilha.sql) — combinados com o Figma.
@@ -380,6 +381,23 @@ export type ResultadoConclusao = {
  * bônus de módulo/trilha de novo (só é concedido no exato momento em que a
  * ÚLTIMA lição pendente daquele nível é concluída pela primeira vez).
  */
+/** Eventos da lição (não bloqueiam nem derrubam a conclusão). trilha_iniciada = 1ª lição concluída da trilha. */
+function emitirEventosDeLicao(usuarioId: string, licaoId: string, trilhaId?: string) {
+  registrarEvento('licao_concluida', trilhaId ? { licao_id: licaoId, trilha_id: trilhaId } : { licao_id: licaoId }, { userId: usuarioId });
+  if (!trilhaId) return;
+  supabase
+    .from('progresso_licao')
+    .select('licao_id, licoes!inner(modulos_trilha!inner(trilha_id))', { count: 'exact', head: true })
+    .eq('usuario_id', usuarioId)
+    .eq('licoes.modulos_trilha.trilha_id', trilhaId)
+    .then(
+      ({ count }) => {
+        if (count === 1) registrarEvento('trilha_iniciada', { trilha_id: trilhaId }, { userId: usuarioId });
+      },
+      () => {}
+    );
+}
+
 export async function concluirLicaoComProgresso(
   usuarioId: string,
   licaoId: string,
@@ -463,6 +481,7 @@ export async function concluirLicaoComProgresso(
   const moduloId: string = licao.modulo_id;
   const modulo: any = licao.modulos_trilha;
   const trilhaId: string | undefined = modulo?.trilha_id;
+  emitirEventosDeLicao(usuarioId, licaoId, trilhaId);
 
   // 4. todas as lições do módulo já concluídas (incluindo essa que acabou de gravar)?
   const { data: licoesDoModulo, error: erroLicoesModulo } = await supabase
@@ -531,6 +550,7 @@ export async function concluirLicaoComProgresso(
     };
   }
 
+  if (trilhaId) registrarEvento('trilha_concluida', { trilha_id: trilhaId }, { userId: usuarioId });
   const xpBonusTrilha = modulo?.trilhas?.xp_bonus ?? XP_BONUS_TRILHA_PADRAO;
   await concederXp(usuarioId, xpBonusTrilha);
 

@@ -1,25 +1,29 @@
 // src/features/adolescente/components/MissaoDoDiaCard.tsx
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import type { MissaoDoDia } from '../../home/services/missaoService';
 
-type Props = { missao: MissaoDoDia; concluida: boolean };
+type Props = { missao: MissaoDoDia; concluida: boolean; onPress?: () => void };
 
-export default function MissaoDoDiaCard({ missao, concluida }: Props) {
+export default function MissaoDoDiaCard({ missao, concluida, onPress }: Props) {
   return (
-    <View style={[styles.card, concluida && styles.cardConcluida]}>
+    <Pressable disabled={!onPress} onPress={onPress} style={[styles.card, concluida && styles.cardConcluida]}>
       <AppText style={styles.icone}>{missao.icone ?? '🎯'}</AppText>
       <View style={{ flex: 1 }}>
         <AppText style={styles.titulo}>{missao.titulo}</AppText>
         <AppText style={styles.descricao} numberOfLines={2}>{missao.descricao}</AppText>
         <AppText style={styles.pontos}>+{missao.pontosRecompensa} pontos</AppText>
       </View>
-      {concluida && <Ionicons name="checkmark-circle" size={22} color={colors.success} />}
-    </View>
+      {concluida ? (
+        <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+      ) : (
+        !!onPress && <Ionicons name="chevron-forward" size={20} color={colors.placeholder} />
+      )}
+    </Pressable>
   );
 }
 

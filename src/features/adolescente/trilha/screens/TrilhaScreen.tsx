@@ -34,6 +34,7 @@ import HomeBottomBar from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { buscarTrilhaComProgresso, ModuloDaTrilha, Trilha, LicaoDaTrilha } from '../services/trilhaService';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;
 const LICOES_POR_MODULO = 5;
@@ -87,6 +88,7 @@ export default function TrilhaScreen() {
     }
   }, [userId]);
 
+  const trilhaVistaRef = useRef<string | null>(null);
   const carregar = useCallback(async () => {
     if (!userId) return;
     setCarregando(true);
@@ -95,6 +97,11 @@ export default function TrilhaScreen() {
     try {
       const resultado = await buscarTrilhaComProgresso(userId);
       setTrilha(resultado?.trilha ?? null);
+      const tid = resultado?.trilha?.id;
+      if (tid && trilhaVistaRef.current !== tid) {
+        trilhaVistaRef.current = tid;
+        registrarEvento('trilha_visualizada', { trilha_id: tid });
+      }
       setModulos(resultado?.modulos ?? []);
       setNos(resultado?.nos ?? []);
       setLicoes(resultado?.licoes ?? []);

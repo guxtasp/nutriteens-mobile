@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
+import { registrarEvento } from '../analytics/analytics';
 
 // Extrai access_token/refresh_token/type de um hash de URL no formato
 // "#access_token=...&refresh_token=...&type=recovery" — mesmo formato usado
@@ -135,6 +136,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_evento, novaSession) => {
       setSession(novaSession);
+      // adia: chamar o supabase de dentro do listener pode travar o cliente
+      if (_evento === 'SIGNED_IN' && novaSession?.user) {
+        const uid = novaSession.user.id;
+        setTimeout(() => registrarEvento('login', undefined, { userId: uid }), 0);
+      }
     });
 
     return () => {

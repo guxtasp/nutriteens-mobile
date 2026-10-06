@@ -1,6 +1,6 @@
 // src/features/adolescente/screens/HomeScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,7 +11,7 @@ import WaterProgressCard from '../../agua/components/WaterProgressCard';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import ChatFab from '../../_shared/components/ChatFab';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
-import MissaoDoDiaCard from '../../home/components/MissaoDoDiaCard';
+import MissoesWidget from '../../missoes/components/MissoesWidget';
 import CelebracaoSequenciaModal from '../components/CelebracaoSequenciaModal';
 import { useHomeData } from '../hooks/useHomeData';
 import { colors } from '../../../../shared/theme/colors';
@@ -110,14 +110,20 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
+      {/* rolável: a barra de baixo e os botões flutuantes ficam fixos por cima */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.conteudo}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={recarregar} tintColor={colors.primaryDark} />}
+      >
       <HomeHeader nome={primeiroNome} pontos={xpTotal} sequenciaAtual={sequenciaAtual} />
       <WeekDaySelector dias={diasComStatus} />
 
-      {missao && <MissaoDoDiaCard missao={missao} concluida={missaoConcluida} />}
+      {missao && <MissoesWidget missao={missao} concluida={missaoConcluida} onPress={() => navigation.navigate('Missoes')} />}
 
       <WaterProgressCard mlAtual={mlHoje} mlMeta={metaMl} />
-
-      <View style={{ flex: 1 }} />
+      </ScrollView>
 
       {!menuAberto && <ChatFab />}
       <QuickActionsMenu aberto={menuAberto} onFechar={() => setMenuAberto(false)} onSelecionar={handleSelecionarAcao} />
@@ -135,5 +141,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white ?? '#A9C7B8' },
+  // espaço no fim para o último card não ficar escondido atrás da barra inferior/FAB
+  conteudo: { paddingBottom: 170 },
   
 });

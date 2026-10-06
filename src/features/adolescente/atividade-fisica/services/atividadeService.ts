@@ -2,6 +2,7 @@
 import { supabase } from '../../../../lib/supabase';
 import { obterOuCriarRegistroDiario } from '../../../../shared/services/registroDiarioService';
 import { formatarDataISO } from '../../../../shared/utils/data';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 
 export type AtividadeCatalogo = {
   id: string;
@@ -57,6 +58,7 @@ export async function registrarAtividades(params: {
 
   const { error } = await supabase.from('registros_atividade_fisica').insert(linhas);
   if (error) throw error;
+  registrarEvento('atividade_registrada', undefined, { userId });
 }
 
 export function horarioAgora(): string {

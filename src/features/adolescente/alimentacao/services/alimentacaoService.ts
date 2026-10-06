@@ -5,6 +5,7 @@ import { gerarEPersistirFeedback } from './feedbackService';
 import { ClassificacaoNova, FeedbackRefeicao } from '../utils/regraFeedbackRefeicao';
 import { valoresEbiaAceitaveis } from '../../triagem/ebia/utils/ordemEbia';
 import { inferirNutrientesPorGrupo, inferirAtencaoPorGrupo } from '../utils/nutrientesPorGrupo';
+import { registrarEvento } from '../../../../shared/analytics/analytics';
 
 export type TipoRefeicao = 'CAFE_DA_MANHA' | 'LANCHE_MANHA' | 'ALMOCO' | 'LANCHE_TARDE' | 'JANTAR' | 'CEIA';
 
@@ -140,6 +141,7 @@ export async function registrarRefeicao(params: {
 
   const { error: erroItens } = await supabase.from('refeicao_alimentos').insert(linhas);
   if (erroItens) throw erroItens;
+  registrarEvento('alimentacao_registrada', undefined, { userId: params.userId });
 
   // 1 "quantidade" no carrinho = 1 item pra fins de feedback (mesmo padrão
   // já usado antes pra classificacoesNova, só que agora carregando também

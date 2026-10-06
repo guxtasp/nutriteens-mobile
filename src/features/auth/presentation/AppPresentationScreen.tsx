@@ -27,7 +27,7 @@ export default function AppPresentationScreen({ navigation }: any) {
     // o scrollRef é usado para controlar o scroll programaticamente
     // o scrollX é usado para animar a barra de progresso e os slides
     // o currentIndex é usado para saber qual slide está visível atualmente
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -37,15 +37,10 @@ export default function AppPresentationScreen({ navigation }: any) {
 
   // Função para ir para um slide específico, usada para avançar ou voltar
   function goToSlide(index: number) {
-    // o scrollRef.current?.getNode() é usado para acessar o método scrollTo do ScrollView
-    //Se o scrollRef.current?.getNode() existir, chama o método scrollTo com o 
-    // deslocamento calculado pelo índice do slide e a largura da tela
-    scrollRef.current?.getNode
-    // Se o scrollRef.current?.getNode() existir, chama o método scrollTo com o 
-    // deslocamento calculado pelo índice do slide e a largura da tela
-      ? (scrollRef.current as any).getNode().scrollTo({ x: index * SCREEN_WIDTH, animated: true })
-      //Se o scrollRef.current?.getNode() não existir, chama o método scrollTo diretamente no scrollRef.current
-      : (scrollRef.current as any)?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+    scrollRef.current?.scrollTo({
+      x: index * SCREEN_WIDTH,
+      animated: true,
+    });
     setCurrentIndex(index);
   }
 

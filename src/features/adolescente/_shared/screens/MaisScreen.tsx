@@ -53,6 +53,19 @@ export default function MaisScreen() {
         <AppText style={styles.secao}>Configurações</AppText>
 
         <View style={styles.cartao}>
+          <Pressable style={styles.linha} onPress={() => navigation.navigate('Lembretes')}>
+            <View style={styles.iconeCirculo}>
+              <Ionicons name="notifications" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.textos}>
+              <AppText style={styles.linhaTitulo}>Lembretes do Bróxis</AppText>
+              <AppText style={styles.linhaSub}>Poucos, no seu ritmo e só do que falta fazer</AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9AA5A0" />
+          </Pressable>
+
+          <View style={styles.divisor} />
+
           <View style={styles.linha}>
             <View style={styles.iconeCirculo}>
               <Ionicons name={somLigado ? 'volume-high' : 'volume-mute'} size={20} color={colors.primary} />

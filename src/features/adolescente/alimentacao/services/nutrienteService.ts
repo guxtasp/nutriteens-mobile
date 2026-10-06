@@ -1,7 +1,7 @@
 // src/features/adolescente/services/nutrienteService.ts
 import { supabase } from '../../../../lib/supabase';
 import type { LacunaNutriente } from '../utils/regraFeedbackRefeicao';
-import type { NutrienteChave } from '../utils/nutrientesPorGrupo';
+import { alimentoEBoaFonte, type NutrienteChave } from '../utils/nutrientesPorGrupo';
 import { formatarDataISO } from '../../../../shared/utils/data';
 
 // alimento_nutrientes guarda um nível categórico (AUSENTE / FONTE /
@@ -51,8 +51,6 @@ export const META_SEMANAL: Partial<Record<NutrienteChave, { coluna: NutrienteCha
   // justificativa no comentário acima do tipo.
 };
 
-const NIVEIS_QUE_CONTAM = new Set(['FONTE', 'ALTO_TEOR']);
-
 // conta em quantos dos últimos 7 dias o usuário comeu pelo menos um
 // alimento marcado como boa fonte (FONTE ou ALTO_TEOR) daquele nutriente
 export async function diasComBoaFonteNaSemana(userId: string, coluna: NutrienteChave): Promise<number> {
@@ -66,7 +64,7 @@ export async function diasComBoaFonteNaSemana(userId: string, coluna: NutrienteC
       data,
       refeicoes (
         refeicao_alimentos (
-          alimentos ( alimento_nutrientes ( ${coluna} ) )
+          alimentos ( grupos_alimentares, alimento_nutrientes ( ${coluna} ) )
         )
       )
     `)
@@ -79,32 +77,33 @@ export async function diasComBoaFonteNaSemana(userId: string, coluna: NutrienteC
   let diasComFonte = 0;
   for (const dia of data ?? []) {
     const teveFonteNesseDia = ((dia as any).refeicoes ?? []).some((refeicao: any) =>
-      (refeicao.refeicao_alimentos ?? []).some((item: any) => {
-        const nivel = item.alimentos?.alimento_nutrientes?.[coluna];
-        return NIVEIS_QUE_CONTAM.has(nivel);
-      })
+      (refeicao.refeicao_alimentos ?? []).some((item: any) => alimentoEBoaFonte(item.alimentos, coluna))
     );
     if (teveFonteNesseDia) diasComFonte += 1;
   }
   return diasComFonte;
 }
 
-// só reporta UMA lacuna (a de menos dias com boa fonte, proporcionalmente
-// ao mínimo exigido — assim um nutriente com minimoDias maior, como
-// proteína/fibra, não "ganha" injustamente só por pedir mais dias), pra
-// não empilhar vários pedidos na mesma mensagem/missão
-export async function detectarLacunaNutriente(userId: string): Promise<LacunaNutriente | null> {
-  let piorFolga = Infinity; // dias - minimoDias: quanto mais negativo, pior a lacuna
-  let piorNutriente: LacunaNutriente | null = null;
+// Lista TODAS as lacunas da semana, da pior pra menos pior (a de menos dias
+// com boa fonte, proporcionalmente ao mínimo exigido — assim um nutriente
+// com minimoDias maior, como proteína/fibra, não "ganha" injustamente só
+// por pedir mais dias). Em empate, vale a ordem de META_SEMANAL.
+export async function listarLacunasNutriente(userId: string): Promise<LacunaNutriente[]> {
+  const lacunas: { folga: number; lacuna: LacunaNutriente }[] = [];
 
   for (const [chave, meta] of Object.entries(META_SEMANAL) as [NutrienteChave, NonNullable<(typeof META_SEMANAL)[NutrienteChave]>][]) {
     const dias = await diasComBoaFonteNaSemana(userId, meta.coluna);
     const folga = dias - meta.minimoDias;
-
-    if (folga < 0 && folga < piorFolga) {
-      piorFolga = folga;
-      piorNutriente = { nutriente: chave, rotulo: meta.rotulo, sugestao: meta.sugestao };
-    }
+    if (folga < 0) lacunas.push({ folga, lacuna: { nutriente: chave, rotulo: meta.rotulo, sugestao: meta.sugestao } });
   }
-  return piorNutriente;
+  // sort é estável: empates mantêm a ordem de META_SEMANAL
+  return lacunas.sort((a, b) => a.folga - b.folga).map((l) => l.lacuna);
+}
+
+// só reporta UMA lacuna (a pior), pra não empilhar vários pedidos na mesma
+// mensagem/missão. `evitar` permite pular nutrientes (ex.: o da missão de
+// ontem, pra não repetir a mesma missão dia após dia).
+export async function detectarLacunaNutriente(userId: string, evitar: string[] = []): Promise<LacunaNutriente | null> {
+  const lacunas = await listarLacunasNutriente(userId);
+  return lacunas.find((l) => !evitar.includes(l.nutriente)) ?? null;
 }

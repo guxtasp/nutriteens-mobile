@@ -1,4 +1,7 @@
 // src/features/admin/services/usuariosAdminService.ts
+// Leitura de usuários pelo Admin. Passa por funções do banco (painel_usuarios_listar /
+// painel_usuario_detalhe) que checam o papel e devolvem só dados de gestão — nunca
+// peso, altura, gênero, EBIA ou alimentação.
 import { supabase } from '../../../lib/supabase';
 
 export type Papel = 'ADOLESCENTE' | 'NUTRICIONISTA' | 'ADMINISTRADOR';
@@ -6,35 +9,95 @@ export type Papel = 'ADOLESCENTE' | 'NUTRICIONISTA' | 'ADMINISTRADOR';
 export interface UsuarioAdmin {
   id: string;
   nome: string | null;
+  apelido: string | null;
   papel: Papel;
   codigoParticipante: string | null;
   tipoInstituicao: string | null;
   instituicaoEnsino: string | null;
   criadoEm: string | null;
+  ultimoAcesso: string | null;
+  ativo: boolean;
 }
 
-// Observação: alteração de papel/código do participante é bloqueada pra qualquer
-// usuário autenticado via app (trigger no banco) — essa tela é só de consulta.
-export async function listarUsuarios(): Promise<UsuarioAdmin[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, nome, papel, codigo_participante, tipo_instituicao, instituicao_ensino, created_at')
-    .order('created_at', { ascending: false });
+export interface DetalheUsuarioAdmin extends Omit<UsuarioAdmin, 'ativo'> {
+  ativo: boolean;
+  etapaOnboarding: string | null;
+  sequenciaAtual: number;
+  maiorSequencia: number;
+  xpTotal: number;
+  faseAtual: string | null;
+  licoesConcluidas: number;
+  diasComRegistro: number;
+  insignias: number;
+  amigos: number;
+  denunciasRecebidas: number;
+  conteudosCriados: number;
+  revisoesFeitas: number;
+}
 
-  if (error) {
-    console.error('Erro ao listar usuários:', error.message);
-    return [];
-  }
+export type ParamsUsuarios = {
+  busca?: string;
+  papel?: Papel | null;
+  ordem?: string;
+  limite?: number;
+  offset?: number;
+};
 
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    nome: row.nome,
-    papel: row.papel,
-    codigoParticipante: row.codigo_participante,
-    tipoInstituicao: row.tipo_instituicao,
-    instituicaoEnsino: row.instituicao_ensino,
-    criadoEm: row.created_at,
-  }));
+export async function listarUsuarios(p: ParamsUsuarios = {}): Promise<{ itens: UsuarioAdmin[]; total: number }> {
+  const { data, error } = await supabase.rpc('painel_usuarios_listar', {
+    p_busca: p.busca?.trim() || null,
+    p_papel: p.papel ?? null,
+    p_ordem: p.ordem ?? 'recentes',
+    p_limite: p.limite ?? 25,
+    p_offset: p.offset ?? 0,
+  });
+  if (error) throw error;
+  const linhas = (data ?? []) as any[];
+  return {
+    total: linhas.length > 0 ? Number(linhas[0].total) : 0,
+    itens: linhas.map((r) => ({
+      id: r.id,
+      nome: r.nome,
+      apelido: r.apelido,
+      papel: r.papel,
+      codigoParticipante: r.codigo_participante,
+      tipoInstituicao: r.tipo_instituicao,
+      instituicaoEnsino: r.instituicao_ensino,
+      criadoEm: r.criado_em,
+      ultimoAcesso: r.ultimo_acesso,
+      ativo: !!r.ativo,
+    })),
+  };
+}
+
+export async function buscarUsuario(id: string): Promise<DetalheUsuarioAdmin> {
+  const { data, error } = await supabase.rpc('painel_usuario_detalhe', { p_id: id });
+  if (error) throw error;
+  const r: any = data;
+  return {
+    id: r.id,
+    nome: r.nome,
+    apelido: r.apelido,
+    papel: r.papel,
+    codigoParticipante: r.codigo_participante,
+    tipoInstituicao: r.tipo_instituicao,
+    instituicaoEnsino: r.instituicao_ensino,
+    criadoEm: r.criado_em,
+    ultimoAcesso: r.ultimo_acesso,
+    ativo: !!r.ativo,
+    etapaOnboarding: r.etapa_onboarding,
+    sequenciaAtual: r.sequencia_atual ?? 0,
+    maiorSequencia: r.maior_sequencia ?? 0,
+    xpTotal: r.xp_total ?? 0,
+    faseAtual: r.fase_atual,
+    licoesConcluidas: Number(r.licoes_concluidas ?? 0),
+    diasComRegistro: Number(r.dias_com_registro ?? 0),
+    insignias: Number(r.insignias ?? 0),
+    amigos: Number(r.amigos ?? 0),
+    denunciasRecebidas: Number(r.denuncias_recebidas ?? 0),
+    conteudosCriados: Number(r.conteudos_criados ?? 0),
+    revisoesFeitas: Number(r.revisoes_feitas ?? 0),
+  };
 }
 
 export function labelPapel(papel: Papel): string {

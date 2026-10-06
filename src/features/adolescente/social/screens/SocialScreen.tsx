@@ -1002,7 +1002,7 @@ export default function SocialScreen() {
             setApelidoDigitado(texto);
             setErroPerfil(null);
           }}
-          placeholder="Ex.: Guuh"
+          placeholder="Ex.: Joãozinho"
           placeholderTextColor="#9AA5AA"
           maxLength={20}
           autoCapitalize="words"
@@ -1124,7 +1124,7 @@ export default function SocialScreen() {
             {perfil.apelido ? (
               <>
                 <Text style={styles.profileNickname}>
-                  @{perfil.apelido}
+                  {perfil.apelido}
                 </Text>
 
                 <Text style={styles.profileDescription}>
@@ -1320,7 +1320,7 @@ export default function SocialScreen() {
                 <Ionicons
                   name="refresh-outline"
                   size={19}
-                  color={colors.primaryDark}
+                  color={colors.white}
                 />
               )}
 
@@ -1407,7 +1407,7 @@ export default function SocialScreen() {
                 </Text>
 
                 <Text style={styles.resultNickname}>
-                  @{resultadoBusca.apelido}
+                  {resultadoBusca.apelido}
                 </Text>
 
                 <Text style={styles.resultDescription}>
@@ -1492,7 +1492,7 @@ export default function SocialScreen() {
 
               <View style={styles.personInfo}>
                 <Text style={styles.personName}>
-                  @{pedido.apelido}
+                  {pedido.apelido}
                 </Text>
 
                 <Text style={styles.personSubtext}>
@@ -1592,7 +1592,7 @@ export default function SocialScreen() {
 
               <View style={styles.personInfo}>
                 <Text style={styles.personName}>
-                  @{pedido.apelido}
+                  {pedido.apelido}
                 </Text>
 
                 <Text style={styles.personSubtext}>

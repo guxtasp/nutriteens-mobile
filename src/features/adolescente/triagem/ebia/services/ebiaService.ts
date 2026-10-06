@@ -15,6 +15,7 @@ import { montarRespostasEbia } from '../utils/montarRespostas';
 // a avaliação nutricional "em aberto" é aberta pelo Recordatório (1ª etapa da
 // triagem); a EBIA se pendura na mesma, em vez de criar outra
 import { obterOuCriarAvaliacaoNutricional } from '../../recordatorio/services/recordatorioService';
+import { registrarEvento } from '../../../../../shared/analytics/analytics';
 
 // Devolve o id da avaliação nutricional usada, pra fecharAvaliacaoNutricional.
 export async function salvarResultadoEbia(
@@ -69,6 +70,7 @@ export async function salvarResultadoEbia(
 export async function concluirOnboarding(userId: string) {
   const { error } = await supabase.from('profiles').update({ etapa_onboarding: 'CONCLUIDO' }).eq('id', userId);
   if (error) throw error;
+  registrarEvento('onboarding_concluido', undefined, { userId });
 }
 
 // periodo_tempo fica de fora de propósito: é um enum cujos valores o app não
@@ -79,4 +81,5 @@ export async function fecharAvaliacaoNutricional(avaliacaoNutricionalId: string)
     .update({ concluida: true, atualizado_em: new Date().toISOString() })
     .eq('id', avaliacaoNutricionalId);
   if (error) throw error;
+  registrarEvento('triagem_concluida');
 }

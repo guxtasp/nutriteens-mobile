@@ -30,6 +30,9 @@ import NovoAlimentoFormScreen from '../features/adolescente/alimentacao/screens/
 import AlimentoCadastradoScreen from '../features/adolescente/alimentacao/screens/AlimentoCadastradoScreen';
 import FeedbackRefeicaoScreen from '../features/adolescente/alimentacao/screens/FeedbackRefeicaoScreen';
 import { AlimentacaoProvider } from '../features/adolescente/alimentacao/contexts/AlimentacaoContext';
+import LembretesScreen from '../features/adolescente/notificacoes/screens/LembretesScreen';
+import LembretesGate from '../features/adolescente/notificacoes/components/LembretesGate';
+import MissoesScreen from '../features/adolescente/missoes/screens/MissoesScreen';
 
 export type AdolescenteStackParamList = {
   TriagemIntro: undefined;
@@ -38,6 +41,7 @@ export type AdolescenteStackParamList = {
   EbiaPergunta: { indice: number; respostasAnteriores: boolean[] };
   Home: undefined;
   Sequencia: undefined;
+  Missoes: undefined;
   Alimentacao: undefined;
   Trilha: undefined;
   LicaoDetalhe: {
@@ -56,6 +60,7 @@ export type AdolescenteStackParamList = {
   TrilhaCompleta: { xpGanho: number; acertosPercentual: number };
   Social: undefined;
   Mais: undefined;
+  Lembretes: undefined;
   AtividadeFisica: undefined;
   BuscaAtividade: undefined;
   Profile: undefined;
@@ -99,6 +104,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="EbiaPergunta" component={EbiaPerguntaScreen} />
                     <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Sequencia" component={SequenciaScreen} options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="Missoes" component={MissoesScreen} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
@@ -107,6 +113,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Lembretes" component={LembretesScreen} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -131,6 +138,8 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="Lembretes" component={LembretesScreen} />
+                    <Stack.Screen name="Missoes" component={MissoesScreen} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -145,6 +154,8 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                 </>
                 )}
             </Stack.Navigator>
+            {/* lembretes só depois da triagem (durante o onboarding não dispara nada) */}
+            <LembretesGate ativo={etapaOnboarding !== 'TRIAGEM'} />
       </AlimentacaoProvider>
     </AtividadeFisicaProvider>
   );
