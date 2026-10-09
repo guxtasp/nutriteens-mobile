@@ -29,6 +29,7 @@ import { supabase } from '../../../../lib/supabase';
 import { GrupoModuloTrilha, NoTrilha, TrilhaCaminho } from '../components/TrilhaPath';
 import EstatisticaPill from '../../home/components/EstatisticaPill';
 import TabHeader from '../../_shared/components/TabHeader';
+import { SinoNotificacoes } from '../../notificacoes/components/SinoNotificacoes';
 import { layout } from '../../../../shared/theme/layout';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
@@ -277,6 +278,7 @@ export default function TrilhaScreen() {
                 />
               </Pressable>
             )}
+            <SinoNotificacoes />
           </>
         }
       />

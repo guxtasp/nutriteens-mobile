@@ -2,6 +2,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PainelLayout } from '../shared/painel/PainelLayout';
+import { criarScreenLayout } from '../shared/painel/components/LimiteErroRota';
 import { ADMIN_PAINEL } from '../features/admin/navigation/adminMenu';
 import AdminDashboardScreen from '../features/admin/dashboard/screens/AdminDashboardScreen';
 import AlimentosListScreen from '../features/admin/screens/AlimentosListScreen';
@@ -44,6 +45,7 @@ export type AdminStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
+const screenLayout = criarScreenLayout(ADMIN_PAINEL);
 
 // Telas que já existiam (têm fundo e rolagem próprios): entram dentro do
 // layout do painel sem serem reescritas.
@@ -74,7 +76,7 @@ const EditarReceita = (props: any) => <EditarReceitaScreen config={ADMIN_PAINEL}
 export default function AdminNavigator() {
   return (
     // animation:'none' — o menu lateral faz parte de cada tela; sem transição ele não "pisca"
-    <Stack.Navigator initialRouteName="AdminDashboard" screenOptions={{ headerShown: false, animation: 'none' }}>
+    <Stack.Navigator initialRouteName="AdminDashboard" screenOptions={{ headerShown: false, animation: 'none' }} screenLayout={screenLayout}>
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       <Stack.Screen name="Usuarios" component={UsuariosScreen} />
       <Stack.Screen name="UsuarioDetalhe" component={UsuarioDetalheScreen} />

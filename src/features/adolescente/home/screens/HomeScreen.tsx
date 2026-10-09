@@ -20,6 +20,7 @@ import { useAguaHoje } from '../../agua/hooks/useAguaHoje';
 import { jaMostrouCelebracaoHoje, marcarCelebracaoMostrada } from '../utils/celebracaoGate';
 import { obterConteudoCelebracao } from '../utils/celebracaoSequencia';
 import { concederXp } from '../../../../shared/services/xpService';
+import { useRecompensasStore } from '../../recompensas/store/recompensasStore';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'Home'>;
 
@@ -65,6 +66,17 @@ export default function HomeScreen() {
   // checagem já vê "mostrado" e não duplica nada.
   const [celebracaoVisivel, setCelebracaoVisivel] = useState(false);
   const celebracaoEmAndamentoRef = useRef(false);
+  // enquanto a celebração de sequência está sendo preparada ou na tela, a fila de recompensas
+  // (cartas, insígnias...) espera, pra duas animações nunca aparecerem juntas
+  const [verificandoCelebracao, setVerificandoCelebracao] = useState(false);
+  const pausarRecompensas = useRecompensasStore((s) => s.pausar);
+  const retomarRecompensas = useRecompensasStore((s) => s.retomar);
+
+  useEffect(() => {
+    if (celebracaoVisivel || verificandoCelebracao) pausarRecompensas('sequencia');
+    else retomarRecompensas('sequencia');
+    return () => retomarRecompensas('sequencia');
+  }, [celebracaoVisivel, verificandoCelebracao, pausarRecompensas, retomarRecompensas]);
 
   useEffect(() => {
     if (!diaDeHojeMantido || !userId || !hojeISO) return;
@@ -72,6 +84,7 @@ export default function HomeScreen() {
 
     let cancelado = false;
     celebracaoEmAndamentoRef.current = true;
+    setVerificandoCelebracao(true);
 
     (async () => {
       try {
@@ -93,6 +106,7 @@ export default function HomeScreen() {
         if (!cancelado) setCelebracaoVisivel(true);
       } finally {
         celebracaoEmAndamentoRef.current = false;
+        setVerificandoCelebracao(false);
       }
     })();
 
@@ -120,9 +134,9 @@ export default function HomeScreen() {
       <HomeHeader nome={primeiroNome} pontos={xpTotal} sequenciaAtual={sequenciaAtual} />
       <WeekDaySelector dias={diasComStatus} />
 
-      {missao && <MissoesWidget missao={missao} concluida={missaoConcluida} onPress={() => navigation.navigate('Missoes')} />}
-
       <WaterProgressCard mlAtual={mlHoje} mlMeta={metaMl} />
+
+      {missao && <MissoesWidget missao={missao} concluida={missaoConcluida} onPress={() => navigation.navigate('Missoes')} />}
       </ScrollView>
 
       {!menuAberto && <ChatFab />}

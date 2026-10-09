@@ -1,9 +1,11 @@
 // src/features/adolescente/perfil/screens/ProfileScreen.tsx
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
 import { BackButton } from '../../../../shared/ui/BackButton';
 import { LogoutButton } from '../../../../shared/ui/LogoutButton';
@@ -15,6 +17,7 @@ import { BroxisEvolucao } from '../components/BroxisEvolucao';
 import { InsigniaTile } from '../components/InsigniaTile';
 import { ConquistaBadge } from '../components/ConquistaBadge';
 import { CreditosApp } from '../../../../shared/ui/CreditosApp';
+import { useCartas } from '../../cartas/hooks/useCartas';
 import { marcarInsigniasVistas, Insignia } from '../services/gamificacaoService';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { calcularIdade } from '../../../../shared/utils/calcularIdade';
@@ -25,9 +28,10 @@ const FUNDO = '#F3F8EE';
 
 export default function ProfileScreen() {
   const { userId } = useAuth();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<AdolescenteStackParamList>>();
   const { perfil } = usePerfilUsuario();
   const { xpTotal, estado, insignias } = useGamificacao();
+  const cartas = useCartas();
   const [selecionada, setSelecionada] = useState<Insignia | null>(null);
 
   const primeiroNome = perfil?.nome?.trim().split(' ')[0] ?? 'Usuário';
@@ -120,6 +124,30 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {/* Álbum do Guia: 10 cartas, uma por passo do Guia Alimentar (privado, amigos não veem) */}
+        <View style={styles.secaoTopo}>
+          <AppText style={styles.secaoTitulo}>ÁLBUM DO GUIA</AppText>
+          <AppText style={styles.secaoLado}>
+            {cartas.progresso.obtidas} de {cartas.progresso.total || 10}
+          </AppText>
+        </View>
+        <Pressable
+          style={styles.cardAlbum}
+          onPress={() => navigation.navigate('AlbumCartas')}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir o álbum de cartas do Guia"
+        >
+          <View style={{ flex: 1 }}>
+            <AppText style={styles.albumTitulo}>Colecione os 10 passos</AppText>
+            <AppText style={styles.albumSub}>Cartas do Guia Alimentar que você desbloqueia no dia a dia</AppText>
+            <View style={{ marginTop: 10 }}>
+              <ProgressBar progress={cartas.progresso.fracao} />
+            </View>
+          </View>
+          <Ionicons name="albums" size={34} color={colors.primaryDark} style={{ marginLeft: 14 }} />
+          {cartas.novas > 0 && <View style={styles.pontoNovoAlbum} />}
+        </Pressable>
+
         {/* Próxima evolução (no lugar de "Certificados" da referência) */}
         <View style={styles.secaoTopo}>
           <AppText style={styles.secaoTitulo}>EVOLUÇÃO DO BROXIS</AppText>
@@ -187,6 +215,28 @@ const styles = StyleSheet.create({
   detalheInsignia: { marginTop: 12, backgroundColor: '#fff', borderRadius: 14, padding: 14 },
   detalheTitulo: { fontSize: 14, fontFamily: typography.bold, color: colors.primaryDark },
   detalheTexto: { fontSize: 12, color: colors.trilhaChipTexto, marginTop: 2 },
+  cardAlbum: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: colors.primary,
+    padding: 18,
+  },
+  albumTitulo: { fontSize: 15, fontFamily: typography.bold, color: colors.primaryDark },
+  albumSub: { fontSize: 12, color: colors.trilhaChipTexto, marginTop: 2 },
+  pontoNovoAlbum: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.exercicioErro,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
   cardEvolucao: {
     flexDirection: 'row',
     alignItems: 'center',

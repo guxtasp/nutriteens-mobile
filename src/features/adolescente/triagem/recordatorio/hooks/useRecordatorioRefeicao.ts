@@ -19,33 +19,33 @@ interface UseRecordatorioRefeicaoParams {
 }
 
 export function useRecordatorioRefeicao({ navigation, indice, recordatorioId }: UseRecordatorioRefeicaoParams) {
-  const [alimentos, setAlimentos] = useState<AlimentoCatalogo[]>([]);
-  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
-  const [naoComeuNada, setNaoComeuNada] = useState(false);
-  const [carregando, setCarregando] = useState(true);
-  const [salvando, setSalvando] = useState(false);
-  const { message, type, showMessage, clearMessage } = useMessageBanner();
+  const [alimentos, setAlimentos] = useState<AlimentoCatalogo[]>([]); // lista de alimentos do catálogo, filtrada por tipo de refeição
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set()); // IDs dos alimentos selecionados pelo usuário
+  const [naoComeuNada, setNaoComeuNada] = useState(false); // flag para indicar que o usuário marcou que não comeu nada na refeição
+  const [carregando, setCarregando] = useState(true); // flag para indicar que os alimentos estão sendo carregados
+  const [salvando, setSalvando] = useState(false); // flag para indicar que os dados estão sendo salvos
+  const { message, type, showMessage, clearMessage } = useMessageBanner(); // hook para exibir mensagens de erro ou sucesso
 
-  const refeicao = REFEICOES[indice];
-  const ehUltima = indice === REFEICOES.length - 1;
+  const refeicao = REFEICOES[indice]; // refeição atual, baseada no índice passado como parâmetro
+  const ehUltima = indice === REFEICOES.length - 1; // flag para indicar se é a última refeição da triagem
 
   useEffect(() => {
-    let ativo = true;
-    setCarregando(true);
-    setSelecionados(new Set());
-    setNaoComeuNada(false);
+    let ativo = true; // flag para evitar atualização de estado após o componente ser desmontado
+    setCarregando(true); // inicia o carregamento dos alimentos
+    setSelecionados(new Set()); // limpa os alimentos selecionados
+    setNaoComeuNada(false); // limpa a flag de "não comeu nada"
 
-    buscarAlimentosPorTipoRefeicao(refeicao.tipo).then((lista) => {
-      if (ativo) {
-        setAlimentos(lista);
-        setCarregando(false);
+    buscarAlimentosPorTipoRefeicao(refeicao.tipo).then((lista) => { // busca os alimentos do catálogo filtrados pelo tipo de refeição
+      if (ativo) { // verifica se o componente ainda está montado antes de atualizar o estado
+        setAlimentos(lista); // atualiza a lista de alimentos
+        setCarregando(false); // finaliza o carregamento
       }
     });
 
-    return () => {
-      ativo = false;
-    };
-  }, [indice]);
+    return () => { // função de limpeza do useEffect, chamada quando o componente é desmontado
+      ativo = false; // marca o componente como desmontado para evitar atualizações de estado
+    }; 
+  }, [indice]); // o useEffect é reexecutado sempre que o índice da refeição muda, garantindo que os alimentos corretos sejam carregados para cada refeição.
 
   function alternarSelecao(alimentoId: string) {
     setNaoComeuNada(false);

@@ -2,6 +2,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PainelLayout } from '../shared/painel/PainelLayout';
+import { criarScreenLayout } from '../shared/painel/components/LimiteErroRota';
 import { NUTRICIONISTA_PAINEL } from '../features/nutricionista/navigation/nutricionistaMenu';
 import AnalyticsScreen from '../shared/painel/screens/AnalyticsScreen';
 import FluxoConteudoScreen from '../features/conteudo/screens/FluxoConteudoScreen';
@@ -33,6 +34,7 @@ export type NutricionistaStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<NutricionistaStackParamList>();
+const screenLayout = criarScreenLayout(NUTRICIONISTA_PAINEL);
 
 function comPainel(Tela: React.ComponentType<any>, titulo: string) {
   return function TelaNoPainel(props: any) {
@@ -57,7 +59,7 @@ const Analytics = () => <AnalyticsScreen config={NUTRICIONISTA_PAINEL} />;
 
 export default function NutricionistaNavigator() {
   return (
-    <Stack.Navigator initialRouteName="NutricionistaDashboard" screenOptions={{ headerShown: false, animation: 'none' }}>
+    <Stack.Navigator initialRouteName="NutricionistaDashboard" screenOptions={{ headerShown: false, animation: 'none' }} screenLayout={screenLayout}>
       <Stack.Screen name="NutricionistaDashboard" component={NutricionistaDashboardScreen} />
       <Stack.Screen name="ParticipantesList" component={ParticipantesScreen} />
       <Stack.Screen name="ParticipanteDetalhe" component={ParticipanteDetalheScreen} />

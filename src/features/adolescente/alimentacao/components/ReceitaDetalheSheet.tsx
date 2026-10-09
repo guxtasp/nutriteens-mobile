@@ -15,12 +15,15 @@ import { registrarEvento } from '../../../../shared/analytics/analytics';
 type Props = {
   receita: ReceitaComAlimento | null;
   onFechar: () => void;
-  onAdicionarAoCarrinho: (receita: ReceitaComAlimento) => void;
+  /** sem esta função o botão "Adicionar ao registro" não aparece (ex.: receita vinda de um amigo) */
+  onAdicionarAoCarrinho?: (receita: ReceitaComAlimento) => void;
+  /** com esta função aparece o botão "Enviar para um amigo" */
+  onEnviarParaAmigo?: (receita: ReceitaComAlimento) => void;
 };
 
 const ROTULO_DIFICULDADE = { FACIL: 'Fácil', MEDIO: 'Médio', DIFICIL: 'Difícil' };
 
-export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCarrinho }: Props) {
+export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCarrinho, onEnviarParaAmigo }: Props) {
   const [passos, setPassos] = useState<PassoReceita[]>([]);
   const [guiaVisivel, setGuiaVisivel] = useState(false);
   const [carregandoPassos, setCarregandoPassos] = useState(false);
@@ -31,6 +34,12 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
 
   // visualizada ao abrir; abandonada se abriu o passo a passo e saiu sem concluir
   useEffect(() => {
+    // zera o estado ao trocar/fechar a receita: sem isso o passo a passo e os
+    // passos da receita anterior ficavam "grudados" na próxima que abrisse
+    setGuiaVisivel(false);
+    setPassos([]);
+    setCarregandoPassos(false);
+    clearMessage();
     if (!receitaId) return;
     guiaAbertaRef.current = false;
     concluidaRef.current = false;
@@ -69,13 +78,25 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
   return (
     <>
       <Modal visible transparent animationType="slide" onRequestClose={onFechar}>
-        <Pressable style={styles.backdrop} onPress={onFechar}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        {/* o passo a passo vive DENTRO deste Modal (overlay): abrir um segundo Modal
+            por cima de outro falha no iOS e o guia nunca aparecia */}
+        <View style={styles.raiz}>
+          <Pressable style={styles.backdrop} onPress={onFechar} />
+
+          <View style={styles.sheet}>
             <View style={styles.puxador} />
 
-            <MessageBanner message={message} type={type} onClose={clearMessage} style={styles.banner} />
+            {/* overlay absoluto: o banner reservava ~80px de altura vazia no topo mesmo sem mensagem */}
+            <View style={styles.bannerOverlay} pointerEvents="box-none">
+              <MessageBanner message={message} type={type} onClose={clearMessage} style={styles.banner} />
+            </View>
 
-            <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={{ paddingBottom: 24 }}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
+            >
               {receita.foto_url ? (
                 <Image source={{ uri: receita.foto_url }} style={styles.foto} resizeMode="cover" />
               ) : (
@@ -110,40 +131,52 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
                 </AppText>
               </Pressable>
 
+              {!!onEnviarParaAmigo && (
+                <Pressable style={[styles.botaoGuia, { marginTop: -12 }]} onPress={() => onEnviarParaAmigo(receita)}>
+                  <Ionicons name="paper-plane-outline" size={16} color={colors.primaryDark} />
+                  <AppText style={styles.botaoGuiaTexto}>Enviar para um amigo</AppText>
+                </Pressable>
+              )}
+
               <AppText style={styles.secaoTitulo}>Modo de preparo</AppText>
               <AppText style={styles.modoPreparo}>{receita.modo_preparo}</AppText>
             </ScrollView>
 
-            <Pressable style={styles.botaoAdicionar} onPress={() => onAdicionarAoCarrinho(receita)}>
-              <AppText style={styles.botaoAdicionarTexto}>ADICIONAR AO REGISTRO</AppText>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
+            {!!onAdicionarAoCarrinho && (
+              <Pressable style={styles.botaoAdicionar} onPress={() => onAdicionarAoCarrinho(receita)}>
+                <AppText style={styles.botaoAdicionarTexto}>ADICIONAR AO REGISTRO</AppText>
+              </Pressable>
+            )}
+          </View>
 
-      <GuiaPreparoReceitaSheet
-        visivel={guiaVisivel}
-        tituloReceita={receita.titulo}
-        passos={passos}
-        onFechar={() => setGuiaVisivel(false)}
-        onConcluir={() => {
-          if (concluidaRef.current) return;
-          concluidaRef.current = true;
-          registrarEvento('receita_concluida', { receita_id: receita.id });
-        }}
-      />
+          <GuiaPreparoReceitaSheet
+            visivel={guiaVisivel}
+            tituloReceita={receita.titulo}
+            passos={passos}
+            onFechar={() => setGuiaVisivel(false)}
+            onConcluir={() => {
+              if (concluidaRef.current) return;
+              concluidaRef.current = true;
+              registrarEvento('receita_concluida', { receita_id: receita.id });
+            }}
+          />
+        </View>
+      </Modal>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  raiz: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
     backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 32, maxHeight: '85%',
   },
+  scroll: { flexGrow: 0, flexShrink: 1 },
+  bannerOverlay: { position: 'absolute', top: 24, left: 20, right: 20, zIndex: 10 },
   puxador: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D9E2E8', alignSelf: 'center', marginBottom: 16 },
-  banner: { marginBottom: 12 },
+  banner: { marginTop: 0 },
   foto: { width: '100%', height: 160, borderRadius: 16, marginBottom: 16, backgroundColor: '#F0F5F1' },
   fotoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   titulo: { fontFamily: typography.bold, fontSize: 20, color: colors.primaryDark, marginBottom: 12 },

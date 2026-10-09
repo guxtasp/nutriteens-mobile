@@ -40,4 +40,12 @@ begin
   end loop;
 end $$;
 
-revoke all on public.eventos_app from anon;
+-- só age se a tabela existir (ela vem de migration_analytics_eventos.sql)
+do $$
+begin
+  if to_regclass('public.eventos_app') is not null then
+    execute 'revoke all on public.eventos_app from anon';
+  else
+    raise notice 'eventos_app não existe ainda; rode migration_analytics_eventos.sql e depois esta migration de novo';
+  end if;
+end $$;

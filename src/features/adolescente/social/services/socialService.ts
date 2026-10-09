@@ -5,6 +5,9 @@
 // direto: tudo passa por `supabase.rpc`, e o banco filtra por quem está logado.
 import { supabase } from '../../../../lib/supabase';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { mapearPerfilAmigo, type LinhaPerfilAmigo, type PerfilAmigo } from '../utils/perfilAmigo';
+
+export type { PerfilAmigo };
 
 export type PerfilSocial = { apelido: string | null; avatar: string | null };
 
@@ -106,6 +109,18 @@ export async function listarAmigos(): Promise<AmigoSocial[]> {
     avatar: l.avatar,
     desde: l.desde ? new Date(l.desde) : null,
   }));
+}
+
+/**
+ * Perfil de um amigo (ver data/migration_social_perfil_amigo.sql). Devolve
+ * `null` quando a amizade não existe mais, não foi aceita ou há bloqueio: o
+ * banco responde igual nos três casos, sem revelar o motivo.
+ */
+export async function buscarPerfilAmigo(amizadeId: string): Promise<PerfilAmigo | null> {
+  const { data, error } = await supabase.rpc('social_perfil_amigo', { p_amizade_id: amizadeId });
+  if (error) throw error;
+  const linha = (data as LinhaPerfilAmigo[] | null)?.[0];
+  return linha ? mapearPerfilAmigo(linha) : null;
 }
 
 /** Só quem recebeu o pedido responde. Devolve false se o pedido não existe mais. */

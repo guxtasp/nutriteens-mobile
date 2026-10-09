@@ -4,6 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
+import { layout } from '../../../../shared/theme/layout';
 import { typography } from '../../../../shared/theme/typography';
 
 type Props = { mlAtual: number; mlMeta: number; onAdicionar?: () => void };
@@ -38,8 +39,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#CDE7D6',
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: 16,
-    marginTop: 16,
+    marginHorizontal: layout.margemH,
+    marginTop: layout.gapEntreBlocos,
+    marginBottom: layout.gapEntreBlocos,
   },
   titulo: {
     fontFamily: typography.bold,

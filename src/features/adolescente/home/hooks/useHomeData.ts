@@ -12,6 +12,7 @@
 // em ConsumoAguaScreen (que precisa de registrar()/salvarPesoAltura(), não
 // só leitura), então uni-lo aqui duplicaria a lógica de escrita em dois
 // lugares — o ganho de juntar os dois seria menor que o risco de divergir.
+import { registrarDiaChamaDupla } from '../../social/services/chamaDuplaService';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../../../lib/supabase';
@@ -102,6 +103,9 @@ export function useHomeData() {
           .eq('id', userId);
         if (erroUpdate) throw erroUpdate;
       }
+
+      // Chama em Dupla: avisa o banco que hoje foi cumprido (idempotente, não bloqueia a Home)
+      if (hojeMantido) void registrarDiaChamaDupla();
 
       // 3. status da semana: busca em lote só os OUTROS dias (hoje já
       // sabemos, não manda ele de novo pro lote)

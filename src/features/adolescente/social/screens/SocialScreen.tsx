@@ -54,6 +54,10 @@ import {
 } from '../services/socialService';
 
 import { colors } from '../../../../shared/theme/colors';
+import EstatisticasCabecalho from '../../_shared/components/EstatisticasCabecalho';
+import TabHeader from '../../_shared/components/TabHeader';
+import { ChamaDuplaSection } from '../components/ChamaDuplaSection';
+import { useChamaDupla } from '../hooks/useChamaDupla';
 import { typography } from '../../../../shared/theme/typography';
 import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
 
@@ -165,7 +169,7 @@ function mensagemSolicitacao(status: string): string {
       return 'Pedido enviado! Agora é só esperar a pessoa aceitar.';
 
     case 'aceita':
-      return 'Vocês agora são amigos! 🎉';
+      return 'Vocês agora são amigos!';
 
     case 'ja_amigos':
       return 'Vocês já são amigos.';
@@ -209,6 +213,8 @@ export default function SocialScreen() {
   >([]);
 
   const [amigos, setAmigos] = useState<AmigoSocial[]>([]);
+  const chamaDupla = useChamaDupla();
+  const [codigoAberto, setCodigoAberto] = useState(false);
 
   const [codigoDigitado, setCodigoDigitado] = useState('');
   const [resultadoBusca, setResultadoBusca] = useState<{
@@ -323,8 +329,8 @@ export default function SocialScreen() {
 
   const atualizar = useCallback(async () => {
     setAtualizando(true);
-    await carregarTudo(false);
-  }, [carregarTudo]);
+    await Promise.all([carregarTudo(false), chamaDupla.recarregar()]);
+  }, [carregarTudo, chamaDupla.recarregar]);
 
   // ---------------------------------------------------------
   // PERFIL SOCIAL
@@ -602,7 +608,7 @@ export default function SocialScreen() {
 
       mostrarBanner(
         aceitar
-          ? `Você e ${apelido} agora são amigos! 🎉`
+          ? `Você e ${apelido} agora são amigos!`
           : 'Pedido recusado.',
         aceitar ? 'success' : 'info',
       );
@@ -1108,6 +1114,50 @@ export default function SocialScreen() {
   function renderPerfilSocial() {
     const precisaConfigurar = !perfil.apelido;
 
+    // Já configurado: uma linha compacta (avatar, apelido, editar) com o código
+    // de amizade recolhido. Só o primeiro preenchimento ocupa a tela.
+    if (!precisaConfigurar) {
+      return (
+        <View style={styles.compactCard}>
+          <View style={styles.compactRow}>
+            <AvatarSocialView avatar={perfil.avatar} size="small" />
+
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileNickname}>{perfil.apelido}</Text>
+              <Text style={styles.profileDescription}>Seu perfil social</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.compactAction}
+              onPress={iniciarEdicaoPerfil}
+              accessibilityRole="button"
+              accessibilityLabel="Editar apelido e avatar"
+            >
+              <Ionicons name="create-outline" size={17} color={colors.primaryDark} />
+              <Text style={styles.compactActionText}>Editar</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.codeToggle}
+            onPress={() => setCodigoAberto((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: codigoAberto }}
+          >
+            <Ionicons name="key-outline" size={18} color={colors.primaryDark} />
+            <Text style={styles.codeToggleText}>Meu código de amizade</Text>
+            <Ionicons
+              name={codigoAberto ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color={colors.primaryDark}
+            />
+          </TouchableOpacity>
+
+          {codigoAberto && renderMeuCodigo()}
+        </View>
+      );
+    }
+
     return (
       <>
         <Text style={styles.sectionTitle}>
@@ -1241,96 +1291,52 @@ export default function SocialScreen() {
     if (!perfil.apelido) return null;
 
     return (
-      <>
-        <Text style={styles.sectionTitle}>
-          Seu código de amizade
-        </Text>
-
-        <View style={styles.codeCard}>
-          <View style={styles.codeIcon}>
-            <Ionicons
-              name="people"
-              size={26}
-              color={colors.primary}
-            />
-          </View>
-
-          <Text style={styles.codeCardTitle}>
-            Compartilhe para adicionar amigos
-          </Text>
-
-          <Text style={styles.codeCardDescription}>
-            Esse código é diferente do seu código de
-            participante.
-          </Text>
-
-          <View style={styles.codeBox}>
+      <View style={styles.codePanel}>
+        <View style={styles.codePanelRow}>
+          <View style={styles.codeBoxCompact}>
             {codigo ? (
-              <Text style={styles.codeText}>
-                {formatarCodigo(codigo.codigo)}
-              </Text>
+              <Text style={styles.codeTextCompact}>{formatarCodigo(codigo.codigo)}</Text>
             ) : (
-              <ActivityIndicator
-                color={colors.primary}
-              />
+              <ActivityIndicator color={colors.primary} />
             )}
           </View>
 
           {codigo && (
             <Text style={styles.expirationText}>
               Válido até{' '}
-              {codigo.expiraEm.toLocaleDateString(
-                'pt-BR',
-                {
-                  day: '2-digit',
-                  month: '2-digit',
-                },
-              )}
+              {codigo.expiraEm.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
             </Text>
           )}
-
-          <View style={styles.codeActions}>
-            <TouchableOpacity
-              style={styles.codeActionPrimary}
-              onPress={compartilharCodigo}
-              disabled={!codigo}
-            >
-              <Ionicons
-                name="share-outline"
-                size={19}
-                color={colors.primaryDark}
-              />
-
-              <Text style={styles.codeActionPrimaryText}>
-                Compartilhar
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.codeActionSecondary}
-              onPress={renovarCodigoAmizade}
-              disabled={renovandoCodigo}
-            >
-              {renovandoCodigo ? (
-                <ActivityIndicator
-                  size="small"
-                  color={colors.primaryDark}
-                />
-              ) : (
-                <Ionicons
-                  name="refresh-outline"
-                  size={19}
-                  color={colors.white}
-                />
-              )}
-
-              <Text style={styles.codeActionSecondaryText}>
-                Renovar
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </>
+
+        <Text style={styles.codeHint}>
+          Compartilhe para adicionar amigos. Não é o seu código de participante.
+        </Text>
+
+        <View style={styles.codeActions}>
+          <TouchableOpacity
+            style={styles.codeActionPrimary}
+            onPress={compartilharCodigo}
+            disabled={!codigo}
+          >
+            <Ionicons name="share-outline" size={19} color={colors.primaryDark} />
+            <Text style={styles.codeActionPrimaryText}>Compartilhar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.codeActionSecondary}
+            onPress={renovarCodigoAmizade}
+            disabled={renovandoCodigo}
+          >
+            {renovandoCodigo ? (
+              <ActivityIndicator size="small" color={colors.primaryDark} />
+            ) : (
+              <Ionicons name="refresh-outline" size={19} color={colors.white} />
+            )}
+            <Text style={styles.codeActionSecondaryText}>Renovar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   }
 
@@ -1511,11 +1517,7 @@ export default function SocialScreen() {
                 }
                 disabled={ocupado}
               >
-                <Ionicons
-                  name="checkmark"
-                  size={20}
-                  color={colors.primaryDark}
-                />
+                <Text style={styles.acceptButtonText}>Aceitar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1529,15 +1531,12 @@ export default function SocialScreen() {
                 }
                 disabled={ocupado}
               >
-                <Ionicons
-                  name="close"
-                  size={20}
-                  color="#68777D"
-                />
+                <Text style={styles.rejectButtonText}>Recusar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.moreButton}
+                accessibilityLabel="Mais opções"
                 onPress={() =>
                   abrirOpcoesPedido(pedido)
                 }
@@ -1658,8 +1657,18 @@ export default function SocialScreen() {
         ) : (
           <View style={styles.listCard}>
             {amigos.map((amigo, index) => (
-              <View
+              <TouchableOpacity
                 key={amigo.amizadeId}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Ver perfil de ${amigo.apelido}`}
+                onPress={() =>
+                  navigation.navigate('PerfilAmigo', {
+                    amizadeId: amigo.amizadeId,
+                    apelido: amigo.apelido,
+                    avatar: amigo.avatar,
+                  })
+                }
                 style={[
                   styles.personRow,
                   index === amigos.length - 1 &&
@@ -1696,7 +1705,7 @@ export default function SocialScreen() {
                     color="#7D898E"
                   />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -1709,7 +1718,9 @@ export default function SocialScreen() {
   // ---------------------------------------------------------
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
+      <TabHeader titulo="Amigos" direita={<EstatisticasCabecalho />} />
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={
@@ -1729,26 +1740,6 @@ export default function SocialScreen() {
         >
           {renderBanner()}
 
-          <View style={styles.header}>
-            <View style={styles.headerIcon}>
-              <Ionicons
-                name="people"
-                size={25}
-                color={colors.primaryDark}
-              />
-            </View>
-
-            <View style={styles.headerText}>
-              <Text style={styles.title}>
-                Amigos
-              </Text>
-
-              <Text style={styles.subtitle}>
-                Conecte-se com seus amigos usando um código.
-              </Text>
-            </View>
-          </View>
-
           {carregando ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator
@@ -1764,13 +1755,13 @@ export default function SocialScreen() {
             <>
               {renderPerfilSocial()}
 
-              {renderMeuCodigo()}
-
               {renderAdicionarAmigo()}
 
               {renderPedidosRecebidos()}
 
               {renderPedidosEnviados()}
+
+              <ChamaDuplaSection chama={chamaDupla} onAbrirHome={() => navigation.navigate('Home')} />
 
               {renderAmigos()}
             </>
@@ -1813,8 +1804,95 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 120,
+  },
+
+  // ----------------------------------------------------------
+  // PERFIL COMPACTO + CÓDIGO RECOLHIDO
+  // ----------------------------------------------------------
+
+  compactCard: {
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    padding: 12,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#E8EEE9',
+  },
+
+  compactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  compactAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#E7F5D8',
+  },
+
+  compactActionText: {
+    fontFamily: typography.semiBold,
+    fontSize: 12,
+    color: colors.primaryDark,
+  },
+
+  codeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F3F1',
+  },
+
+  codeToggleText: {
+    flex: 1,
+    fontFamily: typography.semiBold,
+    fontSize: 13,
+    color: colors.primaryDark,
+  },
+
+  codePanel: {
+    marginTop: 10,
+  },
+
+  codePanelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+
+  codeBoxCompact: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: '#F3F8EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+
+  codeTextCompact: {
+    fontFamily: typography.bold,
+    fontSize: 20,
+    letterSpacing: 3,
+    color: colors.primaryDark,
+  },
+
+  codeHint: {
+    marginTop: 8,
+    fontFamily: typography.regular,
+    fontSize: 12,
+    color: '#7D898E',
   },
 
   // ----------------------------------------------------------
@@ -2449,9 +2527,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  acceptButtonText: {
+    fontFamily: typography.bold,
+    fontSize: 12,
+    color: colors.primaryDark,
+  },
+
+  rejectButtonText: {
+    fontFamily: typography.semiBold,
+    fontSize: 12,
+    color: '#68777D',
+  },
+
   acceptButton: {
-    width: 36,
     height: 36,
+    paddingHorizontal: 12,
     borderRadius: 18,
     backgroundColor: colors.primary,
     alignItems: 'center',
@@ -2460,8 +2550,8 @@ const styles = StyleSheet.create({
   },
 
   rejectButton: {
-    width: 36,
     height: 36,
+    paddingHorizontal: 12,
     borderRadius: 18,
     backgroundColor: '#EFF2F1',
     alignItems: 'center',

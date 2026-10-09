@@ -16,7 +16,7 @@ module.exports = {
   // ou espaços no caminho (foi o que aconteceu aqui) — um pacote resolvido
   // via node_modules não tem esse problema.
   moduleNameMapper: {
-    '\\.(png|jpg|jpeg|gif|svg)$': 'identity-obj-proxy',
+    '\\.(png|jpg|jpeg|gif|svg|webp)$': 'identity-obj-proxy',
   },
   // paths com @/... etc. — ajustar aqui se o projeto usar alias no tsconfig
   clearMocks: true,

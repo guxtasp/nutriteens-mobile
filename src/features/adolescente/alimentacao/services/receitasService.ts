@@ -91,3 +91,13 @@ export async function buscarPassosDaReceita(receitaId: string): Promise<PassoRec
   if (error) throw error;
   return data ?? [];
 }
+export async function buscarReceitaPorId(receitaId: string): Promise<ReceitaComAlimento | null> {
+  const { data, error } = await supabase
+    .from('receitas')
+    .select(`*, alimento_resultante:alimentos!receitas_alimento_resultante_id_fkey(${COLUNAS_ALIMENTO_EMBUTIDO})`)
+    .eq('id', receitaId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data ?? null) as any;
+}

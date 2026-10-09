@@ -1,4 +1,6 @@
 // src/navigation/AdolescenteNavigator.tsx
+import ReceitaCompartilhadaScreen from '../features/adolescente/social/screens/ReceitaCompartilhadaScreen';
+import NotificacoesScreen from '../features/adolescente/notificacoes/screens/NotificacoesScreen';
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TriagemIntroScreen from '../features/adolescente/triagem/screens/TriagemIntroScreen';
@@ -14,6 +16,7 @@ import LicaoCompletaScreen from '../features/adolescente/trilha/screens/LicaoCom
 import ModuloCompletaScreen from '../features/adolescente/trilha/screens/ModuloCompletaScreen';
 import TrilhaCompletaScreen from '../features/adolescente/trilha/screens/TrilhaCompletaScreen';
 import SocialScreen from '../features/adolescente/social/screens/SocialScreen';
+import PerfilAmigoScreen from '../features/adolescente/social/screens/PerfilAmigoScreen';
 import MaisScreen from '../features/adolescente/_shared/screens/MaisScreen';
 import AtividadeFisicaScreen from '../features/adolescente/atividade-fisica/screens/AtividadeFisicaScreen';
 import BuscaAtividadeScreen from '../features/adolescente/atividade-fisica/screens/BuscaAtividadeScreen';
@@ -33,6 +36,8 @@ import { AlimentacaoProvider } from '../features/adolescente/alimentacao/context
 import LembretesScreen from '../features/adolescente/notificacoes/screens/LembretesScreen';
 import LembretesGate from '../features/adolescente/notificacoes/components/LembretesGate';
 import MissoesScreen from '../features/adolescente/missoes/screens/MissoesScreen';
+import AlbumCartasScreen from '../features/adolescente/cartas/screens/AlbumCartasScreen';
+import RecompensasHost from '../features/adolescente/recompensas/components/RecompensasHost';
 
 export type AdolescenteStackParamList = {
   TriagemIntro: undefined;
@@ -59,11 +64,16 @@ export type AdolescenteStackParamList = {
   // Capítulo" do módulo 3) — também mostra ACERTOS.
   TrilhaCompleta: { xpGanho: number; acertosPercentual: number };
   Social: undefined;
+  // Só o que o banco libera a um amigo; apelido/avatar vêm só pra tela não piscar.
+  PerfilAmigo: { amizadeId: string; apelido: string; avatar: string | null };
   Mais: undefined;
   Lembretes: undefined;
+  Notificacoes: undefined;
+  ReceitaCompartilhada: { receitaId: string };
   AtividadeFisica: undefined;
   BuscaAtividade: undefined;
   Profile: undefined;
+  AlbumCartas: undefined;
   BuscaAlimento: { tipo: TipoRefeicao; nomeRefeicao: string; alimentoRecemCriado?: Alimento };
   NovoAlimentoOrigem: { tipo: TipoRefeicao; nomeRefeicao: string };
   NovoAlimentoForm: { tipo: TipoRefeicao; nomeRefeicao: string; origem: OrigemAlimento };
@@ -112,11 +122,15 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="ModuloCompleta" component={ModuloCompletaScreen} />
                     <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="PerfilAmigo" component={PerfilAmigoScreen} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Lembretes" component={LembretesScreen} />
+                    <Stack.Screen name="Notificacoes" component={NotificacoesScreen} />
+                    <Stack.Screen name="ReceitaCompartilhada" component={ReceitaCompartilhadaScreen} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
+                    <Stack.Screen name="AlbumCartas" component={AlbumCartasScreen} />
                     <Stack.Screen name="ConsumoAgua" component={ConsumoAguaScreen} />
                     <Stack.Screen name="TipoRefeicao" component={TipoRefeicaoScreen} />
                     <Stack.Screen name="MetodoRegistroAlimentar" component={MetodoRegistroScreen} />
@@ -137,12 +151,16 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="ModuloCompleta" component={ModuloCompletaScreen} />
                     <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="PerfilAmigo" component={PerfilAmigoScreen} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Lembretes" component={LembretesScreen} />
+                    <Stack.Screen name="Notificacoes" component={NotificacoesScreen} />
+                    <Stack.Screen name="ReceitaCompartilhada" component={ReceitaCompartilhadaScreen} />
                     <Stack.Screen name="Missoes" component={MissoesScreen} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
+                    <Stack.Screen name="AlbumCartas" component={AlbumCartasScreen} />
                     <Stack.Screen name="ConsumoAgua" component={ConsumoAguaScreen} />
                     <Stack.Screen name="TipoRefeicao" component={TipoRefeicaoScreen} />
                     <Stack.Screen name="MetodoRegistroAlimentar" component={MetodoRegistroScreen} />
@@ -156,6 +174,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
             </Stack.Navigator>
             {/* lembretes só depois da triagem (durante o onboarding não dispara nada) */}
             <LembretesGate ativo={etapaOnboarding !== 'TRIAGEM'} />
+            <RecompensasHost ativo={etapaOnboarding !== 'TRIAGEM'} />
       </AlimentacaoProvider>
     </AtividadeFisicaProvider>
   );

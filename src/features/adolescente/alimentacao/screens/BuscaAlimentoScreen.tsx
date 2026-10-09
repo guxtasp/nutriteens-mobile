@@ -23,6 +23,7 @@ import { useAuth } from '../../../../shared/contexts/AuthContext';
 import CarrinhoAlimentosBar from '../components/CarrinhoAlimentarBar';
 import CarrinhoAlimentosSheet from '../components/CarrinhoAlimentarSheet';
 import ReceitaDetalheSheet from '../components/ReceitaDetalheSheet';
+import { EnviarReceitaSheet } from '../../social/components/EnviarReceitaSheet';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'BuscaAlimento'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'BuscaAlimento'>;
@@ -53,6 +54,7 @@ export default function BuscaAlimentoScreen() {
   const [buscando, setBuscando] = useState(false);
   const [sheetCarrinho, setSheetCarrinho] = useState(false);
   const [receitaAberta, setReceitaAberta] = useState<ReceitaComAlimento | null>(null);
+  const [receitaParaEnviar, setReceitaParaEnviar] = useState<{ id: string; titulo: string } | null>(null);
 
   const ultimoIdProcessado = useRef<string | null>(null);
 
@@ -289,7 +291,14 @@ export default function BuscaAlimentoScreen() {
         receita={receitaAberta}
         onFechar={() => setReceitaAberta(null)}
         onAdicionarAoCarrinho={adicionarReceitaAoCarrinho}
+        onEnviarParaAmigo={(r) => {
+          // fecha o detalhe antes: dois Modals abertos ao mesmo tempo falham no iOS
+          setReceitaAberta(null);
+          // espera a animação de fechar terminar; abrir já no mesmo tick também falha no iOS
+          setTimeout(() => setReceitaParaEnviar({ id: r.id, titulo: r.titulo }), 450);
+        }}
       />
+      <EnviarReceitaSheet receita={receitaParaEnviar} onFechar={() => setReceitaParaEnviar(null)} />
     </SafeAreaView>
   );
 }

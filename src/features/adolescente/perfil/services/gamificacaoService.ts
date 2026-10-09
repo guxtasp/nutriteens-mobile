@@ -70,3 +70,14 @@ export async function marcarInsigniasVistas(userId: string): Promise<void> {
     .eq('usuario_id', userId)
     .eq('vista', false);
 }
+
+/** Marca só as insígnias indicadas como vistas (a celebração marca apenas o que mostrou). */
+export async function marcarInsigniasVistasPorId(userId: string, insigniaIds: string[]): Promise<void> {
+  if (insigniaIds.length === 0) return;
+  const { error } = await supabase
+    .from('insignias_usuario')
+    .update({ vista: true })
+    .eq('usuario_id', userId)
+    .in('insignia_id', insigniaIds);
+  if (error) console.warn('Erro ao marcar insígnias como vistas:', error.message);
+}

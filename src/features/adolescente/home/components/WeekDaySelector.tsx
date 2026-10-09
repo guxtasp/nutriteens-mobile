@@ -55,7 +55,8 @@ export default function WeekDaySelector({ dias }: Props) {
 
 const styles = StyleSheet.create({
 
-  scroll: { height: 132, flexGrow: 0, marginBottom: 8 },
+  // altura vem do conteúdo (círculo + rótulos): sem folga sobrando antes do próximo bloco
+  scroll: { flexGrow: 0 },
   linha: { paddingHorizontal: 16, paddingRight: 20, gap: 14 },
   coluna: { alignItems: 'center', width: 80 },
   circulo: { width: 80, height: 80, borderRadius: 40, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

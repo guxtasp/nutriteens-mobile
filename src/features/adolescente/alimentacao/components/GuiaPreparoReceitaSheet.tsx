@@ -12,7 +12,7 @@
 // preferirem o loop igual aos outros guias, é só trocar o "if" do
 // avancarPasso por (atual + 1) % PASSOS.length como nos outros.
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Modal, Pressable, StyleSheet, Animated, Easing, Dimensions, Image } from 'react-native';
+import { View, Pressable, StyleSheet, Animated, Easing, Dimensions, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
@@ -91,7 +91,8 @@ export default function GuiaPreparoReceitaSheet({ visivel, tituloReceita, passos
   const ehUltimoPasso = passoAtual === passos.length - 1;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={onFechar}>
+    // overlay em tela cheia (sem Modal próprio): renderizado dentro do Modal da receita
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onFechar}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
       </Pressable>
@@ -142,7 +143,7 @@ export default function GuiaPreparoReceitaSheet({ visivel, tituloReceita, passos
           )}
         </Pressable>
       </Animated.View>
-    </Modal>
+    </View>
   );
 }
 

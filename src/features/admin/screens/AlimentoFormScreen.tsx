@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, TextInput, Switch, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, TextInput, Switch, ActivityIndicator } from 'react-native';
+import { avisar, confirmar } from '../../../shared/ui/dialogo';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { OptionButton } from '../../../shared/ui/OptionButton';
@@ -156,25 +157,22 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
         navigation.goBack();
       }
     } catch (e: any) {
-      Alert.alert('Erro ao salvar', e.message ?? 'Tente novamente.');
+      avisar('Erro ao salvar', e.message ?? 'Tente novamente.');
     } finally {
       setSalvando(false);
     }
   }
 
-  function confirmarExclusao() {
+  async function confirmarExclusao() {
     if (!existente) return;
-    Alert.alert('Excluir alimento?', `Isso remove "${existente.nome}" do catálogo.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: async () => {
-          await excluirAlimento(existente.id);
-          navigation.goBack();
-        },
-      },
-    ]);
+    const ok = await confirmar('Excluir alimento?', `Isso remove "${existente.nome}" do catálogo.`, { confirmar: 'Excluir', destrutivo: true });
+    if (!ok) return;
+    try {
+      await excluirAlimento(existente.id);
+      navigation.goBack();
+    } catch (e: any) {
+      avisar('Não foi possível excluir', e.message ?? 'Tente novamente.');
+    }
   }
 
   return (

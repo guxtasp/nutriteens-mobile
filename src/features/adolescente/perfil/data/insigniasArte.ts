@@ -12,9 +12,9 @@ import type { ImageSourcePropType } from 'react-native';
  * `null` por `require('../../../../../assets/img/insignias/<codigo>.png')`.
  */
 export const ARTE_INSIGNIAS: Record<string, ImageSourcePropType | null> = {
-  explorador_alimentos: null, // 🥦
-  mestre_movimento: null, // 🏃/🏆
-  super_broxis: null, // ⭐
+  explorador_alimentos: require('../../../../../assets/img/insignias/explorador_alimentos.png'), // 🥦
+  mestre_movimento: require('../../../../../assets/img/insignias/mestre_movimento.png'), // 🏃/🏆
+  super_broxis: require('../../../../../assets/img/insignias/super_broxis.png'), // ⭐
 };
 
 /** Emoji exibido dentro do placeholder, só para dar identidade temporária. */

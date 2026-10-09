@@ -8,6 +8,7 @@ import { typography } from '../../../../shared/theme/typography';
 import { layout } from '../../../../shared/theme/layout';
 import { useSaudacao } from '../hooks/useSaudacao';
 import EstatisticaPill from './EstatisticaPill';
+import { SinoNotificacoes } from '../../notificacoes/components/SinoNotificacoes';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -36,17 +37,32 @@ export default function HomeHeader({ nome, pontos, sequenciaAtual, onAbrirPerfil
   }, [onAbrirPerfil, navigation]);
 
   return (
-    <View style={styles.linha}>
-      <View style={styles.esquerda}>
-        <AppText style={styles.saudacao}>
+    <View style={styles.cabecalho}>
+      {/* linha 1: saudação inteira (uma linha) + perfil */}
+      <View style={styles.linhaSaudacao}>
+        <AppText
+          style={styles.saudacao}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
           Olá, {nome}.
         </AppText>
-        <AppText style={styles.pergunta}>
-          {saudacao}
-        </AppText>
+
+        <Pressable
+          onPress={handleAbrirPerfil}
+          style={styles.perfilBotao}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir perfil"
+        >
+          <Ionicons name="person-circle-outline" size={35} color={colors.primaryDark} />
+        </Pressable>
       </View>
 
-      <View style={styles.direita}>
+      <AppText style={styles.pergunta}>{saudacao}</AppText>
+
+      {/* linha 2: XP, sequência e sino — fora da linha da saudação para não espremê-la */}
+      <View style={styles.estatisticas}>
         {/* XP: sempre visível, mesmo em 0 — é um contador persistente, diferente da sequência */}
         <EstatisticaPill
           icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
@@ -69,54 +85,43 @@ export default function HomeHeader({ nome, pontos, sequenciaAtual, onAbrirPerfil
           </Pressable>
         )}
 
-        <Pressable 
-          onPress={handleAbrirPerfil} 
-          style={styles.perfilBotao}
-          accessibilityRole="button"
-          accessibilityLabel="Abrir perfil"
-        >
-          <Ionicons
-            name="person-circle-outline"
-            size={35}
-            color={colors.primaryDark}
-          />
-        </Pressable>
+        <SinoNotificacoes />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  linha: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  cabecalho: {
     paddingHorizontal: layout.margemH,
     paddingTop: layout.cabecalhoPaddingTop,
     paddingBottom: layout.cabecalhoPaddingBottom,
   },
-  esquerda: {
-    flex: 1,
-    flexShrink: 1,
-    marginRight: 12,
+  linhaSaudacao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   saudacao: {
+    flex: 1,
     fontFamily: typography.bold,
     fontSize: 24,
     color: colors.primaryDark,
-    lineHeight: 26,
+    lineHeight: 30,
   },
   pergunta: {
     fontFamily: typography.bold,
     fontSize: 16,
     color: colors.primary ?? '#3FA85C',
-    marginTop: 4,
+    marginTop: 2,
   },
-  direita: {
+  estatisticas: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
-    flexShrink: 0,
+    marginTop: 12,
   },
   perfilBotao: {
     padding: 4,

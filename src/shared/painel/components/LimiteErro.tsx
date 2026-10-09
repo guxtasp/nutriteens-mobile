@@ -5,7 +5,12 @@
 import React from 'react';
 import { EstadoErro } from './EstadosPainel';
 
-type Props = { chaveReset?: string; children: React.ReactNode };
+type Props = {
+  chaveReset?: string;
+  /** UI exibida quando algo estoura (ex.: com o menu do painel); padrão: mensagem simples */
+  fallback?: (erro: Error, tentarDeNovo: () => void) => React.ReactNode;
+  children: React.ReactNode;
+};
 type Estado = { erro: Error | null; chave?: string };
 
 export class LimiteErro extends React.Component<Props, Estado> {
@@ -27,6 +32,8 @@ export class LimiteErro extends React.Component<Props, Estado> {
 
   render() {
     if (this.state.erro) {
+      const tentar = () => this.setState({ erro: null });
+      if (this.props.fallback) return this.props.fallback(this.state.erro, tentar);
       return (
         <EstadoErro
           mensagem={`Esta tela encontrou um problema: ${this.state.erro.message || 'erro desconhecido'}`}
