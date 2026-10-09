@@ -219,9 +219,9 @@ export function InsigniaGanhaModal({ insignia, restantes, onContinuar, onVerPerf
 
 const styles = StyleSheet.create({
   raiz: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  fundo: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(30,20,4,0.88)' },
+  fundo: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8, 30, 4, 0.88)' },
   cabecalho: { marginBottom: 4 },
-  titulo: { fontSize: 28, fontFamily: typography.bold, textAlign: 'center', letterSpacing: 0.4 },
+  titulo: { fontSize: 24, fontFamily: typography.bold, textAlign: 'center', letterSpacing: 0.4 },
   palco: { alignItems: 'center', justifyContent: 'center' },
   anel: { position: 'absolute', width: TAMANHO, height: TAMANHO, borderRadius: TAMANHO / 2, borderWidth: 4 },
   estrela: { position: 'absolute' },
