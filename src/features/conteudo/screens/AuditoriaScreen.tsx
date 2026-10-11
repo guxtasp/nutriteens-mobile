@@ -19,6 +19,7 @@ const FILTROS: { chave: string; label: string; tipo?: TipoConteudo }[] = [
   { chave: 'TODOS', label: 'Tudo' },
   { chave: 'TRILHA', label: 'Trilhas', tipo: 'TRILHA' },
   { chave: 'RECEITA', label: 'Receitas', tipo: 'RECEITA' },
+  { chave: 'TROCA', label: 'Alternativas', tipo: 'TROCA' },
 ];
 
 const rotuloStatus = (s: string | null) => (s ? STATUS_LABEL[s as StatusFluxo] ?? s : null);

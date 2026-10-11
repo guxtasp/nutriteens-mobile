@@ -115,6 +115,16 @@ export type CorpoReceita = {
   passos: { ordem: number; titulo: string; descricao: string }[];
   ingredientes: { nome: string; proporcao: number | null }[];
 };
+export type CorpoTroca = {
+  titulo: string;
+  categoria: string;
+  origem_nome: string | null;
+  destino_nome: string;
+  frase: string;
+  dica: string | null;
+  rapida: boolean;
+  tipos_refeicao: string[];
+};
 export type EventoHistorico = {
   acao: string;
   statusAnterior: string | null;
@@ -137,7 +147,7 @@ export type DetalheConteudo = {
   revisadoEm: string | null;
   publicadoEm: string | null;
   atualizadoEm: string;
-  corpo: CorpoTrilha | CorpoReceita;
+  corpo: CorpoTrilha | CorpoReceita | CorpoTroca;
   historico: EventoHistorico[];
 };
 

@@ -6,6 +6,7 @@ import { ClassificacaoNova, FeedbackRefeicao } from '../utils/regraFeedbackRefei
 import { valoresEbiaAceitaveis } from '../../triagem/ebia/utils/ordemEbia';
 import { inferirNutrientesPorGrupo, inferirAtencaoPorGrupo } from '../utils/nutrientesPorGrupo';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { buscarTrocaDaRefeicao, TrocaSugerida } from '../../trocas/services/trocasService';
 
 export type TipoRefeicao = 'CAFE_DA_MANHA' | 'LANCHE_MANHA' | 'ALMOCO' | 'LANCHE_TARDE' | 'JANTAR' | 'CEIA';
 
@@ -114,7 +115,7 @@ export async function registrarRefeicao(params: {
   dataISO: string;
   tipo: TipoRefeicao;
   itens: { alimento: Alimento; quantidade: number }[];
-}): Promise<{ refeicaoId: string } & FeedbackRefeicao> {
+}): Promise<{ refeicaoId: string; troca: TrocaSugerida | null } & FeedbackRefeicao> {
   const registroDiarioId = await obterOuCriarRegistroDiarioId(params.userId, params.dataISO);
 
   const agora = new Date();
@@ -157,7 +158,9 @@ export async function registrarRefeicao(params: {
     refeicaoId: refeicao.id,
     itens: itensFeedback,
   });
-  return { refeicaoId: refeicao.id, ...feedback };
+  // falha em silêncio (devolve null): o registro segue com o texto atual
+  const troca = await buscarTrocaDaRefeicao({ tipo: params.tipo, itens: params.itens });
+  return { refeicaoId: refeicao.id, ...feedback, troca };
 }
 export async function buscarAlimentos(termo: string, userId: string): Promise<Alimento[]> {
   if (!termo.trim()) return [];

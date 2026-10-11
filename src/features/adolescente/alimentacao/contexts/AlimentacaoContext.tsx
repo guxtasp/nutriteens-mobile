@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Alimento, TipoRefeicao, registrarRefeicao } from '../services/alimentacaoService';
 import type { FeedbackRefeicao } from '../utils/regraFeedbackRefeicao';
+import type { TrocaSugerida } from '../../trocas/services/trocasService';
 import { ItemCarrinhoAlimento } from '../types/alimentacao';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
@@ -14,7 +15,7 @@ interface AlimentacaoContextValue {
   decrementarItem: (alimentoId: string) => void;
   removerDoCarrinho: (alimentoId: string) => void;
   limparCarrinho: () => void;
-  registrarCarrinho: (tipo: TipoRefeicao) => Promise<({ quantidade: number } & FeedbackRefeicao) | null>;
+  registrarCarrinho: (tipo: TipoRefeicao) => Promise<({ quantidade: number; troca: TrocaSugerida | null } & FeedbackRefeicao) | null>;
   enviando: boolean;
 }
 

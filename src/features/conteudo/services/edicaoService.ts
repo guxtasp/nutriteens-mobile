@@ -249,3 +249,43 @@ export async function removerPasso(id: string): Promise<void> {
   const { error } = await supabase.from('receita_passos').delete().eq('id', id);
   falha(error);
 }
+
+
+// ---------------------------------------------------------------- troca (justificativa)
+export type TrocaEditavel = {
+  id: string;
+  categoria: string;
+  origemNome: string | null;
+  destinoNome: string;
+  frase: string;
+  dica: string;
+  rapida: boolean;
+};
+
+export async function buscarTrocaEditavel(id: string): Promise<TrocaEditavel> {
+  const { data, error } = await supabase
+    .from('alimento_trocas')
+    .select('id, categoria, frase, dica, rapida, origem:alimentos!alimento_trocas_origem_id_fkey(nome), destino:alimentos!alimento_trocas_destino_id_fkey(nome)')
+    .eq('id', id)
+    .single();
+  falha(error);
+  const t: any = data;
+  return {
+    id: t.id,
+    categoria: t.categoria,
+    origemNome: t.origem?.nome ?? null,
+    destinoNome: t.destino?.nome ?? '',
+    frase: t.frase,
+    dica: t.dica ?? '',
+    rapida: !!t.rapida,
+  };
+}
+
+/** Texto da troca. Status e versão são do fluxo (trigger fluxo_alteracao), não daqui. */
+export async function salvarTroca(id: string, d: { frase: string; dica: string; rapida: boolean }): Promise<void> {
+  const { error } = await supabase
+    .from('alimento_trocas')
+    .update({ frase: d.frase.trim(), dica: d.dica.trim() || null, rapida: d.rapida, atualizado_em: new Date().toISOString() })
+    .eq('id', id);
+  falha(error);
+}

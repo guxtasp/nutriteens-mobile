@@ -9,6 +9,7 @@ import RecordatorioRefeicaoScreen from '../features/adolescente/triagem/recordat
 import EbiaPerguntaScreen from '../features/adolescente/triagem/ebia/screens/EbiaPerguntaScreen';
 import HomeScreen from '../features/adolescente/home/screens/HomeScreen';
 import SequenciaScreen from '../features/adolescente/home/screens/SequenciaScreen';
+import SugestoesAlimentaresScreen from '../features/adolescente/alimentacao/screens/SugestoesAlimentaresScreen';
 import AlimentacaoHomeScreen from '../features/adolescente/alimentacao/screens/AlimentacaoHomeScreen';
 import TrilhaScreen from '../features/adolescente/trilha/screens/TrilhaScreen';
 import LicaoDetalheScreen from '../features/adolescente/trilha/screens/LicaoDetalheScreen';
@@ -37,6 +38,8 @@ import LembretesScreen from '../features/adolescente/notificacoes/screens/Lembre
 import LembretesGate from '../features/adolescente/notificacoes/components/LembretesGate';
 import MissoesScreen from '../features/adolescente/missoes/screens/MissoesScreen';
 import AlbumCartasScreen from '../features/adolescente/cartas/screens/AlbumCartasScreen';
+import type { CategoriaTroca } from '../features/adolescente/trocas/utils/trocas';
+import type { TrocaSugerida } from '../features/adolescente/trocas/services/trocasService';
 import RecompensasHost from '../features/adolescente/recompensas/components/RecompensasHost';
 
 export type AdolescenteStackParamList = {
@@ -48,6 +51,7 @@ export type AdolescenteStackParamList = {
   Sequencia: undefined;
   Missoes: undefined;
   Alimentacao: undefined;
+  SugestoesAlimentares: { categoria?: CategoriaTroca } | undefined;
   Trilha: undefined;
   LicaoDetalhe: {
     licaoId: string;
@@ -87,6 +91,7 @@ export type AdolescenteStackParamList = {
   nutricional: string;
   melhoria: string;
   missao: { titulo: string; texto: string; nutriente: string } | null;
+  troca?: TrocaSugerida | null;
   };  
   ConsumoAgua: undefined;
   TipoRefeicao:undefined;
@@ -116,6 +121,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Sequencia" component={SequenciaScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Missoes" component={MissoesScreen} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
                     <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
@@ -145,6 +151,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Sequencia" component={SequenciaScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
+                    <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
                     <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />

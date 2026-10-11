@@ -213,7 +213,7 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
       acao={
         fila ? undefined : (
           <View style={styles.acoes}>
-            {tipo !== 'RECEITA' && (
+            {tipo !== 'RECEITA' && tipo !== 'TROCA' && (
               <AppButton
                 label="+ NOVA TRILHA"
                 fullWidth={false}
@@ -225,7 +225,7 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
                 onPress={() => navigation.navigate('EditarTrilha', {})}
               />
             )}
-            {tipo !== 'TRILHA' && (
+            {tipo !== 'TRILHA' && tipo !== 'TROCA' && (
               <AppButton
                 label="+ NOVA RECEITA"
                 fullWidth={false}

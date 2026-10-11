@@ -21,9 +21,11 @@ import {
   transicionar,
   type CorpoReceita,
   type CorpoTrilha,
+  type CorpoTroca,
   type DetalheConteudo,
 } from '../services/fluxoService';
 import { obterPapelAtual } from '../services/conteudoService';
+import { CONTEXTO_CATEGORIA, type CategoriaTroca } from '../../adolescente/trocas/utils/trocas';
 import {
   ACAO_LABEL,
   ACOES_DECISAO,
@@ -42,7 +44,7 @@ import {
   type TomStatus,
 } from '../utils/fluxo';
 
-type Props = { config: ConfigPainel; route: { params: { tipo: 'TRILHA' | 'RECEITA'; conteudoId: string } } };
+type Props = { config: ConfigPainel; route: { params: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string } } };
 
 const COR_TOM: Record<TomStatus, { fundo: string; texto: string }> = {
   neutro: { fundo: '#EEF0EF', texto: '#4B4B4B' },
@@ -137,6 +139,33 @@ function CorpoReceitaView({ corpo }: { corpo: CorpoReceita }) {
             <AppText style={styles.texto}>{p.descricao}</AppText>
           </View>
         ))}
+      </View>
+    </View>
+  );
+}
+
+function CorpoTrocaView({ corpo }: { corpo: CorpoTroca }) {
+  const contexto = CONTEXTO_CATEGORIA[corpo.categoria as CategoriaTroca];
+  return (
+    <View style={{ gap: 10 }}>
+      <AppText style={styles.meta}>
+        {corpo.origem_nome ? `Em vez de ${corpo.origem_nome}` : 'Alternativa geral da categoria'} → {corpo.destino_nome}
+        {corpo.rapida ? ' · rápido de levar' : ''}
+      </AppText>
+      <AppText style={styles.dica}>É assim que o adolescente lê, ao tocar na alternativa.</AppText>
+      {!!contexto && (
+        <View style={styles.bloco}>
+          <AppText style={styles.blocoTitulo}>O que muda (texto fixo da categoria)</AppText>
+          <AppText style={styles.texto}>{contexto}</AppText>
+        </View>
+      )}
+      <View style={styles.bloco}>
+        <AppText style={styles.blocoTitulo}>O que você ganha (justificativa)</AppText>
+        <AppText style={styles.texto}>{corpo.frase}</AppText>
+      </View>
+      <View style={styles.bloco}>
+        <AppText style={styles.blocoTitulo}>Dica pra fazer</AppText>
+        <AppText style={styles.texto}>{corpo.dica || 'Sem dica cadastrada.'}</AppText>
       </View>
     </View>
   );
@@ -316,7 +345,9 @@ function Detalhe(p: {
                 onPress={() =>
                   dados.tipo === 'TRILHA'
                     ? p.navigation.navigate('EditarTrilha', { trilhaId: dados.conteudoId })
-                    : p.navigation.navigate('EditarReceita', { receitaId: dados.conteudoId })
+                    : dados.tipo === 'TROCA'
+                      ? p.navigation.navigate('EditarTroca', { trocaId: dados.conteudoId })
+                      : p.navigation.navigate('EditarReceita', { receitaId: dados.conteudoId })
                 }
               />
             ) : undefined
@@ -324,6 +355,8 @@ function Detalhe(p: {
         >
           {dados.tipo === 'TRILHA' ? (
             <CorpoTrilhaView corpo={dados.corpo as CorpoTrilha} navigation={p.navigation} />
+          ) : dados.tipo === 'TROCA' ? (
+            <CorpoTrocaView corpo={dados.corpo as CorpoTroca} />
           ) : (
             <CorpoReceitaView corpo={dados.corpo as CorpoReceita} />
           )}

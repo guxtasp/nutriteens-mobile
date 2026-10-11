@@ -32,6 +32,14 @@
       "expo-font",
       "expo-web-browser",
       "expo-audio",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "O NutriTeens usa a câmera para ler o código de barras dos produtos. As imagens não são guardadas.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       ["expo-notifications", { "color": "#8BCF4A" }]
     ],
     "extra": {

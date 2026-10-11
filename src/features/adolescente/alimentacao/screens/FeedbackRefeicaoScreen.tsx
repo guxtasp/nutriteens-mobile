@@ -1,5 +1,5 @@
 // src/features/adolescente/screens/FeedbackRefeicaoScreen.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,8 @@ import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
 import { typography } from '../../../../shared/theme/typography';
 import { ICONE_POR_TIPO_REFEICAO } from '../utils/refeicaoInfo';
 import type { NivelQualidade } from '../utils/regraFeedbackRefeicao';
+import TrocaLista from '../../trocas/components/TrocaLista';
+import { registrarTrocaSugerida } from '../../trocas/services/trocasService';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'FeedbackRefeicao'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'FeedbackRefeicao'>;
@@ -44,6 +46,11 @@ export default function FeedbackRefeicaoScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { params } = useRoute<RouteProps>();
   const conteudo = escolherConteudo(params.nivelQualidade, params.intensidade);
+  const troca = params.troca ?? null;
+
+  useEffect(() => {
+    troca?.opcoes.forEach((o) => registrarTrocaSugerida(o.id, 'refeicao'));
+  }, [troca?.opcoes.map((o) => o.id).join(',')]);
 
   function continuar() {
     // popToTop() (não reset()) — volta pra instância da Home que já existe
@@ -115,6 +122,22 @@ export default function FeedbackRefeicaoScreen() {
             <AppText style={styles.textoMissao}>{params.missao.texto}</AppText>
           </MotiView>
         )}
+
+        {/* Trocas (RF015): no máximo uma, só quando há troca publicada para o item.
+            Sem EBIA e sem julgamento — é um convite. */}
+        {troca && (
+          <MotiView
+            from={{ opacity: 0, translateY: 12 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'timing', duration: 350, delay: 560 }}
+            style={styles.blocoTroca}
+          >
+            <TrocaLista origemNome={troca.origemNome} categoria={troca.categoria} opcoes={troca.opcoes.map((x) => ({ id: x.id, nome: x.destinoNome, explicacao: x.frase, dica: x.dica, nutrientes: x.nutrientes, rapida: x.rapida }))} tema="escuro" />
+            <Pressable onPress={() => navigation.navigate('SugestoesAlimentares', { categoria: troca.categoria })}>
+              <AppText style={styles.linkTrocas}>Ver mais ideias de troca</AppText>
+            </Pressable>
+          </MotiView>
+        )}
       </ScrollView>
 
       <Pressable style={styles.botaoContinuar} onPress={continuar}>
@@ -180,6 +203,8 @@ const styles = StyleSheet.create({
   },
   rotuloMissao: { fontFamily: typography.bold, fontSize: 13, color: '#1F5138', marginBottom: 6 },
   textoMissao: { fontFamily: typography.medium, fontSize: 13, color: '#3A5137', lineHeight: 19 },
+  blocoTroca: { width: '100%', marginTop: 14, alignItems: 'center' },
+  linkTrocas: { fontFamily: typography.bold, fontSize: 12, color: '#F3E3B8', textDecorationLine: 'underline', paddingVertical: 4 },
   botaoContinuar: { backgroundColor: '#fff', borderRadius: 24, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
   botaoTexto: { fontFamily: typography.bold, fontSize: 13, color: '#1F5138', letterSpacing: 0.5 },
 });

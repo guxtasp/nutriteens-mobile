@@ -14,6 +14,7 @@ import DesafiosScreen from '../shared/painel/screens/DesafiosScreen';
 import EditarTrilhaScreen from '../features/conteudo/screens/EditarTrilhaScreen';
 import EditarLicaoScreen from '../features/conteudo/screens/EditarLicaoScreen';
 import EditarReceitaScreen from '../features/conteudo/screens/EditarReceitaScreen';
+import EditarTrocaScreen from '../features/conteudo/screens/EditarTrocaScreen';
 import NutricionistaDashboardScreen from '../features/nutricionista/dashboard/screens/NutricionistaDashboardScreen';
 
 export type NutricionistaStackParamList = {
@@ -23,14 +24,16 @@ export type NutricionistaStackParamList = {
   ConteudoList: undefined;
   NutriReceitas: undefined;
   NutriTrilhas: undefined;
+  NutriTrocas: undefined;
   NutriDesafios: undefined;
   NutriAnalytics: undefined;
-  ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA'; conteudoId: string };
+  ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string };
   LicaoPreview: { licaoId: string };
   ParticipanteDetalhe: { id: string };
   EditarTrilha: { trilhaId?: string } | undefined;
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number };
   EditarReceita: { receitaId?: string } | undefined;
+  EditarTroca: { trocaId: string };
 };
 
 const Stack = createNativeStackNavigator<NutricionistaStackParamList>();
@@ -51,10 +54,12 @@ const Aprovacoes = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titu
 const Conteudos = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Conteúdos" subtitulo="Todo o conteúdo educativo e nutricional" />;
 const Receitas = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Receitas" subtitulo="Revisão nutricional das receitas" tipo="RECEITA" />;
 const Trilhas = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Trilhas" subtitulo="Revisão das trilhas educativas" tipo="TRILHA" />;
+const Trocas = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Alternativas" subtitulo="Revise as justificativas das alternativas alimentares" tipo="TROCA" />;
 const Desafios = () => <DesafiosScreen config={NUTRICIONISTA_PAINEL} />;
 const EditarTrilha = (props: any) => <EditarTrilhaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const EditarLicao = (props: any) => <EditarLicaoScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const EditarReceita = (props: any) => <EditarReceitaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
+const EditarTroca = (props: any) => <EditarTrocaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const Analytics = () => <AnalyticsScreen config={NUTRICIONISTA_PAINEL} />;
 
 export default function NutricionistaNavigator() {
@@ -67,6 +72,7 @@ export default function NutricionistaNavigator() {
       <Stack.Screen name="ConteudoList" component={Conteudos} />
       <Stack.Screen name="NutriReceitas" component={Receitas} />
       <Stack.Screen name="NutriTrilhas" component={Trilhas} />
+      <Stack.Screen name="NutriTrocas" component={Trocas} />
       <Stack.Screen name="NutriDesafios" component={Desafios} />
       <Stack.Screen name="NutriAnalytics" component={Analytics} />
       <Stack.Screen name="ConteudoDetalhe" component={DetalheNoPainel} />
@@ -74,6 +80,7 @@ export default function NutricionistaNavigator() {
       <Stack.Screen name="EditarTrilha" component={EditarTrilha} />
       <Stack.Screen name="EditarLicao" component={EditarLicao} />
       <Stack.Screen name="EditarReceita" component={EditarReceita} />
+      <Stack.Screen name="EditarTroca" component={EditarTroca} />
     </Stack.Navigator>
   );
 }

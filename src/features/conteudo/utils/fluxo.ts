@@ -2,7 +2,7 @@
 // Regras do fluxo de aprovação (espelho das que o banco garante em
 // conteudo_transicionar). Aqui só decidimos o que MOSTRAR; quem decide de verdade é o banco.
 export type PapelPainel = 'NUTRICIONISTA' | 'ADMINISTRADOR';
-export type TipoConteudo = 'TRILHA' | 'RECEITA';
+export type TipoConteudo = 'TRILHA' | 'RECEITA' | 'TROCA';
 export type StatusFluxo =
   | 'RASCUNHO'
   | 'AGUARDANDO_APROVACAO'
@@ -34,7 +34,7 @@ export const ACAO_LABEL: Record<AcaoFluxo | 'CRIACAO' | 'EXCLUSAO' | 'ALTERACAO_
   EDICAO: 'Editado pela nutricionista',
 };
 
-export const TIPO_LABEL: Record<TipoConteudo, string> = { TRILHA: 'Trilha', RECEITA: 'Receita' };
+export const TIPO_LABEL: Record<TipoConteudo, string> = { TRILHA: 'Trilha', RECEITA: 'Receita', TROCA: 'Alternativa' };
 
 export type TomStatus = 'neutro' | 'espera' | 'ok' | 'publicado' | 'erro';
 export function tomDoStatus(s: StatusFluxo): TomStatus {

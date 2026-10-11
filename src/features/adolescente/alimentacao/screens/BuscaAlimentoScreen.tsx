@@ -122,6 +122,7 @@ export default function BuscaAlimentoScreen() {
         nutricional: resultado.nutricional,
         melhoria: resultado.melhoria,
         missao: resultado.missao,
+        troca: resultado.troca,
       });
     } catch (erro) {
       console.error('Erro ao registrar refeição:', erro);
