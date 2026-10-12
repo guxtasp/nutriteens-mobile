@@ -63,3 +63,25 @@ Versão de teste / prova de conceito. Fases 0 a 5 concluídas.
 5. Desligar a rede e escanear: deve cair em "Não achamos esse produto" com "Tentar de novo".
 6. Negar a permissão da câmera e conferir os dois textos (pode pedir de novo / abrir configurações).
 7. `npx tsc --noEmit` e `npm test`.
+
+---
+
+## 7. Atualização (iPhone + diagnóstico visual)
+
+**Rodar de novo `migration_scanner.sql`** (idempotente): adiciona a coluna `detalhes` e troca a assinatura da RPC (a versão antiga é removida). Depois limpe o cache antigo, que não tem os dados do rótulo:
+
+```sql
+delete from public.produtos_scanner where fonte = 'OPEN_FOOD_FACTS';
+```
+
+| # | Decisão | Alternativa |
+|---|---------|-------------|
+| D13 | No iPhone (iOS 16+) o scanner usa o **leitor nativo do sistema** (`CameraView.launchScanner`, VisionKit), que abre sozinho. Se não existir ou falhar, cai no preview da câmera na tela. A API foi tipada à mão e **não pude testá-la num aparelho**. | Só preview (o que não funcionou). |
+| D14 | Preview ganhou lanterna, `autofocus` explícito e dica de distância (15 a 20 cm). | — |
+| D15 | Corrigi um defeito: as camadas de mensagem cobriam o botão de voltar. | — |
+| D16 | Diagnóstico visual: termômetro de processamento (4 níveis), Raio-X do rótulo (açúcar, sal, gordura saturada em "pouco / médio / bastante", colheres de chá de açúcar, fonte de fibras/proteína), aditivos e os 3 primeiros ingredientes, mais foto da embalagem e etiquetas-resumo. **Sem calorias.** | Remover colheres de chá ou aditivos. |
+| D17 | Faixas por 100 g seguem a referência FSA (açúcar 5/22,5 g; sal 0,3/1,5 g; gordura saturada 1,5/5 g). Barras em verde da marca, sem vermelho. **A nutricionista deve validar as faixas e os textos.** | Faixas da ANVISA (rotulagem frontal). |
+| D18 | Produto só é guardado no cache se a OFF trouxe `nova_group` (o registro nunca é sobrescrito). | Permitir atualizar campos vazios na RPC. |
+| D19 | A imagem da embalagem vem direto da OFF (terceiros, só `https`). | Não mostrar imagem. |
+
+Limites: os dados do rótulo dependem do que a OFF tem para o produto; quando faltam, o cartão correspondente simplesmente não aparece. Produtos cadastrados à mão (`USUARIO`) mostram só o termômetro.

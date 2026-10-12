@@ -51,8 +51,8 @@ const ITENS: Item[] = [
     nome: 'Scanner',
     descricao: 'Aponte a câmera para um produto',
     icone: 'barcode-scan',
-    tags: ['CÂMERA', 'EM BREVE'],
-    emBreve: true,
+    tags: ['CÂMERA', 'DISPONÍVEL'],
+    emBreve: false,
     info: {
       titulo: 'Scanner de alimentos',
       icone: 'scan',
@@ -89,11 +89,12 @@ export default function AlimentacaoHomeScreen() {
 
   function abrir(item: Item) {
     if (item.key === 'alternativas') navigation.navigate('SugestoesAlimentares');
+    else if (item.key === 'scanner') navigation.navigate('ScannerAlimento');
   }
 
   return (
     <SafeAreaView style={styles.tela}>
-      <TabHeader titulo="Comer" />
+      <TabHeader titulo="Alternativas de alimentação" />
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         <AppText style={styles.pergunta}>O que você quer conhecer?</AppText>
 

@@ -13,6 +13,7 @@ export const EVENTOS = [
   'receita_visualizada', 'receita_concluida',
   'amizade_solicitada', 'amizade_aceita', 'conteudo_abandonado',
   'troca_sugerida', 'troca_aceita', 'troca_recusada',
+  'scanner_lido',
 ] as const;
 export type NomeEvento = (typeof EVENTOS)[number];
 

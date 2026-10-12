@@ -1,0 +1,302 @@
+[
+  {
+    "categoria": "sodas",
+    "codigo": "5449000335906",
+    "nome": "Fanta Orange",
+    "marca": "Fanta",
+    "nova": 4,
+    "acucar_g": 8,
+    "sal_g": 0.02,
+    "gordura_sat_g": 0
+  },
+  {
+    "categoria": "sodas",
+    "codigo": "7894900701517",
+    "nome": "Coca Cola Zero Açúcar",
+    "marca": "CocaCola",
+    "nova": 4,
+    "acucar_g": 0,
+    "sal_g": 0.035,
+    "gordura_sat_g": 0
+  },
+  {
+    "categoria": "sodas",
+    "codigo": "78933873",
+    "nome": "Coca-Cola Zero",
+    "marca": "Coca Cola",
+    "nova": 4,
+    "acucar_g": 0,
+    "sal_g": 0.014,
+    "gordura_sat_g": 0
+  },
+  {
+    "categoria": "sodas",
+    "codigo": "7892840812874",
+    "nome": "BEB GAS H2OH LIMONETO 1.5L",
+    "marca": "H2",
+    "nova": 4,
+    "acucar_g": 0,
+    "sal_g": 0.11,
+    "gordura_sat_g": 0
+  },
+  {
+    "categoria": "sodas",
+    "codigo": "7892840800000",
+    "nome": "Refrigerante De Cola Pepsi 2l",
+    "marca": "Pepsi",
+    "nova": 4,
+    "acucar_g": 6.9,
+    "sal_g": 0.03,
+    "gordura_sat_g": 0
+  },
+  {
+    "categoria": "chocolates",
+    "codigo": "3664346348997",
+    "nome": "Terry's CHOCOLATE ORANGE",
+    "marca": "Terry's",
+    "nova": 4,
+    "acucar_g": 51,
+    "sal_g": 0.01,
+    "gordura_sat_g": 19
+  },
+  {
+    "categoria": "chocolates",
+    "codigo": "78912359",
+    "nome": "Baton Ao Leite",
+    "marca": "Baton",
+    "nova": 4,
+    "acucar_g": 50,
+    "sal_g": 0.2734375,
+    "gordura_sat_g": 18.75
+  },
+  {
+    "categoria": "chocolates",
+    "codigo": "7891000336373",
+    "nome": "Chocolate ao leite Alpino",
+    "marca": "Nestlé",
+    "nova": 4,
+    "acucar_g": 53.2,
+    "sal_g": 0.255,
+    "gordura_sat_g": 20
+  },
+  {
+    "categoria": "chocolates",
+    "codigo": "7899970402852",
+    "nome": "Chocolate Branco Cookies N Creme Hersheys Pacote 77g",
+    "marca": "HERSHEYS",
+    "nova": 4,
+    "acucar_g": 54,
+    "sal_g": 0.4675,
+    "gordura_sat_g": 16
+  },
+  {
+    "categoria": "chocolates",
+    "codigo": "7899970402814",
+    "nome": "Chocolate Ao Leite Hersheys Pacote 82g",
+    "marca": "Hershey's",
+    "nova": 4,
+    "acucar_g": 56,
+    "sal_g": 0.2575,
+    "gordura_sat_g": 19
+  },
+  {
+    "categoria": "instant-chocolate-powders",
+    "codigo": "7892840819170",
+    "nome": "Toddy Original 750g",
+    "marca": "Toddy",
+    "nova": 4,
+    "acucar_g": 11,
+    "sal_g": 0.2,
+    "gordura_sat_g": 0.2
+  },
+  {
+    "categoria": "instant-chocolate-powders",
+    "codigo": "7891000379585",
+    "nome": "Nescau",
+    "marca": "Nestlé",
+    "nova": 4,
+    "acucar_g": 75,
+    "sal_g": 0.125,
+    "gordura_sat_g": 1
+  },
+  {
+    "categoria": "instant-chocolate-powders",
+    "codigo": "7891000451304",
+    "nome": "Chocolate em Pó Solúvel",
+    "marca": "Nestlé",
+    "nova": 4,
+    "acucar_g": 50,
+    "sal_g": 0.02375,
+    "gordura_sat_g": 3.5
+  },
+  {
+    "categoria": "instant-chocolate-powders",
+    "codigo": "7891000379738",
+    "nome": "Achocolatado Nescau",
+    "marca": "Nestlé",
+    "nova": 4,
+    "acucar_g": 75,
+    "sal_g": 0.127,
+    "gordura_sat_g": 1
+  },
+  {
+    "categoria": "instant-chocolate-powders",
+    "codigo": "7891000338087",
+    "nome": "Achocolatado em pó Nescau 550g Refil",
+    "marca": "Nestlé",
+    "nova": 4,
+    "acucar_g": 12,
+    "sal_g": 0.1275,
+    "gordura_sat_g": 1.3
+  },
+  {
+    "categoria": "breads",
+    "codigo": "7891203010056",
+    "nome": "Pão De Forma Panco Premium Pacote 500g",
+    "marca": "PANCO",
+    "nova": 4,
+    "acucar_g": 7.2,
+    "sal_g": 0.94,
+    "gordura_sat_g": 1
+  },
+  {
+    "categoria": "breads",
+    "codigo": "7896002360326",
+    "nome": "pullman tradicional pão",
+    "marca": "Pullman",
+    "nova": 4,
+    "acucar_g": 3.2,
+    "sal_g": 0.96,
+    "gordura_sat_g": 0.6
+  },
+  {
+    "categoria": "breads",
+    "codigo": "7896066301457",
+    "nome": "Pão De Forma Integral Wickbold Do Forno Pacote 500g",
+    "marca": "Wickbold",
+    "nova": 4,
+    "acucar_g": 4.2,
+    "sal_g": 0.77,
+    "gordura_sat_g": 0.8
+  },
+  {
+    "categoria": "breads",
+    "codigo": "7891962051345",
+    "nome": "Pão de forma integral (36% Cereais integrais)",
+    "marca": "Visconti",
+    "nova": 3,
+    "acucar_g": 12,
+    "sal_g": 1.0075,
+    "gordura_sat_g": 1.2
+  },
+  {
+    "categoria": "breads",
+    "codigo": "7891203010605",
+    "nome": "Bisnaguinhas Originais",
+    "marca": "Panco",
+    "nova": 4,
+    "acucar_g": 12,
+    "sal_g": 0.875,
+    "gordura_sat_g": 2.4
+  },
+  {
+    "categoria": "rices",
+    "codigo": "7893500066545",
+    "nome": "MEU BIJU Arroz Meu Biju 8 Grãos Integrais com Aveia",
+    "marca": "Meu biju",
+    "nova": 1,
+    "acucar_g": 1,
+    "sal_g": 0.01,
+    "gordura_sat_g": 1
+  },
+  {
+    "categoria": "rices",
+    "codigo": "7896290300714",
+    "nome": "Arroz integral Prato Fino",
+    "marca": "Pirahy",
+    "nova": 1,
+    "acucar_g": 0,
+    "sal_g": 0.025,
+    "gordura_sat_g": 0.6
+  },
+  {
+    "categoria": "rices",
+    "codigo": "7893500018483",
+    "nome": "Arroz Integral Tio João Tipo 1 1kg",
+    "marca": "TIO JOAO",
+    "nova": 1,
+    "acucar_g": 0,
+    "sal_g": 0,
+    "gordura_sat_g": 0.8
+  },
+  {
+    "categoria": "rices",
+    "codigo": "7896196060361",
+    "nome": "Arroz Negro Tipo 1 Integral La Pastina Caixa 500g",
+    "marca": "LA PASTINA",
+    "nova": 1,
+    "acucar_g": 0,
+    "sal_g": 0,
+    "gordura_sat_g": 0
+  },
+  {
+    "categoria": "rices",
+    "codigo": "7896290300189",
+    "nome": "Arroz Prato Fino Branco",
+    "marca": "PRATO FINO",
+    "nova": 1,
+    "acucar_g": 0,
+    "sal_g": 0,
+    "gordura_sat_g": 0.4
+  },
+  {
+    "categoria": "yogurts",
+    "codigo": "7896051164609",
+    "nome": "Iogurte Natural Integral",
+    "marca": "Itambé",
+    "nova": 3,
+    "acucar_g": 6,
+    "sal_g": 0.1175,
+    "gordura_sat_g": 2.5
+  },
+  {
+    "categoria": "yogurts",
+    "codigo": "7891000072974",
+    "nome": "Yogurte integral sabor mel",
+    "marca": "Nestlé",
+    "nova": 4,
+    "acucar_g": 12,
+    "sal_g": 0.115,
+    "gordura_sat_g": 1.6
+  },
+  {
+    "categoria": "yogurts",
+    "codigo": "7891025120230",
+    "nome": "Iogurte Integral Natural Danone Copo 160g",
+    "marca": "Danone",
+    "nova": 3,
+    "acucar_g": 6.25,
+    "sal_g": 0.1359375,
+    "gordura_sat_g": 2.3125
+  },
+  {
+    "categoria": "yogurts",
+    "codigo": "7891000073018",
+    "nome": "Yogurte Natural Desnatado",
+    "marca": "Nestlé",
+    "nova": 1,
+    "acucar_g": 0,
+    "sal_g": 0.1225,
+    "gordura_sat_g": 0
+  },
+  {
+    "categoria": "yogurts",
+    "codigo": "7891000244449",
+    "nome": "Iogurte Parcialmente Desnatado Morango Nestlé Garrafa 1,25kg Tamanho Família",
+    "marca": "Nestlé",
+    "nova": 4,
+    "acucar_g": 12,
+    "sal_g": 0,
+    "gordura_sat_g": 0.5
+  }
+]

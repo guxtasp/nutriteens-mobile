@@ -10,6 +10,9 @@ import EbiaPerguntaScreen from '../features/adolescente/triagem/ebia/screens/Ebi
 import HomeScreen from '../features/adolescente/home/screens/HomeScreen';
 import SequenciaScreen from '../features/adolescente/home/screens/SequenciaScreen';
 import SugestoesAlimentaresScreen from '../features/adolescente/alimentacao/screens/SugestoesAlimentaresScreen';
+import ScannerAlimentoScreen from '../features/adolescente/scanner/screens/ScannerAlimentoScreen';
+import ResultadoScannerScreen from '../features/adolescente/scanner/screens/ResultadoScannerScreen';
+import CadastroProdutoScannerScreen from '../features/adolescente/scanner/screens/CadastroProdutoScannerScreen';
 import AlimentacaoHomeScreen from '../features/adolescente/alimentacao/screens/AlimentacaoHomeScreen';
 import TrilhaScreen from '../features/adolescente/trilha/screens/TrilhaScreen';
 import LicaoDetalheScreen from '../features/adolescente/trilha/screens/LicaoDetalheScreen';
@@ -52,6 +55,9 @@ export type AdolescenteStackParamList = {
   Missoes: undefined;
   Alimentacao: undefined;
   SugestoesAlimentares: { categoria?: CategoriaTroca } | undefined;
+  ScannerAlimento: undefined;
+  ResultadoScanner: { codigo: string };
+  CadastroProdutoScanner: { codigo: string };
   Trilha: undefined;
   LicaoDetalhe: {
     licaoId: string;
@@ -122,6 +128,9 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Missoes" component={MissoesScreen} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
+                    <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
+                    <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
+                    <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
                     <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
@@ -152,6 +161,9 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Sequencia" component={SequenciaScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
+                    <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
+                    <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
+                    <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
                     <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
