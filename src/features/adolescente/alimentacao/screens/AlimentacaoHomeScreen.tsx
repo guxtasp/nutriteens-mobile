@@ -38,7 +38,7 @@ const ITENS: Item[] = [
     descricao: 'Para que serve cada uma e onde encontrar',
     icone: 'food-apple-outline',
     tags: ['NUTRIENTES', 'EM BREVE'],
-    emBreve: true,
+    emBreve: false,
     info: {
       titulo: 'Vitaminas e minerais',
       icone: 'nutrition',
@@ -90,11 +90,12 @@ export default function AlimentacaoHomeScreen() {
   function abrir(item: Item) {
     if (item.key === 'alternativas') navigation.navigate('SugestoesAlimentares');
     else if (item.key === 'scanner') navigation.navigate('ScannerAlimento');
+    else if (item.key === 'vitaminas') navigation.navigate('Vitaminas');
   }
 
   return (
     <SafeAreaView style={styles.tela}>
-      <TabHeader titulo="Alternativas de alimentação" />
+      <TabHeader titulo="Comer" />
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         <AppText style={styles.pergunta}>O que você quer conhecer?</AppText>
 

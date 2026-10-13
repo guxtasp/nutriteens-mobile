@@ -9,10 +9,10 @@ import RecordatorioRefeicaoScreen from '../features/adolescente/triagem/recordat
 import EbiaPerguntaScreen from '../features/adolescente/triagem/ebia/screens/EbiaPerguntaScreen';
 import HomeScreen from '../features/adolescente/home/screens/HomeScreen';
 import SequenciaScreen from '../features/adolescente/home/screens/SequenciaScreen';
+import VitaminasScreen from '../features/adolescente/vitaminas/screens/VitaminasScreen';
+import NutrienteDetalheScreen from '../features/adolescente/vitaminas/screens/NutrienteDetalheScreen';
+import type { NutrienteChave } from '../features/adolescente/alimentacao/utils/nutrientesPorGrupo';
 import SugestoesAlimentaresScreen from '../features/adolescente/alimentacao/screens/SugestoesAlimentaresScreen';
-import ScannerAlimentoScreen from '../features/adolescente/scanner/screens/ScannerAlimentoScreen';
-import ResultadoScannerScreen from '../features/adolescente/scanner/screens/ResultadoScannerScreen';
-import CadastroProdutoScannerScreen from '../features/adolescente/scanner/screens/CadastroProdutoScannerScreen';
 import AlimentacaoHomeScreen from '../features/adolescente/alimentacao/screens/AlimentacaoHomeScreen';
 import TrilhaScreen from '../features/adolescente/trilha/screens/TrilhaScreen';
 import LicaoDetalheScreen from '../features/adolescente/trilha/screens/LicaoDetalheScreen';
@@ -44,6 +44,9 @@ import AlbumCartasScreen from '../features/adolescente/cartas/screens/AlbumCarta
 import type { CategoriaTroca } from '../features/adolescente/trocas/utils/trocas';
 import type { TrocaSugerida } from '../features/adolescente/trocas/services/trocasService';
 import RecompensasHost from '../features/adolescente/recompensas/components/RecompensasHost';
+import ScannerAlimentoScreen from '../features/adolescente/scanner/screens/ScannerAlimentoScreen';
+import ResultadoScannerScreen from '../features/adolescente/scanner/screens/ResultadoScannerScreen';
+import CadastroProdutoScannerScreen from '../features/adolescente/scanner/screens/CadastroProdutoScannerScreen';
 
 export type AdolescenteStackParamList = {
   TriagemIntro: undefined;
@@ -55,9 +58,8 @@ export type AdolescenteStackParamList = {
   Missoes: undefined;
   Alimentacao: undefined;
   SugestoesAlimentares: { categoria?: CategoriaTroca } | undefined;
-  ScannerAlimento: undefined;
-  ResultadoScanner: { codigo: string };
-  CadastroProdutoScanner: { codigo: string };
+  Vitaminas: undefined;
+  NutrienteDetalhe: { nutriente: NutrienteChave };
   Trilha: undefined;
   LicaoDetalhe: {
     licaoId: string;
@@ -102,6 +104,9 @@ export type AdolescenteStackParamList = {
   ConsumoAgua: undefined;
   TipoRefeicao:undefined;
   MetodoRegistroAlimentar: { tipo: TipoRefeicao; nomeRefeicao: string };
+  ScannerAlimento: undefined;
+  ResultadoScanner: { codigo: string };
+  CadastroProdutoScanner: { codigo: string };
 };
 
 const Stack = createNativeStackNavigator<AdolescenteStackParamList>();
@@ -128,9 +133,8 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Missoes" component={MissoesScreen} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
-                    <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
-                    <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
-                    <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />
+                    <Stack.Screen name="Vitaminas" component={VitaminasScreen} />
+                    <Stack.Screen name="NutrienteDetalhe" component={NutrienteDetalheScreen} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
                     <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
@@ -153,7 +157,10 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="NovoAlimentoOrigem" component={NovoAlimentoOrigemScreen} />
                     <Stack.Screen name="NovoAlimentoForm" component={NovoAlimentoFormScreen} />
                     <Stack.Screen name="AlimentoCadastrado" component={AlimentoCadastradoScreen} />
-                    <Stack.Screen name="FeedbackRefeicao" component={FeedbackRefeicaoScreen} />                    
+                    <Stack.Screen name="FeedbackRefeicao" component={FeedbackRefeicaoScreen} /> 
+                    <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
+                    <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
+                    <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />                   
                 </>
                 ) : (
                 <>
@@ -161,9 +168,8 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Sequencia" component={SequenciaScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
-                    <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
-                    <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
-                    <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />
+                    <Stack.Screen name="Vitaminas" component={VitaminasScreen} />
+                    <Stack.Screen name="NutrienteDetalhe" component={NutrienteDetalheScreen} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
                     <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
