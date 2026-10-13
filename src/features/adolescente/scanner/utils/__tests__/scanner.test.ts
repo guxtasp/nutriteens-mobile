@@ -1,4 +1,5 @@
 import {
+  avaliarOpenFoodFacts, confiancaDoCandidato, coberturaDePalavras, normalizarTexto, rankearCandidatos, variantesCodigo,
   categoriaPorTags, checksumGs1Ok, colheresDeAcucar, ingredientesPrincipais, mapearOpenFoodFacts, modoDoResultado, nivelNutriente,
   normalizarCodigo, novaDoOpenFoodFacts, pontosPositivos, resumoDiagnostico, textoAditivos,
 } from '../scanner';
@@ -134,5 +135,74 @@ describe('diagnóstico visual', () => {
     expect(textoAditivos(null)).toBeNull();
     expect(ingredientesPrincipais('a, b (c, d), e, f', 3)).toEqual(['A', 'B (c, d)', 'E']);
     expect(ingredientesPrincipais(undefined)).toEqual([]);
+  });
+});
+
+describe('variantes de código (GTIN com zeros à esquerda)', () => {
+  it('EAN-13 sem zero na frente não tem variante', () => {
+    expect(variantesCodigo('7891000100103')).toEqual(['7891000100103']);
+  });
+  it('UPC-A (12) também é procurado como EAN-13 com 0 na frente', () => {
+    expect(variantesCodigo('036000291452')).toEqual(['036000291452', '0036000291452']);
+  });
+  it('EAN-13 começando com 0 também é procurado como UPC-A', () => {
+    expect(variantesCodigo('0036000291452')).toEqual(['0036000291452', '036000291452']);
+  });
+  it('GTIN-14 com zeros à esquerda cai para EAN-13/UPC-A, preservando o código lido primeiro', () => {
+    expect(variantesCodigo('00036000291452')).toEqual(['00036000291452', '0036000291452', '036000291452']);
+  });
+  it('EAN-8 e códigos inválidos não geram variantes', () => {
+    expect(variantesCodigo('96385074')).toEqual(['96385074']);
+    expect(variantesCodigo('7891000100104')).toEqual([]);
+  });
+});
+
+describe('avaliarOpenFoodFacts: inexistente x ficha incompleta', () => {
+  it('status 0 ou resposta vazia = inexistente', () => {
+    expect(avaliarOpenFoodFacts({ status: 0 }, '1').tipo).toBe('inexistente');
+    expect(avaliarOpenFoodFacts(null, '1').tipo).toBe('inexistente');
+  });
+  it('existe sem nome = sem_nome (e guarda o nível, se vier)', () => {
+    expect(avaliarOpenFoodFacts({ status: 1, product: { nova_group: 4 } }, '1')).toEqual({ tipo: 'sem_nome', classificacaoNova: 'ULTRAPROCESSADO' });
+  });
+  it('existe com nome e sem nova_group = ok com classificação nula', () => {
+    const r = avaliarOpenFoodFacts({ status: 1, product: { product_name: 'Bolacha' } }, '1');
+    expect(r.tipo).toBe('ok');
+    if (r.tipo === 'ok') expect(r.produto.classificacaoNova).toBeNull();
+  });
+});
+
+describe('correspondência por nome e marca (só candidatos)', () => {
+  it('normaliza acento, caixa e pontuação', () => {
+    expect(normalizarTexto('  Açúcar  REFINADO, União! ')).toBe('acucar refinado uniao');
+    expect(normalizarTexto(null)).toBe('');
+  });
+  it('cobertura ignora palavras vazias', () => {
+    expect(coberturaDePalavras('suco de uva', 'Suco Uva Integral')).toBe(1);
+    expect(coberturaDePalavras('suco de uva', 'Suco de Laranja')).toBeCloseTo(0.5);
+    expect(coberturaDePalavras('', 'x')).toBe(0);
+  });
+  it('marca + nome batendo = PROVAVEL', () => {
+    expect(confiancaDoCandidato({ nome: 'Achocolatado em pó', marca: 'Nescau' }, { nome: 'Achocolatado em Pó 400g', marca: 'Nestlé Nescau' })).toBe('PROVAVEL');
+  });
+  it('sem marca informada nunca passa de POSSIVEL', () => {
+    expect(confiancaDoCandidato({ nome: 'Achocolatado em pó' }, { nome: 'Achocolatado em Pó', marca: 'Nescau' })).toBe('POSSIVEL');
+  });
+  it('marca diferente descarta, mesmo com nome igual', () => {
+    expect(confiancaDoCandidato({ nome: 'Achocolatado em pó', marca: 'Toddy' }, { nome: 'Achocolatado em pó', marca: 'Nescau' })).toBe('DESCARTADO');
+  });
+  it('nome pouco parecido é descartado', () => {
+    expect(confiancaDoCandidato({ nome: 'Suco de uva' }, { nome: 'Biscoito recheado', marca: null })).toBe('DESCARTADO');
+  });
+  it('rankeia (provável antes), remove repetidos e limita', () => {
+    const lista = [
+      { codigoBarras: '1', nome: 'Achocolatado em pó', marca: null, origem: 'open_food_facts' as const },
+      { codigoBarras: '2', nome: 'Achocolatado em pó 400g', marca: 'Nescau', origem: 'proprio' as const },
+      { codigoBarras: '2', nome: 'Achocolatado em pó 400g', marca: 'Nescau', origem: 'open_food_facts' as const },
+      { codigoBarras: '3', nome: 'Biscoito', marca: null, origem: 'proprio' as const },
+    ];
+    const r = rankearCandidatos({ nome: 'achocolatado em po', marca: 'nescau' }, lista, 3);
+    expect(r.map((c) => c.codigoBarras)).toEqual(['2', '1']);   // 2 (marca bate) vem antes de 1 (sem marca no cadastro)
+    expect(r.map((c) => c.confianca)).toEqual(['PROVAVEL', 'POSSIVEL']);
   });
 });

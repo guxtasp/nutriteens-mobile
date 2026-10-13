@@ -14,6 +14,7 @@ import { ItemAtividade, ListaAtividades } from '../../../../shared/painel/compon
 import { useDashboardPainel } from '../../../../shared/painel/hooks/useDashboardPainel';
 import type { IconeNome } from '../../../../shared/painel/types';
 import { NUTRICIONISTA_PAINEL } from '../../navigation/nutricionistaMenu';
+import { usePendentesScanner } from '../../../adolescente/scanner/hooks/usePendentesScanner';
 
 const REGISTRO: Record<string, { icone: IconeNome; texto: string }> = {
   alimentacao: { icone: 'restaurant-outline', texto: 'Alimentação registrada' },
@@ -24,6 +25,7 @@ const REGISTRO: Record<string, { icone: IconeNome; texto: string }> = {
 export default function NutricionistaDashboardScreen() {
   const [dias, setDias] = useState(30);
   const { dados, carregando, erro, recarregar } = useDashboardPainel(dias);
+  const pendentesScanner = usePendentesScanner();
 
   // só o código do participante (NT-000001) — sem nome, por privacidade
   const recentes: ItemAtividade[] = (dados?.recentes ?? []).map((r, i) => ({
@@ -68,6 +70,15 @@ export default function NutricionistaDashboardScreen() {
             />
             <CartaoKpi titulo="Trilhas ativas" ajuda="Trilhas educativas publicadas e visíveis para os adolescentes." valor={dados.kpis.trilhas_ativas} icone="map-outline" />
             <CartaoKpi titulo="Desafios ativos" ajuda="Desafios disponíveis hoje no aplicativo." valor={dados.kpis.desafios_ativos} icone="trophy-outline" />
+            {pendentesScanner !== null && (
+              <CartaoKpi
+                titulo="Pedidos de produtos (scanner)"
+                ajuda="Produtos que adolescentes escanearam e não estavam na base. Abra 'Produtos do scanner' no menu para cadastrar ou rejeitar."
+                valor={pendentesScanner}
+                icone="barcode-outline"
+                alerta={pendentesScanner > 0}
+              />
+            )}
           </GridResponsiva>
 
           <Colunas bases={[460, 300]}>

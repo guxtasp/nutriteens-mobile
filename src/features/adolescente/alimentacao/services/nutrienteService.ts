@@ -1,7 +1,7 @@
 // src/features/adolescente/services/nutrienteService.ts
 import { supabase } from '../../../../lib/supabase';
 import type { LacunaNutriente } from '../utils/regraFeedbackRefeicao';
-import { alimentoEBoaFonte, type NutrienteChave } from '../utils/nutrientesPorGrupo';
+import { alimentoEBoaFonte, nutrientesAlcancaveis, type NutrienteChave } from '../utils/nutrientesPorGrupo';
 import { formatarDataISO } from '../../../../shared/utils/data';
 
 // alimento_nutrientes guarda um nível categórico (AUSENTE / FONTE /
@@ -84,14 +84,34 @@ export async function diasComBoaFonteNaSemana(userId: string, coluna: NutrienteC
   return diasComFonte;
 }
 
+// Nutrientes que algum alimento do catálogo consegue cumprir. Sem isso, nutriente sem dado
+// (ex.: vitamina D) virava "lacuna" eterna e a missão nunca podia ser concluída.
+// Cache curto (o catálogo muda raramente). Se a consulta falhar, devolve null = não filtra nada.
+let cacheAlcancaveis: { em: number; chaves: Set<NutrienteChave> } | null = null;
+const TTL_ALCANCAVEIS_MS = 10 * 60 * 1000;
+
+async function buscarNutrientesAlcancaveis(): Promise<Set<NutrienteChave> | null> {
+  if (cacheAlcancaveis && Date.now() - cacheAlcancaveis.em < TTL_ALCANCAVEIS_MS) return cacheAlcancaveis.chaves;
+  const chaves = Object.keys(META_SEMANAL) as NutrienteChave[];
+  const { data, error } = await supabase
+    .from('alimentos')
+    .select(`grupos_alimentares, alimento_nutrientes ( ${chaves.join(', ')} )`);
+  if (error || !data) return null;
+  const set = nutrientesAlcancaveis(data as any[], chaves);
+  cacheAlcancaveis = { em: Date.now(), chaves: set };
+  return set;
+}
+
 // Lista TODAS as lacunas da semana, da pior pra menos pior (a de menos dias
 // com boa fonte, proporcionalmente ao mínimo exigido — assim um nutriente
 // com minimoDias maior, como proteína/fibra, não "ganha" injustamente só
 // por pedir mais dias). Em empate, vale a ordem de META_SEMANAL.
 export async function listarLacunasNutriente(userId: string): Promise<LacunaNutriente[]> {
   const lacunas: { folga: number; lacuna: LacunaNutriente }[] = [];
+  const alcancaveis = await buscarNutrientesAlcancaveis();
 
   for (const [chave, meta] of Object.entries(META_SEMANAL) as [NutrienteChave, NonNullable<(typeof META_SEMANAL)[NutrienteChave]>][]) {
+    if (alcancaveis && !alcancaveis.has(chave)) continue; // ninguém consegue cumprir: não vira lacuna
     const dias = await diasComBoaFonteNaSemana(userId, meta.coluna);
     const folga = dias - meta.minimoDias;
     if (folga < 0) lacunas.push({ folga, lacuna: { nutriente: chave, rotulo: meta.rotulo, sugestao: meta.sugestao } });

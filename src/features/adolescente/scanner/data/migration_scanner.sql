@@ -6,7 +6,8 @@
 --    autenticado; escrita direta SÓ da nutricionista/Admin (papel real: 'ADMINISTRADOR').
 --  * O app (adolescente) grava o cache da Open Food Facts e o "cadastrar este produto" de teste
 --    pela RPC scanner_salvar_produto(): só INSERE, nunca sobrescreve um produto já existente,
---    e só aceita fonte 'OPEN_FOOD_FACTS' ou 'USUARIO'. A equipe corrige/aprova direto na tabela.
+--    e só aceita fonte 'OPEN_FOOD_FACTS' (cache). Produto pedido por usuário NÃO entra direto:
+--    vira solicitação (migration_scanner_solicitacoes.sql) e a equipe aprova com fonte 'EQUIPE'.
 --  * Sem calorias, sem nutriente: só nome, marca, nível de processamento e categoria de troca.
 begin;
 
@@ -61,7 +62,7 @@ begin
   if auth.uid() is null then
     raise exception 'Sem permissão.' using errcode = '42501';
   end if;
-  if p_fonte not in ('OPEN_FOOD_FACTS', 'USUARIO') then
+  if p_fonte is distinct from 'OPEN_FOOD_FACTS' then
     raise exception 'Fonte inválida.' using errcode = '22023';
   end if;
   if v_nome is null then

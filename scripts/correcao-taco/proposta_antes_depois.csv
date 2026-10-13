@@ -1,0 +1,97 @@
+alimento,confianca,taco_id,taco_descricao,nutriente,valor_por_100g,nivel_atual_db,nivel_proposto,mudanca
+Feijão,media,561,"Feijão, carioca, cozido",vitamina_a,,null,null,
+Feijão,media,561,"Feijão, carioca, cozido",vitamina_c,0.0,FONTE,AUSENTE,MUDA
+Feijão,media,561,"Feijão, carioca, cozido",calcio,26.5946666666667,AUSENTE,AUSENTE,
+Feijão,media,561,"Feijão, carioca, cozido",ferro,1.289,AUSENTE,AUSENTE,
+Feijão,media,561,"Feijão, carioca, cozido",zinco,0.7,AUSENTE,AUSENTE,
+Feijão,media,561,"Feijão, carioca, cozido",magnesio,42.3396666666667,null,FONTE,MUDA
+Arroz,media,3,"Arroz, tipo 1, cozido",vitamina_a,,null,null,
+Arroz,media,3,"Arroz, tipo 1, cozido",vitamina_c,,null,null,
+Arroz,media,3,"Arroz, tipo 1, cozido",calcio,3.54433333333333,AUSENTE,AUSENTE,
+Arroz,media,3,"Arroz, tipo 1, cozido",ferro,0.076666666666667,AUSENTE,AUSENTE,
+Arroz,media,3,"Arroz, tipo 1, cozido",zinco,0.491333333333333,AUSENTE,AUSENTE,
+Arroz,media,3,"Arroz, tipo 1, cozido",magnesio,2.25333333333333,null,AUSENTE,MUDA
+Leite,alta,458,"Leite, de vaca, integral",vitamina_a,,null,null,
+Leite,alta,458,"Leite, de vaca, integral",vitamina_c,0.0,AUSENTE,AUSENTE,
+Leite,alta,458,"Leite, de vaca, integral",calcio,122.58,ALTO_TEOR,FONTE,MUDA
+Leite,alta,458,"Leite, de vaca, integral",ferro,0.0,AUSENTE,AUSENTE,
+Leite,alta,458,"Leite, de vaca, integral",zinco,0.38,AUSENTE,AUSENTE,
+Leite,alta,458,"Leite, de vaca, integral",magnesio,9.63666666666667,null,AUSENTE,MUDA
+Ovo,media,488,"Ovo, de galinha, inteiro, cozido/10minutos",vitamina_a,,null,null,
+Ovo,media,488,"Ovo, de galinha, inteiro, cozido/10minutos",vitamina_c,,null,null,
+Ovo,media,488,"Ovo, de galinha, inteiro, cozido/10minutos",calcio,49.2183333333333,AUSENTE,AUSENTE,
+Ovo,media,488,"Ovo, de galinha, inteiro, cozido/10minutos",ferro,1.51533333333333,FONTE,AUSENTE,MUDA
+Ovo,media,488,"Ovo, de galinha, inteiro, cozido/10minutos",zinco,1.236,FONTE,FONTE,
+Ovo,media,488,"Ovo, de galinha, inteiro, cozido/10minutos",magnesio,11.2443333333333,null,AUSENTE,MUDA
+Ovo cozido,alta,488,"Ovo, de galinha, inteiro, cozido/10minutos",vitamina_a,,(sem linha),null,MUDA
+Ovo cozido,alta,488,"Ovo, de galinha, inteiro, cozido/10minutos",vitamina_c,,(sem linha),null,MUDA
+Ovo cozido,alta,488,"Ovo, de galinha, inteiro, cozido/10minutos",calcio,49.2183333333333,(sem linha),AUSENTE,MUDA
+Ovo cozido,alta,488,"Ovo, de galinha, inteiro, cozido/10minutos",ferro,1.51533333333333,(sem linha),AUSENTE,MUDA
+Ovo cozido,alta,488,"Ovo, de galinha, inteiro, cozido/10minutos",zinco,1.236,(sem linha),FONTE,MUDA
+Ovo cozido,alta,488,"Ovo, de galinha, inteiro, cozido/10minutos",magnesio,11.2443333333333,(sem linha),AUSENTE,MUDA
+Ovo frito/mexido,media,490,"Ovo, de galinha, inteiro, frito",vitamina_a,,(sem linha),null,MUDA
+Ovo frito/mexido,media,490,"Ovo, de galinha, inteiro, frito",vitamina_c,0.0,(sem linha),AUSENTE,MUDA
+Ovo frito/mexido,media,490,"Ovo, de galinha, inteiro, frito",calcio,72.8873333333333,(sem linha),AUSENTE,MUDA
+Ovo frito/mexido,media,490,"Ovo, de galinha, inteiro, frito",ferro,2.09666666666667,(sem linha),AUSENTE,MUDA
+Ovo frito/mexido,media,490,"Ovo, de galinha, inteiro, frito",zinco,1.46133333333333,(sem linha),FONTE,MUDA
+Ovo frito/mexido,media,490,"Ovo, de galinha, inteiro, frito",magnesio,16.2503333333333,(sem linha),AUSENTE,MUDA
+Frango,baixa,408,"Frango, peito, sem pele, cozido",vitamina_a,0.0,AUSENTE,AUSENTE,
+Frango,baixa,408,"Frango, peito, sem pele, cozido",vitamina_c,,null,null,
+Frango,baixa,408,"Frango, peito, sem pele, cozido",calcio,6.44,AUSENTE,AUSENTE,
+Frango,baixa,408,"Frango, peito, sem pele, cozido",ferro,0.337333333333333,AUSENTE,AUSENTE,
+Frango,baixa,408,"Frango, peito, sem pele, cozido",zinco,0.947,FONTE,AUSENTE,MUDA
+Frango,baixa,408,"Frango, peito, sem pele, cozido",magnesio,13.76,null,AUSENTE,MUDA
+Batata,alta,91,"Batata, inglesa, cozida",vitamina_a,,null,null,
+Batata,alta,91,"Batata, inglesa, cozida",vitamina_c,3.76,FONTE,AUSENTE,MUDA
+Batata,alta,91,"Batata, inglesa, cozida",calcio,3.52,AUSENTE,AUSENTE,
+Batata,alta,91,"Batata, inglesa, cozida",ferro,0.194,AUSENTE,AUSENTE,
+Batata,alta,91,"Batata, inglesa, cozida",zinco,0.187666666666667,AUSENTE,AUSENTE,
+Batata,alta,91,"Batata, inglesa, cozida",magnesio,5.425,null,AUSENTE,MUDA
+Batata doce cozida,alta,88,"Batata, doce, cozida",vitamina_a,,(sem linha),null,MUDA
+Batata doce cozida,alta,88,"Batata, doce, cozida",vitamina_c,23.7866666666667,(sem linha),ALTO_TEOR,MUDA
+Batata doce cozida,alta,88,"Batata, doce, cozida",calcio,17.153,(sem linha),AUSENTE,MUDA
+Batata doce cozida,alta,88,"Batata, doce, cozida",ferro,0.187,(sem linha),AUSENTE,MUDA
+Batata doce cozida,alta,88,"Batata, doce, cozida",zinco,0.123333333333333,(sem linha),AUSENTE,MUDA
+Batata doce cozida,alta,88,"Batata, doce, cozida",magnesio,11.1596666666667,(sem linha),AUSENTE,MUDA
+Açaí,media,168,"Açaí, polpa, congelada",vitamina_a,,null,null,
+Açaí,media,168,"Açaí, polpa, congelada",vitamina_c,0.0,FONTE,AUSENTE,MUDA
+Açaí,media,168,"Açaí, polpa, congelada",calcio,35.18,AUSENTE,AUSENTE,
+Açaí,media,168,"Açaí, polpa, congelada",ferro,0.432333333333333,AUSENTE,AUSENTE,
+Açaí,media,168,"Açaí, polpa, congelada",zinco,0.265333333333333,AUSENTE,AUSENTE,
+Açaí,media,168,"Açaí, polpa, congelada",magnesio,17.04,null,AUSENTE,MUDA
+Carne bovina,baixa,326,"Carne, bovina, acém, moído, cozido",vitamina_a,0.0,(sem linha),AUSENTE,MUDA
+Carne bovina,baixa,326,"Carne, bovina, acém, moído, cozido",vitamina_c,,(sem linha),null,MUDA
+Carne bovina,baixa,326,"Carne, bovina, acém, moído, cozido",calcio,4.02666666666667,(sem linha),AUSENTE,MUDA
+Carne bovina,baixa,326,"Carne, bovina, acém, moído, cozido",ferro,2.65333333333333,(sem linha),FONTE,MUDA
+Carne bovina,baixa,326,"Carne, bovina, acém, moído, cozido",zinco,8.1,(sem linha),ALTO_TEOR,MUDA
+Carne bovina,baixa,326,"Carne, bovina, acém, moído, cozido",magnesio,17.07,(sem linha),AUSENTE,MUDA
+Carne suína,baixa,432,"Porco, lombo, assado",vitamina_a,0.0,(sem linha),AUSENTE,MUDA
+Carne suína,baixa,432,"Porco, lombo, assado",vitamina_c,,(sem linha),null,MUDA
+Carne suína,baixa,432,"Porco, lombo, assado",calcio,19.5113333333333,(sem linha),AUSENTE,MUDA
+Carne suína,baixa,432,"Porco, lombo, assado",ferro,0.457333333333333,(sem linha),AUSENTE,MUDA
+Carne suína,baixa,432,"Porco, lombo, assado",zinco,1.75833333333333,(sem linha),FONTE,MUDA
+Carne suína,baixa,432,"Porco, lombo, assado",magnesio,18.1423333333333,(sem linha),AUSENTE,MUDA
+Pão francês,alta,53,"Pão, trigo, francês",vitamina_a,,(sem linha),null,MUDA
+Pão francês,alta,53,"Pão, trigo, francês",vitamina_c,,(sem linha),null,MUDA
+Pão francês,alta,53,"Pão, trigo, francês",calcio,15.7533333333333,(sem linha),AUSENTE,MUDA
+Pão francês,alta,53,"Pão, trigo, francês",ferro,1.0,(sem linha),AUSENTE,MUDA
+Pão francês,alta,53,"Pão, trigo, francês",zinco,0.763333333333333,(sem linha),AUSENTE,MUDA
+Pão francês,alta,53,"Pão, trigo, francês",magnesio,25.4633333333333,(sem linha),AUSENTE,MUDA
+Cuscuz,alta,533,"Cuscuz, de milho, cozido com sal",vitamina_a,,null,null,
+Cuscuz,alta,533,"Cuscuz, de milho, cozido com sal",vitamina_c,0.0,AUSENTE,AUSENTE,
+Cuscuz,alta,533,"Cuscuz, de milho, cozido com sal",calcio,1.54066666666667,AUSENTE,AUSENTE,
+Cuscuz,alta,533,"Cuscuz, de milho, cozido com sal",ferro,0.173333333333333,AUSENTE,AUSENTE,
+Cuscuz,alta,533,"Cuscuz, de milho, cozido com sal",zinco,0.202,AUSENTE,AUSENTE,
+Cuscuz,alta,533,"Cuscuz, de milho, cozido com sal",magnesio,2.718,null,AUSENTE,MUDA
+Mandioca/aipim,alta,129,"Mandioca, cozida",vitamina_a,,(sem linha),null,MUDA
+Mandioca/aipim,alta,129,"Mandioca, cozida",vitamina_c,11.0666666666667,(sem linha),FONTE,MUDA
+Mandioca/aipim,alta,129,"Mandioca, cozida",calcio,18.6283333333333,(sem linha),AUSENTE,MUDA
+Mandioca/aipim,alta,129,"Mandioca, cozida",ferro,0.074666666666667,(sem linha),AUSENTE,MUDA
+Mandioca/aipim,alta,129,"Mandioca, cozida",zinco,0.174333333333333,(sem linha),AUSENTE,MUDA
+Mandioca/aipim,alta,129,"Mandioca, cozida",magnesio,26.8156666666667,(sem linha),AUSENTE,MUDA
+Abóbora/purê de abóbora,media,64,"Abóbora, cabotian, cozida",vitamina_a,,(sem linha),null,MUDA
+Abóbora/purê de abóbora,media,64,"Abóbora, cabotian, cozida",vitamina_c,7.46333333333333,(sem linha),FONTE,MUDA
+Abóbora/purê de abóbora,media,64,"Abóbora, cabotian, cozida",calcio,7.62566666666667,(sem linha),AUSENTE,MUDA
+Abóbora/purê de abóbora,media,64,"Abóbora, cabotian, cozida",ferro,0.345333333333333,(sem linha),AUSENTE,MUDA
+Abóbora/purê de abóbora,media,64,"Abóbora, cabotian, cozida",zinco,0.286333333333333,(sem linha),AUSENTE,MUDA
+Abóbora/purê de abóbora,media,64,"Abóbora, cabotian, cozida",magnesio,9.111,(sem linha),AUSENTE,MUDA

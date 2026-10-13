@@ -19,6 +19,7 @@ import { painel } from './painelTheme';
 import { useModoPainel } from './hooks/useModoPainel';
 import type { ConfigPainel, ItemMenu } from './types';
 import { LimiteErro } from './components/LimiteErro';
+import { usePendentesScanner } from '../../features/adolescente/scanner/hooks/usePendentesScanner';
 
 type Props = {
   config: ConfigPainel;
@@ -41,7 +42,9 @@ function Menu({
   compacto,
   onNavegar,
   onSair,
+  pendentesScanner,
 }: {
+  pendentesScanner: number | null;
   config: ConfigPainel;
   rotaAtiva: string;
   compacto: boolean;
@@ -78,9 +81,14 @@ function Menu({
             >
               <Ionicons name={item.icone} size={20} color={on ? colors.primaryDark : colors.textOnDarkMuted} />
               {!compacto && (
-                <AppText numberOfLines={1} style={[styles.itemTexto, on && styles.itemTextoAtivo]}>
+                <AppText numberOfLines={1} style={[styles.itemTexto, on && styles.itemTextoAtivo, { flexShrink: 1 }]}>
                   {item.label}
                 </AppText>
+              )}
+              {item.selo === 'SCANNER_PENDENTES' && !!pendentesScanner && (
+                <View style={[styles.selo, compacto && styles.seloCompacto]} accessibilityLabel={`${pendentesScanner} pendentes`}>
+                  {!compacto && <AppText style={styles.seloTexto}>{pendentesScanner > 99 ? '99+' : pendentesScanner}</AppText>}
+                </View>
               )}
             </Pressable>
           );
@@ -107,6 +115,7 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
   const { modo } = useModoPainel();
   const insets = useSafeAreaInsets();
   const [gavetaAberta, setGavetaAberta] = useState(false);
+  const pendentesScanner = usePendentesScanner(config.itens.some((i) => i.selo === 'SCANNER_PENDENTES'));
 
   function navegar(rota: string) {
     setGavetaAberta(false);
@@ -168,7 +177,7 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
             { width: modo === 'desktop' ? painel.larguraSidebar : painel.larguraRail, paddingTop: insets.top },
           ]}
         >
-          <Menu config={config} rotaAtiva={route.name} compacto={modo === 'tablet'} onNavegar={navegar} onSair={sair} />
+          <Menu config={config} rotaAtiva={route.name} compacto={modo === 'tablet'} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
         </View>
       )}
 
@@ -193,7 +202,7 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
         <Modal visible={gavetaAberta} transparent animationType="fade" onRequestClose={() => setGavetaAberta(false)}>
           <View style={styles.gavetaFundo}>
             <View style={[styles.gaveta, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-              <Menu config={config} rotaAtiva={route.name} compacto={false} onNavegar={navegar} onSair={sair} />
+              <Menu config={config} rotaAtiva={route.name} compacto={false} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
             </View>
             <Pressable style={{ flex: 1 }} onPress={() => setGavetaAberta(false)} accessibilityLabel="Fechar menu" />
           </View>
@@ -204,6 +213,9 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
 }
 
 const styles = StyleSheet.create({
+  selo: { marginLeft: 'auto', minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  seloCompacto: { position: 'absolute', top: 6, right: 6, minWidth: 10, width: 10, height: 10, paddingHorizontal: 0, borderRadius: 5 },
+  seloTexto: { fontFamily: typography.bold, fontSize: 11, color: colors.primaryDark },
   root: { flex: 1, flexDirection: 'row', backgroundColor: painel.fundo },
   sidebar: { backgroundColor: colors.background },
   menu: { flex: 1, paddingHorizontal: 12, paddingBottom: 12 },

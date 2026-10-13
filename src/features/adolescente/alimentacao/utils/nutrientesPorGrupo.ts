@@ -93,3 +93,13 @@ export function alimentoEBoaFonte(alimento: any, coluna: NutrienteChave): boolea
 export function inferirAtencaoPorGrupo(grupoAlimentar: string): Partial<Record<NutrienteAtencaoChave, NivelAtencao>> {
   return NUTRIENTES_ATENCAO_POR_GRUPO[grupoAlimentar] ?? {};
 }
+
+/**
+ * Nutrientes que PELO MENOS UM alimento do catálogo consegue cumprir (mesma regra das missões: alimentoEBoaFonte).
+ * Serve para não sugerir missão/feedback de um nutriente que ninguém consegue atingir (ex.: vitamina D sem dado).
+ */
+export function nutrientesAlcancaveis(alimentos: any[], chaves: NutrienteChave[]): Set<NutrienteChave> {
+  const ok = new Set<NutrienteChave>();
+  for (const c of chaves) if (alimentos.some((a) => alimentoEBoaFonte(a, c))) ok.add(c);
+  return ok;
+}

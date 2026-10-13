@@ -48,6 +48,24 @@ export function normalizarCodigo(raw: string): string | null {
   return checksumGs1Ok(c) ? c : null;
 }
 
+/**
+ * Códigos equivalentes do MESMO produto (GTIN com zeros à esquerda): UPC-A (12) = EAN-13 com "0" na frente,
+ * e GTIN-14 com "0" na frente = EAN-13. O primeiro item é sempre o código lido. EAN-8 não tem equivalente
+ * seguro (ele não é um GTIN-13 com zeros), então fica sozinho. Só devolve variantes com dígito verificador válido.
+ */
+export function variantesCodigo(codigo: string): string[] {
+  if (!checksumGs1Ok(codigo)) return [];
+  const saida = [codigo];
+  const add = (c: string) => { if (!saida.includes(c) && checksumGs1Ok(c)) saida.push(c); };
+  if (codigo.length === 12) add(`0${codigo}`);
+  if (codigo.length === 13 && codigo.startsWith('0')) add(codigo.slice(1));
+  if (codigo.length === 14 && codigo.startsWith('0')) {
+    add(codigo.slice(1));
+    if (codigo[1] === '0') add(codigo.slice(2));
+  }
+  return saida;
+}
+
 // ---------- Open Food Facts ----------
 
 export function novaDoOpenFoodFacts(n: unknown): ClassificacaoNova | null {
@@ -125,6 +143,19 @@ export function mapearOpenFoodFacts(json: any, codigo: string): ProdutoScanner |
     fonte: 'OPEN_FOOD_FACTS',
     detalhes: detalhesDaOff(p),
   };
+}
+
+export type AvaliacaoOff =
+  | { tipo: 'inexistente' }                                // a OFF respondeu e não tem esse código
+  | { tipo: 'sem_nome'; classificacaoNova: ClassificacaoNova | null } // existe, mas a ficha não tem nome utilizável
+  | { tipo: 'ok'; produto: ProdutoScanner };               // pode vir sem nível de processamento
+
+/** Separa "não existe" de "existe com ficha incompleta" (a falha de rede é tratada fora, no serviço). */
+export function avaliarOpenFoodFacts(json: any, codigo: string): AvaliacaoOff {
+  if (!json || json.status !== 1 || !json.product) return { tipo: 'inexistente' };
+  const produto = mapearOpenFoodFacts(json, codigo);
+  if (produto) return { tipo: 'ok', produto };
+  return { tipo: 'sem_nome', classificacaoNova: novaDoOpenFoodFacts(json.product.nova_group) };
 }
 
 function detalhesDaOff(p: any): DetalhesProduto {
@@ -232,4 +263,70 @@ export function textoAditivos(n: number | null | undefined): string | null {
   if (typeof n !== 'number' || !Number.isFinite(n)) return null;
   if (n === 0) return 'Nenhum aditivo na lista de ingredientes';
   return n === 1 ? '1 aditivo na lista de ingredientes' : `${n} aditivos na lista de ingredientes`;
+}
+
+// ---------- correspondência por nome e marca (só gera CANDIDATOS; nunca confirma) ----------
+
+/** minúsculas, sem acento nem pontuação, espaços únicos. */
+export function normalizarTexto(t: unknown): string {
+  return (typeof t === 'string' ? t : '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+const PALAVRAS_VAZIAS = new Set(['de', 'da', 'do', 'das', 'dos', 'com', 'sem', 'e', 'a', 'o', 'para', 'em', 'tipo']);
+
+function palavras(t: unknown): string[] {
+  return normalizarTexto(t).split(' ').filter((w) => w.length > 1 && !PALAVRAS_VAZIAS.has(w));
+}
+
+/** Parte das palavras do texto digitado que aparecem no candidato (0 a 1). */
+export function coberturaDePalavras(consulta: unknown, candidato: unknown): number {
+  const q = palavras(consulta);
+  if (q.length === 0) return 0;
+  const c = new Set(palavras(candidato));
+  return q.filter((w) => c.has(w)).length / q.length;
+}
+
+export type ConfiancaCandidato = 'PROVAVEL' | 'POSSIVEL' | 'DESCARTADO';
+
+/**
+ * PROVAVEL: marca informada bate E ao menos 80% das palavras do nome batem.
+ * POSSIVEL: ao menos 60% das palavras do nome batem (e a marca, se informada, não contradiz).
+ * Sem marca informada, nunca passa de POSSIVEL. Nada aqui confirma o produto: a equipe decide.
+ */
+export function confiancaDoCandidato(
+  busca: { nome: string; marca?: string | null },
+  cand: { nome: string; marca?: string | null },
+): ConfiancaCandidato {
+  const nomeOk = coberturaDePalavras(busca.nome, `${cand.nome} ${cand.marca ?? ''}`);
+  const marcaBusca = normalizarTexto(busca.marca);
+  const marcaCand = normalizarTexto(cand.marca);
+  const marcaBate = !!marcaBusca && !!marcaCand && (marcaCand.includes(marcaBusca) || marcaBusca.includes(marcaCand));
+  const marcaContradiz = !!marcaBusca && !!marcaCand && !marcaBate;
+  if (marcaContradiz) return 'DESCARTADO';
+  if (marcaBate && nomeOk >= 0.8) return 'PROVAVEL';
+  if (nomeOk >= 0.6) return 'POSSIVEL';
+  return 'DESCARTADO';
+}
+
+const ORDEM_CONFIANCA: Record<ConfiancaCandidato, number> = { PROVAVEL: 0, POSSIVEL: 1, DESCARTADO: 2 };
+
+export type Candidato = { codigoBarras: string; nome: string; marca: string | null; confianca: Exclude<ConfiancaCandidato, 'DESCARTADO'>; origem: 'proprio' | 'open_food_facts' };
+
+/** Filtra e ordena candidatos (sem repetir código), no máximo `limite`. */
+export function rankearCandidatos(
+  busca: { nome: string; marca?: string | null },
+  lista: { codigoBarras: string; nome: string; marca: string | null; origem: Candidato['origem'] }[],
+  limite = 3,
+): Candidato[] {
+  const vistos = new Set<string>();
+  const out: Candidato[] = [];
+  for (const c of lista) {
+    if (vistos.has(c.codigoBarras)) continue;
+    vistos.add(c.codigoBarras);
+    const confianca = confiancaDoCandidato(busca, c);
+    if (confianca !== 'DESCARTADO') out.push({ ...c, confianca });
+  }
+  return out.sort((a, b) => ORDEM_CONFIANCA[a.confianca] - ORDEM_CONFIANCA[b.confianca]).slice(0, limite);
 }

@@ -13,10 +13,12 @@ import { GridResponsiva } from '../../../../shared/painel/components/GridRespons
 import { ItemAtividade, ListaAtividades } from '../../../../shared/painel/components/ListaAtividades';
 import { useDashboardPainel } from '../../../../shared/painel/hooks/useDashboardPainel';
 import { ADMIN_PAINEL } from '../../navigation/adminMenu';
+import { usePendentesScanner } from '../../../adolescente/scanner/hooks/usePendentesScanner';
 
 export default function AdminDashboardScreen() {
   const [dias, setDias] = useState(30);
   const { dados, carregando, erro, recarregar } = useDashboardPainel(dias);
+  const pendentesScanner = usePendentesScanner();
 
   const atividades: ItemAtividade[] = (dados?.atividades ?? []).map((a, i) => ({
     chave: `${a.tipo}-${a.quando}-${i}`,
@@ -62,6 +64,15 @@ export default function AdminDashboardScreen() {
             />
             <CartaoKpi titulo="Nutricionistas" ajuda="Contas com perfil de nutricionista, que validam o conteúdo nutricional." valor={dados.kpis.nutricionistas} icone="medkit-outline" />
             <CartaoKpi titulo="Desafios ativos" ajuda="Desafios diários e periódicos disponíveis hoje no aplicativo." valor={dados.kpis.desafios_ativos} icone="trophy-outline" />
+            {pendentesScanner !== null && (
+              <CartaoKpi
+                titulo="Pedidos de produtos (scanner)"
+                ajuda="Produtos que adolescentes escanearam e não estavam na base. Abra 'Produtos do scanner' no menu para cadastrar ou rejeitar."
+                valor={pendentesScanner}
+                icone="barcode-outline"
+                alerta={pendentesScanner > 0}
+              />
+            )}
           </GridResponsiva>
 
           <Colunas bases={[460, 300]}>

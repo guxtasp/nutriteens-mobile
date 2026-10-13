@@ -21,6 +21,7 @@ import FluxoConteudoScreen from '../features/conteudo/screens/FluxoConteudoScree
 import AuditoriaScreen from '../features/conteudo/screens/AuditoriaScreen';
 import EditarTrocaScreen from '../features/conteudo/screens/EditarTrocaScreen';
 import ConteudoDetalheScreen from '../features/conteudo/screens/ConteudoDetalheScreen';
+import SolicitacoesScannerScreen from '../features/adolescente/scanner/screens/SolicitacoesScannerScreen';
 import LicaoPreviewScreen from '../features/conteudo/screens/LicaoPreviewScreen';
 
 export type AdminStackParamList = {
@@ -33,6 +34,7 @@ export type AdminStackParamList = {
   AdminConteudos: undefined;
   AdminTrilhas: undefined;
   AdminTrocas: undefined;
+  AdminProdutosScanner: undefined;
   AdminDesafios: undefined;
   AdminModeracao: undefined;
   Metricas: undefined;
@@ -71,6 +73,7 @@ const Receitas = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Receit
 const Conteudos = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Conteúdos" subtitulo="Consulte tudo que passa pela aprovação da nutricionista" />;
 const Trilhas = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Trilhas" subtitulo="Organize e envie trilhas para aprovação" tipo="TRILHA" />;
 const Trocas = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Alternativas" subtitulo="Consulte as justificativas e envie para revisão" tipo="TROCA" />;
+const ProdutosScanner = () => <SolicitacoesScannerScreen config={ADMIN_PAINEL} />;
 const Auditoria = () => <AuditoriaScreen config={ADMIN_PAINEL} />;
 const Desafios = () => <DesafiosScreen config={ADMIN_PAINEL} />;
 const EditarTrilha = (props: any) => <EditarTrilhaScreen config={ADMIN_PAINEL} route={props.route} />;
@@ -91,6 +94,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminReceitas" component={Receitas} />
       <Stack.Screen name="AdminConteudos" component={Conteudos} />
       <Stack.Screen name="AdminTrilhas" component={Trilhas} />
+      <Stack.Screen name="AdminProdutosScanner" component={ProdutosScanner} />
       <Stack.Screen name="AdminTrocas" component={Trocas} />
       <Stack.Screen name="AdminDesafios" component={Desafios} />
       <Stack.Screen name="AdminModeracao" component={ModeracaoScreen} />

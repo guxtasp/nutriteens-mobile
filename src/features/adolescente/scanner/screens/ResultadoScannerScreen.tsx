@@ -2,7 +2,9 @@
 // Resultado do scanner (prova de conceito). Tom neutro e acolhedor: sem caloria, sem culpa.
 //  - encontrado + ultraprocessado + categoria -> alternativas (AlternativasLista)
 //  - encontrado + não ultraprocessado          -> mensagem positiva
-//  - não encontrado (ou rede fora)             -> buscar por nome / cadastrar / tentar de novo
+//  - não encontrado                            -> buscar por nome / pedir cadastro à equipe / tentar de novo
+//  - rede ou Open Food Facts fora do ar        -> "tentar de novo" (NÃO pede cadastro: não sabemos se existe)
+//  - código ilegível (dígito verificador)      -> escanear de novo
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,7 +37,7 @@ export default function ResultadoScannerScreen() {
   useEffect(() => {
     let ativo = true;
     setRes(null);
-    buscarProduto(codigo).then((r) => {
+    buscarProduto(codigo, { ignorarCacheNegativo: tentativa > 0 }).then((r) => {
       if (!ativo) return;
       setRes(r);
       if (registrado.current !== tentativa) { // 1 evento por busca, mesmo se a tela re-renderizar
@@ -61,27 +63,54 @@ export default function ResultadoScannerScreen() {
 
         {res?.status === 'encontrado' && <Encontrado produto={res.produto} />}
 
+        {res?.status === 'invalido' && (
+          <View style={styles.bloco}>
+            <MaterialCommunityIcons name="barcode-scan" size={44} color={colors.primaryDark} />
+            <AppText style={styles.tituloBloco}>Não deu para ler o código direito</AppText>
+            <AppText style={styles.texto}>Tente de novo com o código bem enquadrado e boa luz.</AppText>
+          </View>
+        )}
+
+        {res?.status === 'indisponivel' && (
+          <View style={styles.bloco}>
+            <MaterialCommunityIcons name="wifi-off" size={44} color={colors.primaryDark} />
+            <AppText style={styles.tituloBloco}>Não conseguimos consultar agora</AppText>
+            <AppText style={styles.texto}>
+              A conexão ou a base de produtos está instável, então ainda não dá para saber se ele existe. Código: {codigo}
+            </AppText>
+            <AppButton label="Tentar de novo" onPress={() => setTentativa((n) => n + 1)} />
+          </View>
+        )}
+
         {res?.status === 'nao_encontrado' && (
           <View style={styles.bloco}>
             <MaterialCommunityIcons name="barcode-off" size={44} color={colors.primaryDark} />
-            <AppText style={styles.tituloBloco}>Não achamos esse produto por aqui</AppText>
-            <AppText style={styles.texto}>
-              Pode ser que ele ainda não esteja na nossa lista ou que a conexão esteja instável. Código: {codigo}
+            <AppText style={styles.tituloBloco}>
+              {res.motivo === 'FICHA_INCOMPLETA' ? 'Esse produto está com a ficha incompleta' : 'Não achamos esse produto por aqui'}
             </AppText>
-            <AppButton label="Tentar de novo" onPress={() => setTentativa((n) => n + 1)} />
+            <AppText style={styles.texto}>
+              {res.motivo === 'FICHA_INCOMPLETA'
+                ? 'Ele existe na base, mas sem nome. Você pode avisar a nossa equipe para completar. '
+                : 'Ele ainda não está na nossa lista. Você pode pedir para a nossa equipe cadastrar. '}
+              Código: {codigo}
+            </AppText>
+            <AppButton
+              label="Pedir cadastro à equipe"
+              onPress={() => navigation.navigate('CadastroProdutoScanner', { codigo, motivo: res.motivo })}
+            />
+            <AppButton
+              label="Tentar de novo"
+              backgroundColor={colors.white}
+              textColor={colors.primaryDark}
+              outlineColor={colors.primaryDark}
+              onPress={() => setTentativa((n) => n + 1)}
+            />
             <AppButton
               label="Buscar por nome"
               backgroundColor={colors.white}
               textColor={colors.primaryDark}
               outlineColor={colors.primaryDark}
               onPress={() => navigation.navigate('TipoRefeicao')}
-            />
-            <AppButton
-              label="Cadastrar este produto"
-              backgroundColor={colors.white}
-              textColor={colors.primaryDark}
-              outlineColor={colors.primaryDark}
-              onPress={() => navigation.navigate('CadastroProdutoScanner', { codigo })}
             />
           </View>
         )}
@@ -123,6 +152,16 @@ function Encontrado({ produto }: { produto: ProdutoScanner }) {
       </View>
 
       <DiagnosticoProduto produto={produto} />
+
+      {modo === 'SEM_CLASSIFICACAO' && (
+        <AppButton
+          label="Avisar a equipe para completar"
+          backgroundColor={colors.white}
+          textColor={colors.primaryDark}
+          outlineColor={colors.primaryDark}
+          onPress={() => navigation.navigate('CadastroProdutoScanner', { codigo: produto.codigoBarras, motivo: 'FICHA_INCOMPLETA' })}
+        />
+      )}
 
       {modo === 'POSITIVO' && (
         <View style={styles.positivo}>

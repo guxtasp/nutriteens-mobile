@@ -10,6 +10,8 @@ export interface ItemMenu {
   icone: IconeNome;
   /** outras rotas que mantêm este item marcado (ex.: formulário de um alimento) */
   rotasFilhas?: string[];
+  /** mostra um contador ao lado do item (ex.: pedidos pendentes do scanner) */
+  selo?: 'SCANNER_PENDENTES';
 }
 
 export interface ConfigPainel {

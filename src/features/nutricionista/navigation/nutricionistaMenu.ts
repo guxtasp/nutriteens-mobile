@@ -11,6 +11,7 @@ export const NUTRICIONISTA_PAINEL: ConfigPainel = {
     { rota: 'ConteudoList', label: 'Conteúdos', icone: 'document-text-outline', rotasFilhas: ['ConteudoDetalhe', 'LicaoPreview', 'EditarLicao'] },
     { rota: 'NutriReceitas', label: 'Receitas', icone: 'restaurant-outline', rotasFilhas: ['EditarReceita'] },
     { rota: 'NutriTrocas', label: 'Alternativas', icone: 'swap-horizontal-outline', rotasFilhas: ['EditarTroca'] },
+    { rota: 'NutriProdutosScanner', label: 'Produtos do scanner', icone: 'barcode-outline', selo: 'SCANNER_PENDENTES' },
     { rota: 'NutriTrilhas', label: 'Trilhas', icone: 'map-outline', rotasFilhas: ['EditarTrilha'] },
     { rota: 'NutriDesafios', label: 'Desafios', icone: 'trophy-outline' },
     { rota: 'NutriAnalytics', label: 'Analytics', icone: 'stats-chart-outline' },

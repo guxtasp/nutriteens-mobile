@@ -7,6 +7,7 @@ import { NUTRICIONISTA_PAINEL } from '../features/nutricionista/navigation/nutri
 import AnalyticsScreen from '../shared/painel/screens/AnalyticsScreen';
 import FluxoConteudoScreen from '../features/conteudo/screens/FluxoConteudoScreen';
 import ConteudoDetalheScreen from '../features/conteudo/screens/ConteudoDetalheScreen';
+import SolicitacoesScannerScreen from '../features/adolescente/scanner/screens/SolicitacoesScannerScreen';
 import LicaoPreviewScreen from '../features/conteudo/screens/LicaoPreviewScreen';
 import ParticipantesScreen from '../features/nutricionista/screens/ParticipantesScreen';
 import ParticipanteDetalheScreen from '../features/nutricionista/screens/ParticipanteDetalheScreen';
@@ -25,6 +26,7 @@ export type NutricionistaStackParamList = {
   NutriReceitas: undefined;
   NutriTrilhas: undefined;
   NutriTrocas: undefined;
+  NutriProdutosScanner: undefined;
   NutriDesafios: undefined;
   NutriAnalytics: undefined;
   ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string };
@@ -60,6 +62,7 @@ const EditarTrilha = (props: any) => <EditarTrilhaScreen config={NUTRICIONISTA_P
 const EditarLicao = (props: any) => <EditarLicaoScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const EditarReceita = (props: any) => <EditarReceitaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const EditarTroca = (props: any) => <EditarTrocaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
+const ProdutosScanner = () => <SolicitacoesScannerScreen config={NUTRICIONISTA_PAINEL} />;
 const Analytics = () => <AnalyticsScreen config={NUTRICIONISTA_PAINEL} />;
 
 export default function NutricionistaNavigator() {
@@ -72,6 +75,7 @@ export default function NutricionistaNavigator() {
       <Stack.Screen name="ConteudoList" component={Conteudos} />
       <Stack.Screen name="NutriReceitas" component={Receitas} />
       <Stack.Screen name="NutriTrilhas" component={Trilhas} />
+      <Stack.Screen name="NutriProdutosScanner" component={ProdutosScanner} />
       <Stack.Screen name="NutriTrocas" component={Trocas} />
       <Stack.Screen name="NutriDesafios" component={Desafios} />
       <Stack.Screen name="NutriAnalytics" component={Analytics} />

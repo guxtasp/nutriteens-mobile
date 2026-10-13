@@ -12,6 +12,7 @@ export const ADMIN_PAINEL: ConfigPainel = {
     { rota: 'AdminReceitas', label: 'Receitas', icone: 'restaurant-outline', rotasFilhas: ['EditarReceita'] },
     { rota: 'AdminConteudos', label: 'Conteúdos', icone: 'document-text-outline', rotasFilhas: ['ConteudoDetalhe', 'LicaoPreview', 'EditarLicao'] },
     { rota: 'AdminTrocas', label: 'Alternativas', icone: 'swap-horizontal-outline', rotasFilhas: ['EditarTroca'] },
+    { rota: 'AdminProdutosScanner', label: 'Produtos do scanner', icone: 'barcode-outline', selo: 'SCANNER_PENDENTES' },
     { rota: 'AdminTrilhas', label: 'Trilhas', icone: 'map-outline', rotasFilhas: ['EditarTrilha'] },
     { rota: 'AdminDesafios', label: 'Desafios', icone: 'trophy-outline' },
     { rota: 'AdminModeracao', label: 'Moderação', icone: 'shield-checkmark-outline' },

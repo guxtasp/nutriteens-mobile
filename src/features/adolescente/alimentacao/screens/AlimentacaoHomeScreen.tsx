@@ -37,7 +37,7 @@ const ITENS: Item[] = [
     nome: 'Vitaminas',
     descricao: 'Para que serve cada uma e onde encontrar',
     icone: 'food-apple-outline',
-    tags: ['NUTRIENTES', 'EM BREVE'],
+    tags: ['NUTRIENTES', 'DISPONÍVEL'],
     emBreve: false,
     info: {
       titulo: 'Vitaminas e minerais',
