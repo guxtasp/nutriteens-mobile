@@ -29,13 +29,13 @@ export type NutricionistaStackParamList = {
   NutriProdutosScanner: undefined;
   NutriDesafios: undefined;
   NutriAnalytics: undefined;
-  ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string };
-  LicaoPreview: { licaoId: string };
+  ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string; origem?: string };
+  LicaoPreview: { licaoId: string; origem?: string };
   ParticipanteDetalhe: { id: string };
-  EditarTrilha: { trilhaId?: string } | undefined;
-  EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number };
-  EditarReceita: { receitaId?: string } | undefined;
-  EditarTroca: { trocaId: string };
+  EditarTrilha: { trilhaId?: string; origem?: string } | undefined;
+  EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
+  EditarReceita: { receitaId?: string; origem?: string } | undefined;
+  EditarTroca: { trocaId: string; origem?: string };
 };
 
 const Stack = createNativeStackNavigator<NutricionistaStackParamList>();

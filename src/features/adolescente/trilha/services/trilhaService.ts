@@ -5,10 +5,9 @@ import type { NoTrilha } from '../components/TrilhaPath';
 import { dataInicioJanela } from '../utils/janelaHabito';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
 
-// Fallbacks usados quando `xp_bonus` está nulo no banco (ver
-// migration_progresso_modulo_trilha.sql) — combinados com o Figma.
-const XP_BONUS_MODULO_PADRAO = 100;
-const XP_BONUS_TRILHA_PADRAO = 125;
+// O valor do XP (lição, bônus de módulo e de trilha — incluindo os fallbacks quando
+// `xp_bonus` é nulo) é decidido pelo banco em `conceder_xp` (migration_xp_servidor.sql).
+// Aqui só se usa o valor devolvido, para a tela mostrar exatamente o que foi creditado.
 
 export type Trilha = {
   id: string;
@@ -79,7 +78,8 @@ export async function buscarTrilhaComProgresso(
     .select('id, titulo, descricao, tema, ordem, xp_bonus')
     .eq('status', 'aprovada');
 
-  query = trilhaId ? query.eq('id', trilhaId) : query.order('ordem').limit(1);
+  // empate de `ordem`: a trilha mais antiga (resultado estável, igual a trilhaVisivelAoAdolescente do painel)
+  query = trilhaId ? query.eq('id', trilhaId) : query.order('ordem').order('criado_em').limit(1);
 
   const { data: trilhasData, error: erroTrilha } = await query;
   if (erroTrilha) throw erroTrilha;
@@ -468,7 +468,7 @@ export async function concluirLicaoComProgresso(
     throw erroProgresso;
   }
 
-  await concederXp(usuarioId, xpRecompensa);
+  const xpLicaoConcedido = await concederXp('licao', licaoId);
 
   // 3. busca módulo/trilha da lição pra saber se ela é a última de cada um
   const { data: licao, error: erroLicao } = await supabase
@@ -501,17 +501,16 @@ export async function concluirLicaoComProgresso(
   const moduloFechou = (progressoModulo ?? []).length >= idsLicoesModulo.length;
 
   if (!moduloFechou) {
-    return { nivel: 'licao', xpGanhoLicao: xpRecompensa, xpGanhoBonus: 0, acertosPercentual: null };
+    return { nivel: 'licao', xpGanhoLicao: xpLicaoConcedido, xpGanhoBonus: 0, acertosPercentual: null };
   }
 
   // 5. módulo fechou nesta chamada — concede bônus de módulo
-  const xpBonusModulo = modulo?.xp_bonus ?? XP_BONUS_MODULO_PADRAO;
-  await concederXp(usuarioId, xpBonusModulo);
+  const xpBonusModulo = await concederXp('bonus_modulo', moduloId);
 
   if (!trilhaId) {
     return {
       nivel: 'modulo',
-      xpGanhoLicao: xpRecompensa,
+      xpGanhoLicao: xpLicaoConcedido,
       xpGanhoBonus: xpBonusModulo,
       acertosPercentual: acertosPercentualDaQuestao,
     };
@@ -544,19 +543,18 @@ export async function concluirLicaoComProgresso(
   if (!trilhaFechou) {
     return {
       nivel: 'modulo',
-      xpGanhoLicao: xpRecompensa,
+      xpGanhoLicao: xpLicaoConcedido,
       xpGanhoBonus: xpBonusModulo,
       acertosPercentual: acertosPercentualDaQuestao,
     };
   }
 
   if (trilhaId) registrarEvento('trilha_concluida', { trilha_id: trilhaId }, { userId: usuarioId });
-  const xpBonusTrilha = modulo?.trilhas?.xp_bonus ?? XP_BONUS_TRILHA_PADRAO;
-  await concederXp(usuarioId, xpBonusTrilha);
+  const xpBonusTrilha = await concederXp('bonus_trilha', trilhaId);
 
   return {
     nivel: 'trilha',
-    xpGanhoLicao: xpRecompensa,
+    xpGanhoLicao: xpLicaoConcedido,
     xpGanhoBonus: xpBonusModulo + xpBonusTrilha,
     acertosPercentual: acertosPercentualDaQuestao,
   };

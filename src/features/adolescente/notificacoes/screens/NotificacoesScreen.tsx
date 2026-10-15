@@ -37,8 +37,10 @@ export default function NotificacoesScreen() {
 
   function abrir(n: NotificacaoComLeitura) {
     marcarLida(n.id);
-    if (n.destino === 'Receita' && n.params) {
-      navigation.navigate('ReceitaCompartilhada', { receitaId: n.params.receitaId });
+    // 'Receita' não é uma rota: o destino real é 'ReceitaCompartilhada', que precisa do id.
+    // Sem o id não há o que abrir (antes caía em navigate('Receita'), rota inexistente).
+    if (n.destino === 'Receita') {
+      if (n.params) navigation.navigate('ReceitaCompartilhada', { receitaId: n.params.receitaId });
       return;
     }
     navigation.navigate(n.destino);

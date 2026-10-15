@@ -9,6 +9,7 @@ import { criarProgresso, Progresso, UNIDADES } from '../../missoes/utils/progres
 import { alimentoEBoaFonte, type NutrienteChave } from '../../alimentacao/utils/nutrientesPorGrupo';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { feedbackConquista } from '../../../../shared/audio/feedback';
 import {
   obterVariante,
   sortearVariante,
@@ -420,29 +421,18 @@ export async function avaliarMissaoDoDia(userId: string, data: string, missao: M
 // avaliada como cumprida. `useHomeData` reavalia `avaliarMissaoDoDia` a
 // cada vez que a Home ganha foco (é uma leitura, não um flag manual — ver
 // comentário acima), então sem essa guarda o usuário ganharia pontos de
-// novo toda vez que voltasse pra Home no mesmo dia. O UPDATE condicional
-// (`.eq('xp_concedido', false)`) é o que garante isso de forma atômica: só
-// quem "ganha a corrida" de marcar o flag é que efetivamente concede os
-// pontos — se `data` voltar vazio, outra chamada (ou uma anterior) já
-// concedeu, e essa aqui não faz nada.
-export async function concederPontosMissaoSeNecessario(
-  userId: string,
-  missaoDiariaId: string,
-  pontos: number
-): Promise<void> {
-  if (pontos <= 0) return;
-
-  const { data, error } = await supabase
-    .from('missoes_diarias')
-    .update({ xp_concedido: true })
-    .eq('id', missaoDiariaId)
-    .eq('xp_concedido', false)
-    .select('id');
-
-  if (error) throw error;
-  if (!data || data.length === 0) return; // já tinha sido concedido antes
+// novo toda vez que voltasse pra Home no mesmo dia.
+//
+// Quem garante isso agora é o servidor (`conceder_xp`, origem `missao_diaria`):
+// ele confere que a missão é do usuário e de hoje, liga o flag `xp_concedido`
+// e soma o valor do catálogo numa única transação — o app não envia quantidade
+// de pontos. Chamadas repetidas devolvem 0 e não fazem nada.
+export async function concederPontosMissaoSeNecessario(userId: string, missaoDiariaId: string): Promise<void> {
+  const concedido = await concederXp('missao_diaria', missaoDiariaId);
+  if (concedido <= 0) return; // já tinha sido concedido antes
 
   registrarEvento('desafio_concluido', undefined, { userId });
-
-  await concederXp(userId, pontos);
+  // só chega aqui na PRIMEIRA vez que a missão é concluída (o servidor é idempotente),
+  // então o som/vibração não se repete a cada abertura de tela
+  feedbackConquista();
 }

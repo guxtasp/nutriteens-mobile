@@ -3,7 +3,7 @@
 // Cards em grade responsiva: no celular empilham, no desktop viram colunas.
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { GridResponsiva } from '../../../shared/painel/components/GridResponsiva';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
@@ -65,11 +65,13 @@ function CartaoConteudo({
   item,
   papel,
   navigation,
+  origem,
   aoMudar,
 }: {
   item: ItemFluxo;
   papel: PapelPainel;
   navigation: any;
+  origem: string;
   aoMudar: () => void;
 }) {
   const [ocupado, setOcupado] = useState(false);
@@ -78,7 +80,7 @@ function CartaoConteudo({
   // decisões (aprovar, rejeitar, publicar) só depois de abrir e ler o conteúdo
   const acoes = acoesPermitidas(papel, item.status).filter((a) => !ACOES_DECISAO.includes(a));
   const decide = acoesPermitidas(papel, item.status).some((a) => ACOES_DECISAO.includes(a));
-  const abrir = () => navigation.navigate('ConteudoDetalhe', { tipo: item.tipo, conteudoId: item.conteudoId });
+  const abrir = () => navigation.navigate('ConteudoDetalhe', { tipo: item.tipo, conteudoId: item.conteudoId, origem });
 
   async function executar(acao: AcaoFluxo) {
     setOcupado(true);
@@ -166,6 +168,7 @@ function CartaoConteudo({
 
 export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, fila }: Props) {
   const navigation = useNavigation<any>();
+  const origem = useRoute().name;
   const [itens, setItens] = useState<ItemFluxo[]>([]);
   const [papel, setPapel] = useState<PapelPainel | null>(null);
   const [filtro, setFiltro] = useState('TODOS');
@@ -222,7 +225,7 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
                 textColor={colors.white}
                 shadowColor="#123024"
                 style={styles.botao}
-                onPress={() => navigation.navigate('EditarTrilha', {})}
+                onPress={() => navigation.navigate('EditarTrilha', { origem })}
               />
             )}
             {tipo !== 'TRILHA' && tipo !== 'TROCA' && (
@@ -234,7 +237,7 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
                 textColor={colors.white}
                 shadowColor="#123024"
                 style={styles.botao}
-                onPress={() => navigation.navigate('EditarReceita', {})}
+                onPress={() => navigation.navigate('EditarReceita', { origem })}
               />
             )}
           </View>
@@ -295,7 +298,7 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
       ) : (
         <GridResponsiva minItem={320} gap={12} maxColunas={3}>
           {visiveis.map((i) => (
-            <CartaoConteudo key={i.id} item={i} papel={papel} navigation={navigation} aoMudar={carregar} />
+            <CartaoConteudo key={i.id} item={i} papel={papel} navigation={navigation} origem={origem} aoMudar={carregar} />
           ))}
         </GridResponsiva>
       )}

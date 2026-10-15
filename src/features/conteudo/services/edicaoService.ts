@@ -3,6 +3,7 @@
 // fluxo): a nutricionista edita sem perder o status (sobe a versão), o Admin volta o
 // conteúdo para rascunho, e o status só muda por conteudo_transicionar.
 import { supabase } from '../../../lib/supabase';
+import type { LicaoPayload, PassoPayload } from '../utils/passosEdicao';
 
 function falha(error: { message: string } | null): never | void {
   if (error) throw error;
@@ -14,7 +15,15 @@ export type TrilhaEditavel = {
   titulo: string;
   descricao: string | null;
   tema: string;
-  modulos: { id: string; titulo: string; ordem: number; licoes: { id: string; titulo: string; ordem: number; tipo: string; xp: number }[] }[];
+  ordem: number;
+  xpBonus: number | null;
+  modulos: {
+    id: string;
+    titulo: string;
+    ordem: number;
+    xpBonus: number | null;
+    licoes: { id: string; titulo: string; ordem: number; tipo: string; xp: number }[];
+  }[];
 };
 
 export async function listarTemas(): Promise<string[]> {
@@ -26,7 +35,7 @@ export async function listarTemas(): Promise<string[]> {
 export async function buscarTrilhaEditavel(id: string): Promise<TrilhaEditavel> {
   const { data, error } = await supabase
     .from('trilhas')
-    .select('id, titulo, descricao, tema, modulos_trilha(id, titulo, ordem, licoes(id, titulo, ordem, tipo, xp_recompensa))')
+    .select('id, titulo, descricao, tema, ordem, xp_bonus, modulos_trilha(id, titulo, ordem, xp_bonus, licoes(id, titulo, ordem, tipo, xp_recompensa))')
     .eq('id', id)
     .single();
   falha(error);
@@ -36,12 +45,15 @@ export async function buscarTrilhaEditavel(id: string): Promise<TrilhaEditavel> 
     titulo: t.titulo,
     descricao: t.descricao,
     tema: String(t.tema),
+    ordem: t.ordem ?? 0,
+    xpBonus: t.xp_bonus ?? null,
     modulos: [...(t.modulos_trilha ?? [])]
       .sort((a: any, b: any) => a.ordem - b.ordem)
       .map((m: any) => ({
         id: m.id,
         titulo: m.titulo,
         ordem: m.ordem,
+        xpBonus: m.xp_bonus ?? null,
         licoes: [...(m.licoes ?? [])]
           .sort((a: any, b: any) => a.ordem - b.ordem)
           .map((l: any) => ({ id: l.id, titulo: l.titulo, ordem: l.ordem, tipo: String(l.tipo), xp: l.xp_recompensa })),
@@ -49,20 +61,51 @@ export async function buscarTrilhaEditavel(id: string): Promise<TrilhaEditavel> 
   };
 }
 
-export async function criarTrilha(d: { titulo: string; descricao: string; tema: string }): Promise<string> {
+export type TrilhaOrdemLinha = { id: string; titulo: string; ordem: number; status: string; criadoEm: string | null };
+
+/** Todas as trilhas com a ordem e o status (para sugerir a ordem e avisar qual o adolescente vê). */
+export async function listarTrilhasOrdem(): Promise<TrilhaOrdemLinha[]> {
+  const { data, error } = await supabase.from('trilhas').select('id, titulo, ordem, status, criado_em').order('ordem');
+  falha(error);
+  return (data ?? []).map((t: any) => ({ id: t.id, titulo: t.titulo, ordem: t.ordem ?? 0, status: String(t.status), criadoEm: t.criado_em ?? null }));
+}
+
+export async function criarTrilha(d: { titulo: string; descricao: string; tema: string; ordem: number; xpBonus?: number | null }): Promise<string> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('Sessão expirada. Entre novamente.');
   const { data, error } = await supabase
     .from('trilhas')
-    .insert({ titulo: d.titulo.trim(), descricao: d.descricao.trim() || null, tema: d.tema, criado_por: auth.user.id })
+    .insert({
+      titulo: d.titulo.trim(),
+      descricao: d.descricao.trim() || null,
+      tema: d.tema,
+      ordem: d.ordem,
+      xp_bonus: d.xpBonus ?? null,
+      criado_por: auth.user.id,
+    })
     .select('id')
     .single();
   falha(error);
   return (data as any).id as string;
 }
 
-export async function salvarTrilha(id: string, d: { titulo: string; descricao: string }): Promise<void> {
-  const { error } = await supabase.from('trilhas').update({ titulo: d.titulo.trim(), descricao: d.descricao.trim() || null }).eq('id', id);
+/**
+ * Atualiza SÓ os campos que vierem em `d`. Importante: o trigger do fluxo dispara quando titulo,
+ * descricao ou tema aparecem no UPDATE (mesmo com o mesmo valor); por isso quem chama deve mandar
+ * apenas o que mudou. Status e aprovação NÃO passam por aqui (só pelo fluxo de aprovação).
+ */
+export async function salvarTrilha(
+  id: string,
+  d: { titulo?: string; descricao?: string; tema?: string; ordem?: number; xpBonus?: number | null }
+): Promise<void> {
+  const campos: Record<string, any> = {};
+  if (d.titulo !== undefined) campos.titulo = d.titulo.trim();
+  if (d.descricao !== undefined) campos.descricao = d.descricao.trim() || null;
+  if (d.tema !== undefined) campos.tema = d.tema;
+  if (d.ordem !== undefined) campos.ordem = d.ordem;
+  if (d.xpBonus !== undefined) campos.xp_bonus = d.xpBonus;
+  if (Object.keys(campos).length === 0) return;
+  const { error } = await supabase.from('trilhas').update(campos).eq('id', id);
   falha(error);
 }
 
@@ -76,8 +119,36 @@ export async function renomearModulo(id: string, titulo: string): Promise<void> 
   falha(error);
 }
 
+export async function salvarModulo(id: string, d: { titulo?: string; xpBonus?: number | null }): Promise<void> {
+  const campos: Record<string, any> = {};
+  if (d.titulo !== undefined) campos.titulo = d.titulo.trim();
+  if (d.xpBonus !== undefined) campos.xp_bonus = d.xpBonus;
+  if (Object.keys(campos).length === 0) return;
+  const { error } = await supabase.from('modulos_trilha').update(campos).eq('id', id);
+  falha(error);
+}
+
+function erroDeFuncao(error: { message: string; code?: string }, migration: string): Error {
+  if (error.code === 'PGRST202' || /could not find the function/i.test(String(error.message))) {
+    return new Error(`O banco ainda não tem esta função. Rode ${migration} no Supabase.`);
+  }
+  return error as unknown as Error;
+}
+
+/** Nova ordem dos módulos (nivel 'MODULO', pai = trilha) ou das lições (nivel 'LICAO', pai = módulo). Atômico. */
+export async function reordenarItens(nivel: 'MODULO' | 'LICAO', paiId: string, idsNaOrdem: string[]): Promise<void> {
+  const { error } = await supabase.rpc('conteudo_reordenar', { p_nivel: nivel, p_pai_id: paiId, p_ids: idsNaOrdem });
+  if (error) throw erroDeFuncao(error, 'migration_trilha_estrutura.sql');
+}
+
+/** Exclui módulo/lição com os passos. O banco recusa se adolescentes já concluíram a lição. */
+export async function excluirItem(nivel: 'MODULO' | 'LICAO', id: string): Promise<void> {
+  const { error } = await supabase.rpc('conteudo_excluir_item', { p_nivel: nivel, p_id: id });
+  if (error) throw erroDeFuncao(error, 'migration_trilha_estrutura.sql');
+}
+
 // ---------------------------------------------------------------- lição
-export type OpcaoEditavel = { id: string; texto: string; correta: boolean; ordem: number };
+export type OpcaoEditavel = { id: string; texto: string; correta: boolean; ordem: number; categoria: string | null };
 export type QuestaoEditavel = {
   id: string;
   enunciado: string;
@@ -91,6 +162,9 @@ export type LicaoEditavel = {
   titulo: string;
   tipo: string;
   xp: number;
+  icone: string | null;
+  tipoHabito: string | null;
+  janelaHoras: number | null;
   conteudo: Record<string, any> | null;
   questoes: QuestaoEditavel[];
 };
@@ -98,7 +172,7 @@ export type LicaoEditavel = {
 export async function buscarLicaoEditavel(id: string): Promise<LicaoEditavel> {
   const { data, error } = await supabase
     .from('licoes')
-    .select('id, modulo_id, titulo, tipo, xp_recompensa, conteudo, questoes_quiz(id, enunciado, ordem, formato, dados_extra, opcoes_quiz(id, texto, correta, ordem))')
+    .select('id, modulo_id, titulo, tipo, xp_recompensa, icone, tipo_habito, criterio_conclusao, conteudo, questoes_quiz(id, enunciado, ordem, formato, dados_extra, opcoes_quiz(id, texto, correta, ordem, categoria))')
     .eq('id', id)
     .single();
   falha(error);
@@ -109,6 +183,9 @@ export async function buscarLicaoEditavel(id: string): Promise<LicaoEditavel> {
     titulo: l.titulo,
     tipo: String(l.tipo),
     xp: l.xp_recompensa,
+    icone: l.icone ?? null,
+    tipoHabito: l.tipo_habito ? String(l.tipo_habito) : null,
+    janelaHoras: l.criterio_conclusao?.janela_horas ?? null,
     conteudo: l.conteudo ?? null,
     questoes: [...(l.questoes_quiz ?? [])]
       .sort((a: any, b: any) => a.ordem - b.ordem)
@@ -119,7 +196,7 @@ export async function buscarLicaoEditavel(id: string): Promise<LicaoEditavel> {
         dadosExtra: q.dados_extra ?? {},
         opcoes: [...(q.opcoes_quiz ?? [])]
           .sort((a: any, b: any) => a.ordem - b.ordem)
-          .map((o: any) => ({ id: o.id, texto: o.texto, correta: !!o.correta, ordem: o.ordem })),
+          .map((o: any) => ({ id: o.id, texto: o.texto, correta: !!o.correta, ordem: o.ordem, categoria: o.categoria ?? null })),
       })),
   };
 }
@@ -141,6 +218,34 @@ export async function salvarQuestao(id: string, d: { enunciado: string; dadosExt
 export async function salvarOpcao(id: string, d: { texto: string; correta: boolean }): Promise<void> {
   const { error } = await supabase.from('opcoes_quiz').update({ texto: d.texto.trim(), correta: d.correta }).eq('id', id);
   falha(error);
+}
+
+/**
+ * Cria (sem `id`) ou atualiza (com `id`) uma lição COM todos os passos e alternativas, numa
+ * única transação do banco (função conteudo_salvar_licao, migration_licao_atomica.sql).
+ * A permissão (Admin/Nutricionista) e a validação são conferidas dentro da função.
+ */
+export async function salvarLicaoCompleta(d: {
+  id?: string;
+  moduloId?: string;
+  ordem?: number;
+  licao: LicaoPayload;
+  passos: PassoPayload[];
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('conteudo_salvar_licao', {
+    p_licao_id: d.id ?? null,
+    p_modulo_id: d.moduloId ?? null,
+    p_licao: { ...d.licao, ...(d.ordem !== undefined ? { ordem: d.ordem } : {}) },
+    p_passos: d.passos,
+  });
+  if (error) {
+    const msg = String(error.message ?? '');
+    if ((error as any).code === 'PGRST202' || /could not find the function/i.test(msg)) {
+      throw new Error('O banco ainda não tem a função de salvar lição. Rode migration_licao_atomica.sql no Supabase.');
+    }
+    throw error;
+  }
+  return data as string;
 }
 
 /** Lição de leitura: um cartão de conteúdo (formato 'cartao'), mesmo padrão das trilhas existentes. */

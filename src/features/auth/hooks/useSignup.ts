@@ -5,6 +5,7 @@ import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
 import { signupState } from '../../../shared/state/signupFlag';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { registrarEvento } from '../../../shared/analytics/analytics';
+import { VERSAO_TERMOS, CONTEUDO_CONSENTIMENTO } from '../../legal/data/textosLegais';
 import {
   toIsoDate,
   validateNome,
@@ -130,8 +131,8 @@ export function useSignup() {
     const { error: consentError } = await supabase.from('consentimentos').insert({
       user_id: userId,
       aceite_termos: true,
-      versao_termo: '1.0',
-      conteudo: 'Termos de uso e política de privacidade versão 1.0',
+      versao_termo: VERSAO_TERMOS,
+      conteudo: CONTEUDO_CONSENTIMENTO,
     });
 
     setLoading(false);

@@ -45,6 +45,7 @@ import LembretesScreen from '../features/adolescente/notificacoes/screens/Lembre
 import LembretesGate from '../features/adolescente/notificacoes/components/LembretesGate';
 import MissoesScreen from '../features/adolescente/missoes/screens/MissoesScreen';
 import AlbumCartasScreen from '../features/adolescente/cartas/screens/AlbumCartasScreen';
+import ExtratoXpScreen from '../features/adolescente/perfil/screens/ExtratoXpScreen';
 import type { CategoriaTroca } from '../features/adolescente/trocas/utils/trocas';
 import type { TrocaSugerida } from '../features/adolescente/trocas/services/trocasService';
 import RecompensasHost from '../features/adolescente/recompensas/components/RecompensasHost';
@@ -87,6 +88,7 @@ export type AdolescenteStackParamList = {
   BuscaAtividade: undefined;
   Profile: undefined;
   AlbumCartas: undefined;
+  ExtratoXp: undefined;
   BuscaAlimento: { tipo: TipoRefeicao; nomeRefeicao: string; alimentoRecemCriado?: Alimento };
   NovoAlimentoOrigem: { tipo: TipoRefeicao; nomeRefeicao: string };
   NovoAlimentoForm: { tipo: TipoRefeicao; nomeRefeicao: string; origem: OrigemAlimento };
@@ -154,6 +156,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     <Stack.Screen name="AlbumCartas" component={AlbumCartasScreen} />
+                    <Stack.Screen name="ExtratoXp" component={ExtratoXpScreen} />
                     <Stack.Screen name="ConsumoAgua" component={ConsumoAguaScreen} />
                     <Stack.Screen name="TipoRefeicao" component={TipoRefeicaoScreen} />
                     <Stack.Screen name="MetodoRegistroAlimentar" component={MetodoRegistroScreen} />
@@ -190,6 +193,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     <Stack.Screen name="AlbumCartas" component={AlbumCartasScreen} />
+                    <Stack.Screen name="ExtratoXp" component={ExtratoXpScreen} />
                     <Stack.Screen name="ConsumoAgua" component={ConsumoAguaScreen} />
                     <Stack.Screen name="TipoRefeicao" component={TipoRefeicaoScreen} />
                     <Stack.Screen name="MetodoRegistroAlimentar" component={MetodoRegistroScreen} />

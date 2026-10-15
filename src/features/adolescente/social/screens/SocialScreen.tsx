@@ -57,6 +57,7 @@ import { colors } from '../../../../shared/theme/colors';
 import EstatisticasCabecalho from '../../_shared/components/EstatisticasCabecalho';
 import TabHeader from '../../_shared/components/TabHeader';
 import { ChamaDuplaSection } from '../components/ChamaDuplaSection';
+import { FeedTab } from '../components/FeedTab';
 import { useChamaDupla } from '../hooks/useChamaDupla';
 import { typography } from '../../../../shared/theme/typography';
 import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
@@ -66,6 +67,8 @@ import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 
 type NavigationProp =
   NativeStackNavigationProp<AdolescenteStackParamList>;
+
+type AbaSocial = 'feed' | 'amigos';
 
 type BannerType = 'success' | 'error' | 'info';
 
@@ -238,6 +241,11 @@ export default function SocialScreen() {
 
   const [menuAberto, setMenuAberto] = useState(false);
 
+  // O feed é a tela principal; "Amigos" guarda perfil, código, pedidos e Chama em Dupla.
+  const [aba, setAba] = useState<AbaSocial>('feed');
+  // muda a cada "puxar para atualizar" para o feed recarregar junto
+  const [feedToken, setFeedToken] = useState(0);
+
   const [banner, setBanner] = useState<BannerState>(null);
 
   const mostrarBanner = useCallback(
@@ -282,6 +290,9 @@ export default function SocialScreen() {
 
         setPerfil(perfilAtual);
         setCodigo(codigoAtual);
+
+        // Primeiro acesso: o perfil social (apelido e avatar) é configurado na aba Amigos.
+        if (!perfilAtual.apelido) setAba('amigos');
 
         setApelidoDigitado(perfilAtual.apelido ?? '');
 
@@ -329,6 +340,7 @@ export default function SocialScreen() {
 
   const atualizar = useCallback(async () => {
     setAtualizando(true);
+    setFeedToken((t) => t + 1);
     await Promise.all([carregarTudo(false), chamaDupla.recarregar()]);
   }, [carregarTudo, chamaDupla.recarregar]);
 
@@ -1713,6 +1725,40 @@ export default function SocialScreen() {
     );
   }
 
+  function renderSeletorAba() {
+    const abas: { chave: AbaSocial; rotulo: string; icone: keyof typeof Ionicons.glyphMap; badge?: number }[] = [
+      { chave: 'feed', rotulo: 'Feed', icone: 'newspaper-outline' },
+      { chave: 'amigos', rotulo: 'Amigos', icone: 'people-outline', badge: pedidosRecebidos.length },
+    ];
+
+    return (
+      <View style={styles.seletor} accessibilityRole="tablist">
+        {abas.map((item) => {
+          const ativa = aba === item.chave;
+
+          return (
+            <TouchableOpacity
+              key={item.chave}
+              style={[styles.seletorItem, ativa && styles.seletorItemAtivo]}
+              onPress={() => setAba(item.chave)}
+              activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: ativa }}
+            >
+              <Ionicons name={item.icone} size={18} color={ativa ? colors.primaryDark : '#7D898E'} />
+              <Text style={[styles.seletorTexto, ativa && styles.seletorTextoAtivo]}>{item.rotulo}</Text>
+              {!!item.badge && (
+                <View style={styles.seletorBadge}>
+                  <Text style={styles.seletorBadgeTexto}>{item.badge}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  }
+
   // ---------------------------------------------------------
   // RENDER
   // ---------------------------------------------------------
@@ -1753,17 +1799,38 @@ export default function SocialScreen() {
             </View>
           ) : (
             <>
-              {renderPerfilSocial()}
+              {renderSeletorAba()}
 
-              {renderAdicionarAmigo()}
+              {aba === 'feed' ? (
+                <FeedTab
+                  amigos={amigos}
+                  temApelido={!!perfil.apelido}
+                  refreshToken={feedToken}
+                  onAbrirAmigo={(amigo) =>
+                    navigation.navigate('PerfilAmigo', {
+                      amizadeId: amigo.amizadeId,
+                      apelido: amigo.apelido,
+                      avatar: amigo.avatar,
+                    })
+                  }
+                  onIrParaAmigos={() => setAba('amigos')}
+                  onEditarPerfil={iniciarEdicaoPerfil}
+                />
+              ) : (
+                <>
+                  {renderPerfilSocial()}
 
-              {renderPedidosRecebidos()}
+                  {renderAdicionarAmigo()}
 
-              {renderPedidosEnviados()}
+                  {renderPedidosRecebidos()}
 
-              <ChamaDuplaSection chama={chamaDupla} onAbrirHome={() => navigation.navigate('Home')} />
+                  {renderPedidosEnviados()}
 
-              {renderAmigos()}
+                  <ChamaDuplaSection chama={chamaDupla} onAbrirHome={() => navigation.navigate('Home')} />
+
+                  {renderAmigos()}
+                </>
+              )}
             </>
           )}
         </ScrollView>
@@ -1795,6 +1862,57 @@ export default function SocialScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+
+  // ----------------------------------------------------------
+  // SELETOR FEED / AMIGOS
+  // ----------------------------------------------------------
+  seletor: {
+    flexDirection: 'row',
+    padding: 4,
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: '#EAF0E6',
+  },
+
+  seletorItem: {
+    flex: 1,
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 12,
+  },
+
+  seletorItemAtivo: {
+    backgroundColor: colors.white,
+  },
+
+  seletorTexto: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#7D898E',
+  },
+
+  seletorTextoAtivo: {
+    color: colors.primaryDark,
+  },
+
+  seletorBadge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+
+  seletorBadgeTexto: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.primaryDark,
   },
 
   screen: {

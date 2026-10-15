@@ -18,6 +18,7 @@ import { typography } from '../theme/typography';
 import { painel } from './painelTheme';
 import { useModoPainel } from './hooks/useModoPainel';
 import type { ConfigPainel, ItemMenu } from './types';
+import { rotaMenuAtiva } from './menuAtivo';
 import { LimiteErro } from './components/LimiteErro';
 import { usePendentesScanner } from '../../features/adolescente/scanner/hooks/usePendentesScanner';
 
@@ -52,7 +53,7 @@ function Menu({
   onSair: () => void;
 }) {
   function ativo(item: ItemMenu) {
-    return item.rota === rotaAtiva || !!item.rotasFilhas?.includes(rotaAtiva);
+    return item.rota === rotaAtiva;
   }
   return (
     <View style={styles.menu}>
@@ -177,7 +178,7 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
             { width: modo === 'desktop' ? painel.larguraSidebar : painel.larguraRail, paddingTop: insets.top },
           ]}
         >
-          <Menu config={config} rotaAtiva={route.name} compacto={modo === 'tablet'} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
+          <Menu config={config} rotaAtiva={rotaMenuAtiva(config, route.name, (route.params as any)?.origem) ?? route.name} compacto={modo === 'tablet'} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
         </View>
       )}
 
@@ -202,7 +203,7 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
         <Modal visible={gavetaAberta} transparent animationType="fade" onRequestClose={() => setGavetaAberta(false)}>
           <View style={styles.gavetaFundo}>
             <View style={[styles.gaveta, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-              <Menu config={config} rotaAtiva={route.name} compacto={false} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
+              <Menu config={config} rotaAtiva={rotaMenuAtiva(config, route.name, (route.params as any)?.origem) ?? route.name} compacto={false} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
             </View>
             <Pressable style={{ flex: 1 }} onPress={() => setGavetaAberta(false)} accessibilityLabel="Fechar menu" />
           </View>

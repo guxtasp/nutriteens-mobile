@@ -126,14 +126,16 @@ export default function SignupScreen({ navigation }: any) {
               Li e aceito os{' '}
               <AppText
                 style={styles.link}
-                onPress={() => showMessage('Documento ainda não implementado', 'info')}
+                onPress={() => navigation.navigate('TermosDeUso')}
+                accessibilityRole="link"
               >
                 Termos de Uso
               </AppText>{' '}
               e a{' '}
               <AppText
                 style={styles.link}
-                onPress={() => showMessage('Documento ainda não implementado', 'info')}
+                onPress={() => navigation.navigate('PoliticaPrivacidade')}
+                accessibilityRole="link"
               >
                 Política de Privacidade
               </AppText>

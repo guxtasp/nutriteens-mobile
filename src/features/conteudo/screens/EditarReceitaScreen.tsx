@@ -21,7 +21,7 @@ import { obterPapelAtual } from '../services/conteudoService';
 import type { Papel } from '../utils/regrasAprovacao';
 import { AvisoEdicao, BarraSalvar, campoMultilinha, numeroOuNulo } from '../components/CamposEdicao';
 
-type Props = { config: ConfigPainel; route: { params?: { receitaId?: string } } };
+type Props = { config: ConfigPainel; route: { params?: { receitaId?: string; origem?: string } } };
 const DIFICULDADES = [
   { chave: 'FACIL', label: 'Fácil' },
   { chave: 'MEDIO', label: 'Médio' },
@@ -30,6 +30,7 @@ const DIFICULDADES = [
 
 export default function EditarReceitaScreen({ config, route }: Props) {
   const receitaId = route.params?.receitaId;
+  const origem = route.params?.origem;
   const criando = !receitaId;
   const navigation = useNavigation<any>();
   const [papel, setPapel] = useState<Papel | null>(null);
@@ -118,7 +119,7 @@ export default function EditarReceitaScreen({ config, route }: Props) {
         }
       }
       if (criando) {
-        navigation.replace('EditarReceita', { receitaId: id });
+        navigation.replace('EditarReceita', { receitaId: id, origem });
       } else {
         await carregar();
         setMsg('Receita salva.');

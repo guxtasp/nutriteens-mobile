@@ -32,6 +32,9 @@ export function useHomeData() {
   const { dias, hojeISO } = useSemanaAtual();
 
   const [carregando, setCarregando] = useState(true);
+  // true só depois de uma carga que deu certo — antes disso (ou se a carga falhar) os números
+  // são os iniciais (0) e não podem ser tratados como "sequência perdida"
+  const [dadosCarregados, setDadosCarregados] = useState(false);
   const [missao, setMissao] = useState<MissaoDoDia | null>(null);
   const [missaoConcluida, setMissaoConcluida] = useState(false);
   const [sequenciaAtual, setSequenciaAtual] = useState(0);
@@ -58,7 +61,7 @@ export function useHomeData() {
       // concederPontosMissaoSeNecessario) ANTES de ler xp_total logo abaixo,
       // pra esse total já vir atualizado nessa mesma passada
       if (missaoConcluidaHoje) {
-        await concederPontosMissaoSeNecessario(userId, missaoDoDia.id, missaoDoDia.pontosRecompensa);
+        await concederPontosMissaoSeNecessario(userId, missaoDoDia.id);
       }
 
       // hoje contou pra sequência se a missão foi cumprida OU há qualquer
@@ -128,6 +131,7 @@ export function useHomeData() {
           status: calcularStatusDia({ data: dia.data, hojeISO: hoje, mantido: diasMantidos.has(dia.data) }),
         }))
       );
+      setDadosCarregados(true);
     } catch (erro) {
       console.error('Erro ao carregar dados da Home:', erro);
     } finally {
@@ -143,6 +147,7 @@ export function useHomeData() {
 
   return {
     carregando,
+    dadosCarregados,
     missao,
     missaoConcluida,
     sequenciaAtual,

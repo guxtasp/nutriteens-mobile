@@ -44,7 +44,7 @@ import {
   type TomStatus,
 } from '../utils/fluxo';
 
-type Props = { config: ConfigPainel; route: { params: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string } } };
+type Props = { config: ConfigPainel; route: { params: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string; origem?: string } } };
 
 const COR_TOM: Record<TomStatus, { fundo: string; texto: string }> = {
   neutro: { fundo: '#EEF0EF', texto: '#4B4B4B' },
@@ -64,7 +64,7 @@ const CONFIRMACAO: Partial<Record<AcaoFluxo, string>> = {
   REABRIR: 'Reabrir como rascunho para poder ajustar e enviar de novo?',
 };
 
-function CorpoTrilhaView({ corpo, navigation }: { corpo: CorpoTrilha; navigation: any }) {
+function CorpoTrilhaView({ corpo, navigation, origem }: { corpo: CorpoTrilha; navigation: any; origem?: string }) {
   const totalLicoes = corpo.modulos.reduce((s, m) => s + m.licoes.length, 0);
   return (
     <View style={{ gap: 10 }}>
@@ -83,7 +83,7 @@ function CorpoTrilhaView({ corpo, navigation }: { corpo: CorpoTrilha; navigation
               key={l.id}
               accessibilityRole="button"
               style={styles.licao}
-              onPress={() => navigation.navigate('LicaoPreview', { licaoId: l.id })}
+              onPress={() => navigation.navigate('LicaoPreview', { licaoId: l.id, origem })}
             >
               <AppText style={styles.licaoTitulo}>
                 {l.ordem}. {l.titulo}
@@ -172,7 +172,7 @@ function CorpoTrocaView({ corpo }: { corpo: CorpoTroca }) {
 }
 
 export default function ConteudoDetalheScreen({ config, route }: Props) {
-  const { tipo, conteudoId } = route.params;
+  const { tipo, conteudoId, origem } = route.params;
   const navigation = useNavigation<any>();
   const [dados, setDados] = useState<DetalheConteudo | null>(null);
   const [papel, setPapel] = useState<PapelPainel | null>(null);
@@ -243,6 +243,7 @@ export default function ConteudoDetalheScreen({ config, route }: Props) {
           dados={dados}
           papel={papel}
           navigation={navigation}
+          origem={origem}
           aviso={aviso}
           erroAcao={erroAcao}
           pendente={pendente}
@@ -269,6 +270,7 @@ function Detalhe(p: {
   dados: DetalheConteudo;
   papel: PapelPainel;
   navigation: any;
+  origem?: string;
   aviso: string | null;
   erroAcao: string | null;
   pendente: AcaoFluxo | null;
@@ -344,17 +346,17 @@ function Detalhe(p: {
                 style={styles.botao}
                 onPress={() =>
                   dados.tipo === 'TRILHA'
-                    ? p.navigation.navigate('EditarTrilha', { trilhaId: dados.conteudoId })
+                    ? p.navigation.navigate('EditarTrilha', { trilhaId: dados.conteudoId, origem: p.origem })
                     : dados.tipo === 'TROCA'
-                      ? p.navigation.navigate('EditarTroca', { trocaId: dados.conteudoId })
-                      : p.navigation.navigate('EditarReceita', { receitaId: dados.conteudoId })
+                      ? p.navigation.navigate('EditarTroca', { trocaId: dados.conteudoId, origem: p.origem })
+                      : p.navigation.navigate('EditarReceita', { receitaId: dados.conteudoId, origem: p.origem })
                 }
               />
             ) : undefined
           }
         >
           {dados.tipo === 'TRILHA' ? (
-            <CorpoTrilhaView corpo={dados.corpo as CorpoTrilha} navigation={p.navigation} />
+            <CorpoTrilhaView corpo={dados.corpo as CorpoTrilha} navigation={p.navigation} origem={p.origem} />
           ) : dados.tipo === 'TROCA' ? (
             <CorpoTrocaView corpo={dados.corpo as CorpoTroca} />
           ) : (

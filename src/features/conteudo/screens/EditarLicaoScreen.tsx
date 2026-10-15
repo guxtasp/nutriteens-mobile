@@ -1,43 +1,80 @@
 // src/features/conteudo/screens/EditarLicaoScreen.tsx
-// Editar uma lição existente (título, XP, texto, enunciados e alternativas) ou criar uma
-// lição de leitura nova dentro de um módulo. Só altera o que mudou, para não subir a versão
-// do conteúdo à toa. Estruturas complexas (pares, colunas) ficam como estão.
-import React, { useCallback, useEffect, useState } from 'react';
+// Criar e editar uma lição COMPLETA: dados da lição + todos os passos (cartão, múltipla escolha,
+// verdadeiro/falso, completar, ordene, associe, classifique, memória, prato, enquete, meta) e
+// lição de hábito (prática real). A gravação é atômica (conteudo_salvar_licao): valida tudo
+// antes e grava lição, passos e alternativas numa única transação. Só grava se algo mudou,
+// para não subir a versão do conteúdo à toa.
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { AppText } from '../../../shared/ui/AppText';
+import { AppButton } from '../../../shared/ui/AppButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
-import {
-  LicaoEditavel, buscarLicaoEditavel, criarLicaoLeitura, salvarLicao, salvarOpcao, salvarQuestao,
-} from '../services/edicaoService';
+import { buscarLicaoEditavel, salvarLicaoCompleta, type LicaoEditavel } from '../services/edicaoService';
 import { obterPapelAtual } from '../services/conteudoService';
 import { ROTULO_FORMATO } from '../utils/descreverQuestao';
 import type { Papel } from '../utils/regrasAprovacao';
-import { AvisoEdicao, BarraSalvar, campoMultilinha, numeroOuNulo } from '../components/CamposEdicao';
+import { AvisoEdicao, BarraSalvar, campoMultilinha } from '../components/CamposEdicao';
+import PassoEditor from '../components/PassoEditor';
+import {
+  FORMATOS_PASSO,
+  HABITOS,
+  ICONES_SUGERIDOS,
+  LIMITES,
+  ROTULO_HABITO,
+  ROTULO_TIPO_LICAO,
+  assinaturaLicao,
+  deQuestao,
+  mover,
+  paraPayloadLicao,
+  passoVazio,
+  validarLicaoEdicao,
+  validarPasso,
+  type FormatoPasso,
+  type LicaoEmEdicao,
+  type PassoEdicao,
+  type TipoLicaoEdicao,
+} from '../utils/passosEdicao';
 
-type Props = { config: ConfigPainel; route: { params?: { licaoId?: string; moduloId?: string; proximaOrdem?: number } } };
+type Props = {
+  config: ConfigPainel;
+  route: { params?: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: TipoLicaoEdicao } };
+};
 
-const FORMATOS_COM_CORRETA = ['multipla_escolha', 'verdadeiro_falso', 'completar'];
+const TIPOS: TipoLicaoEdicao[] = ['conteudo', 'quiz', 'atividade_rastreavel'];
+
+function Chip({ texto, ligado, onPress }: { texto: string; ligado: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={[styles.chip, ligado && styles.chipOn]}>
+      <AppText style={[styles.chipTexto, ligado && { color: colors.white }]}>{texto}</AppText>
+    </Pressable>
+  );
+}
 
 export default function EditarLicaoScreen({ config, route }: Props) {
-  const { licaoId, moduloId, proximaOrdem } = route.params ?? {};
+  const { licaoId, moduloId, proximaOrdem, origem, tipoNovo } = route.params ?? {};
   const criando = !licaoId;
   const navigation = useNavigation<any>();
   const [papel, setPapel] = useState<Papel | null>(null);
   const [licao, setLicao] = useState<LicaoEditavel | null>(null);
+  const [tipo, setTipo] = useState<TipoLicaoEdicao>(tipoNovo ?? 'conteudo');
   const [titulo, setTitulo] = useState('');
   const [xp, setXp] = useState('10');
+  const [icone, setIcone] = useState('');
   const [texto, setTexto] = useState('');
-  const [enunciados, setEnunciados] = useState<Record<string, string>>({});
-  const [cartoes, setCartoes] = useState<Record<string, string>>({});
-  const [opcoes, setOpcoes] = useState<Record<string, { texto: string; correta: boolean }>>({});
+  const [objetivo, setObjetivo] = useState('');
+  const [habito, setHabito] = useState<string>('alimentacao');
+  const [janela, setJanela] = useState(String(LIMITES.janelaPadrao));
+  const [passos, setPassos] = useState<PassoEdicao[]>([]);
+  const [assinaturaInicial, setAssinaturaInicial] = useState<string | null>(criando ? null : '');
+  const [mostrarErros, setMostrarErros] = useState(false);
   const [carregando, setCarregando] = useState(!criando);
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -45,17 +82,38 @@ export default function EditarLicaoScreen({ config, route }: Props) {
 
   useEffect(() => { obterPapelAtual().then(setPapel); }, []);
 
+  const estado = useMemo<LicaoEmEdicao>(
+    () => ({ tipo, titulo, xp, icone, texto, objetivo, habito, janelaHoras: janela, passos }),
+    [tipo, titulo, xp, icone, texto, objetivo, habito, janela, passos]
+  );
+
   const carregar = useCallback(async () => {
     if (!licaoId) return;
     try {
       const l = await buscarLicaoEditavel(licaoId);
+      const inicial: LicaoEmEdicao = {
+        tipo: (TIPOS as string[]).includes(l.tipo) ? (l.tipo as TipoLicaoEdicao) : 'conteudo',
+        titulo: l.titulo,
+        xp: String(l.xp),
+        icone: l.icone ?? '',
+        texto: typeof l.conteudo?.texto === 'string' ? l.conteudo.texto : '',
+        objetivo: typeof l.conteudo?.objetivo === 'string' ? l.conteudo.objetivo : '',
+        habito: l.tipoHabito ?? 'alimentacao',
+        janelaHoras: String(l.janelaHoras ?? LIMITES.janelaPadrao),
+        passos: l.questoes.map(deQuestao),
+      };
       setLicao(l);
-      setTitulo(l.titulo);
-      setXp(String(l.xp));
-      setTexto(typeof l.conteudo?.texto === 'string' ? l.conteudo.texto : '');
-      setEnunciados(Object.fromEntries(l.questoes.map((q) => [q.id, q.enunciado])));
-      setCartoes(Object.fromEntries(l.questoes.filter((q) => q.formato === 'cartao').map((q) => [q.id, String(q.dadosExtra?.texto ?? '')])));
-      setOpcoes(Object.fromEntries(l.questoes.flatMap((q) => q.opcoes.map((o) => [o.id, { texto: o.texto, correta: o.correta }]))));
+      setTipo(inicial.tipo);
+      setTitulo(inicial.titulo);
+      setXp(String(inicial.xp));
+      setIcone(inicial.icone);
+      setTexto(inicial.texto);
+      setObjetivo(inicial.objetivo);
+      setHabito(inicial.habito);
+      setJanela(String(inicial.janelaHoras));
+      setPassos(inicial.passos);
+      setAssinaturaInicial(assinaturaLicao(inicial));
+      setMostrarErros(false);
       setErro(null);
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível abrir a lição.');
@@ -66,55 +124,48 @@ export default function EditarLicaoScreen({ config, route }: Props) {
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
+  const alterada = assinaturaInicial === null ? true : assinaturaInicial !== '' && assinaturaLicao(estado) !== assinaturaInicial;
+  const errosLicao = useMemo(() => (mostrarErros ? validarLicaoEdicao(estado) : []), [mostrarErros, estado]);
+  const errosPorPasso = useMemo(() => (mostrarErros ? passos.map(validarPasso) : passos.map(() => [])), [mostrarErros, passos]);
+  const errosGerais = errosLicao.filter((e) => !/^Passo \d+:/.test(e));
+
+  function adicionarPasso(f: FormatoPasso) {
+    setPassos((a) => [...a, passoVazio(f)]);
+  }
+
   async function salvar() {
-    const xpNum = numeroOuNulo(xp);
-    if (titulo.trim().length < 2) return setErro('Dê um título à lição.');
-    if (xpNum == null || xpNum < 0 || xpNum > 500) return setErro('XP deve ser um número entre 0 e 500.');
-    setOcupado(true);
-    setErro(null);
     setMsg(null);
+    setErro(null);
+    if (!criando && !alterada) {
+      setMsg('Nada para salvar: nenhuma alteração.');
+      return;
+    }
+    const problemas = validarLicaoEdicao(estado);
+    if (problemas.length > 0) {
+      setMostrarErros(true);
+      setErro(problemas.length === 1 ? problemas[0] : `${problemas.length} problemas para corrigir antes de salvar (veja os avisos em vermelho).`);
+      return;
+    }
+    if (criando && !moduloId) {
+      setErro('Módulo não informado.');
+      return;
+    }
+    setOcupado(true);
     try {
+      const { licao: dadosLicao, passos: dadosPassos } = paraPayloadLicao(estado);
+      await salvarLicaoCompleta({
+        id: licao?.id,
+        moduloId,
+        ordem: criando ? proximaOrdem : undefined,
+        licao: dadosLicao,
+        passos: dadosPassos,
+      });
       if (criando) {
-        if (!moduloId) throw new Error('Módulo não informado.');
-        if (texto.trim().length < 10) throw new Error('Escreva o texto da lição (mínimo de 10 letras).');
-        await criarLicaoLeitura(moduloId, { titulo, texto, xp: xpNum, ordem: proximaOrdem ?? 1 });
         navigation.goBack();
         return;
       }
-      if (!licao) return;
-      let alterou = false;
-      const textoMudou = typeof licao.conteudo?.texto === 'string' && texto !== licao.conteudo.texto;
-      if (titulo.trim() !== licao.titulo || xpNum !== licao.xp || textoMudou) {
-        await salvarLicao(licao.id, {
-          titulo,
-          xp: xpNum,
-          conteudo: textoMudou ? { ...(licao.conteudo ?? {}), texto } : undefined,
-        });
-        alterou = true;
-      }
-      for (const q of licao.questoes) {
-        const novoEnun = (enunciados[q.id] ?? q.enunciado).trim();
-        const novoCartao = q.formato === 'cartao' ? cartoes[q.id] ?? '' : null;
-        const cartaoMudou = novoCartao !== null && novoCartao !== String(q.dadosExtra?.texto ?? '');
-        if (novoEnun !== q.enunciado || cartaoMudou) {
-          if (novoEnun.length === 0) throw new Error('O enunciado não pode ficar vazio.');
-          await salvarQuestao(q.id, { enunciado: novoEnun, dadosExtra: cartaoMudou ? { ...q.dadosExtra, texto: novoCartao } : undefined });
-          alterou = true;
-        }
-        for (const o of q.opcoes) {
-          const novo = opcoes[o.id];
-          if (novo && (novo.texto.trim() !== o.texto || novo.correta !== o.correta)) {
-            if (novo.texto.trim().length === 0) throw new Error('Uma alternativa ficou vazia.');
-            await salvarOpcao(o.id, novo);
-            alterou = true;
-          }
-        }
-        if (FORMATOS_COM_CORRETA.includes(q.formato) && q.opcoes.length > 0 && !q.opcoes.some((o) => (opcoes[o.id]?.correta ?? o.correta))) {
-          throw new Error(`A pergunta "${q.enunciado.slice(0, 40)}" ficou sem resposta correta marcada.`);
-        }
-      }
       await carregar();
-      setMsg(alterou ? 'Lição salva.' : 'Nada para salvar: nenhuma alteração.');
+      setMsg('Lição salva.');
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível salvar.');
     } finally {
@@ -122,8 +173,15 @@ export default function EditarLicaoScreen({ config, route }: Props) {
     }
   }
 
+  const habitoTipo = tipo === 'atividade_rastreavel';
+
   return (
-    <PainelLayout config={config} titulo={criando ? 'Nova lição de leitura' : 'Editar lição'} subtitulo={licao?.titulo} voltar>
+    <PainelLayout
+      config={config}
+      titulo={criando ? `Nova lição · ${ROTULO_TIPO_LICAO[tipo]}` : 'Editar lição'}
+      subtitulo={licao?.titulo}
+      voltar
+    >
       {carregando ? (
         <EstadoCarregando />
       ) : !criando && !licao ? (
@@ -131,52 +189,104 @@ export default function EditarLicaoScreen({ config, route }: Props) {
       ) : (
         <>
           <AvisoEdicao papel={papel} />
-          <CartaoSecao titulo="Lição" ajuda="Título e XP aparecem para o adolescente. XP é a pontuação ganha ao concluir a lição.">
-            <LabeledInput label="Título" value={titulo} onChangeText={setTitulo} maxLength={120} />
-            <LabeledInput label="XP ao concluir" value={xp} onChangeText={setXp} keyboardType="numeric" maxLength={3} />
-            {(criando || typeof licao?.conteudo?.texto === 'string') && (
-              <LabeledInput label="Texto da lição" value={texto} onChangeText={setTexto} multiline style={campoMultilinha} placeholder="Escreva o conteúdo que o adolescente vai ler" />
+
+          {criando && (
+            <CartaoSecao titulo="Tipo de lição" ajuda="Leitura: texto e passos. Quiz: só passos. Prática real: o adolescente registra um hábito (água, atividade física ou alimentação) e a lição conclui sozinha.">
+              <View style={styles.chips}>
+                {TIPOS.map((t) => (
+                  <Chip key={t} texto={ROTULO_TIPO_LICAO[t]} ligado={tipo === t} onPress={() => { setTipo(t); if (t === 'atividade_rastreavel') setPassos([]); }} />
+                ))}
+              </View>
+            </CartaoSecao>
+          )}
+
+          <CartaoSecao titulo="Lição" ajuda="Título, ícone e XP aparecem para o adolescente. XP é a pontuação ganha ao concluir a lição.">
+            <LabeledInput label="Título" value={titulo} onChangeText={setTitulo} maxLength={LIMITES.titulo} />
+            <LabeledInput label="XP ao concluir" value={xp} onChangeText={(t) => setXp(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={3} />
+            <View style={{ gap: 6 }}>
+              <LabeledInput label="Ícone (opcional)" value={icone} onChangeText={setIcone} autoCapitalize="none" maxLength={40} placeholder="Ex.: leaf-outline" />
+              <View style={styles.chips}>
+                {ICONES_SUGERIDOS.map((i) => (
+                  <Chip key={i} texto={i} ligado={icone === i} onPress={() => setIcone(i)} />
+                ))}
+              </View>
+            </View>
+            {(tipo === 'conteudo' || habitoTipo) && (
+              <>
+                <LabeledInput
+                  label={habitoTipo ? 'Desafio do dia' : passos.length > 0 ? 'Texto de abertura (opcional)' : 'Texto da lição'}
+                  value={texto}
+                  onChangeText={setTexto}
+                  multiline
+                  style={campoMultilinha}
+                  placeholder={habitoTipo ? 'Ex.: registre a água que você beber hoje.' : 'Escreva o conteúdo que o adolescente vai ler'}
+                />
+                <LabeledInput label="Objetivo (opcional)" value={objetivo} onChangeText={setObjetivo} multiline style={{ minHeight: 64, textAlignVertical: 'top' }} />
+              </>
             )}
-            {criando && <AppText style={styles.suave}>A lição será criada com um cartão de leitura. Perguntas e outros formatos são adicionados pela equipe técnica.</AppText>}
+            {habitoTipo && (
+              <>
+                <View style={{ gap: 6 }}>
+                  <AppText style={styles.rotulo}>Hábito a registrar</AppText>
+                  <View style={styles.chips}>
+                    {HABITOS.map((h) => (
+                      <Chip key={h} texto={ROTULO_HABITO[h]} ligado={habito === h} onPress={() => setHabito(h)} />
+                    ))}
+                  </View>
+                </View>
+                <LabeledInput label="Janela de verificação (horas)" value={janela} onChangeText={(t) => setJanela(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={3} />
+              </>
+            )}
+            {errosGerais.length > 0 && (
+              <View style={styles.erros}>
+                {errosGerais.map((e, i) => <AppText key={i} style={styles.erroTexto}>• {e}</AppText>)}
+              </View>
+            )}
           </CartaoSecao>
 
-          {!criando && licao && licao.questoes.map((q, i) => (
-            <CartaoSecao
-              key={q.id}
-              titulo={`Passo ${i + 1} · ${ROTULO_FORMATO[q.formato] ?? q.formato}`}
-              ajuda="Corrija o enunciado e as alternativas. Marque a(s) resposta(s) correta(s) tocando no círculo."
-            >
-              <LabeledInput label={q.formato === 'cartao' ? 'Título do cartão' : 'Enunciado'} value={enunciados[q.id] ?? ''} onChangeText={(t) => setEnunciados((a) => ({ ...a, [q.id]: t }))} multiline style={{ minHeight: 64, textAlignVertical: 'top' }} />
-              {q.formato === 'cartao' && (
-                <LabeledInput label="Texto do cartão" value={cartoes[q.id] ?? ''} onChangeText={(t) => setCartoes((a) => ({ ...a, [q.id]: t }))} multiline style={campoMultilinha} />
+          {!habitoTipo && (
+            <>
+              {passos.length === 0 && (
+                <AppText style={styles.suave}>
+                  {tipo === 'quiz' ? 'Um quiz precisa de pelo menos 1 passo.' : 'Esta lição ainda não tem passos. Adicione abaixo, ou use só o texto de leitura.'}
+                </AppText>
               )}
-              {q.opcoes.map((o) => {
-                const marcavel = FORMATOS_COM_CORRETA.includes(q.formato);
-                const atual = opcoes[o.id] ?? { texto: o.texto, correta: o.correta };
-                return (
-                  <View key={o.id} style={styles.opcao}>
-                    {marcavel && (
-                      <Pressable
-                        onPress={() => setOpcoes((a) => ({ ...a, [o.id]: { ...atual, correta: !atual.correta } }))}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: atual.correta }}
-                        accessibilityLabel="Resposta correta"
-                        style={[styles.marca, atual.correta && styles.marcaOn]}
-                      >
-                        {atual.correta && <AppText style={styles.marcaCheck}>✓</AppText>}
-                      </Pressable>
-                    )}
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <LabeledInput label="" value={atual.texto} onChangeText={(t) => setOpcoes((a) => ({ ...a, [o.id]: { ...atual, texto: t } }))} />
-                    </View>
-                  </View>
-                );
-              })}
-              {!['cartao', 'multipla_escolha', 'verdadeiro_falso', 'completar', 'ordene', 'enquete'].includes(q.formato) && (
-                <AppText style={styles.suave}>Neste formato, pares, colunas e demais dados ficam como estão; aqui só o texto pode ser corrigido.</AppText>
-              )}
-            </CartaoSecao>
-          ))}
+              {passos.map((p, i) => (
+                <PassoEditor
+                  key={p.chave}
+                  passo={p}
+                  indice={i}
+                  total={passos.length}
+                  erros={errosPorPasso[i] ?? []}
+                  onChange={(novo) => setPassos((a) => a.map((x, k) => (k === i ? novo : x)))}
+                  onMover={(dir) => setPassos((a) => mover(a, i, dir))}
+                  onRemover={() => setPassos((a) => a.filter((_, k) => k !== i))}
+                />
+              ))}
+              <CartaoSecao titulo="Adicionar passo" subtitulo={`${passos.length} de ${LIMITES.passosMax} passos`} ajuda="Escolha o formato do próximo passo. Todos os formatos funcionam em lições de leitura e de quiz.">
+                <View style={styles.chips}>
+                  {FORMATOS_PASSO.map((f) => (
+                    <Chip key={f} texto={ROTULO_FORMATO[f] ?? f} ligado={false} onPress={() => adicionarPasso(f)} />
+                  ))}
+                </View>
+              </CartaoSecao>
+            </>
+          )}
+
+          {!criando && licao && (
+            <View style={{ flexDirection: 'row' }}>
+              <AppButton
+                label="PRÉ-VISUALIZAR LIÇÃO"
+                fullWidth={false}
+                size="compact"
+                outlineColor={colors.primaryDark}
+                textColor={colors.primaryDark}
+                style={{ paddingHorizontal: 14, minHeight: 44 }}
+                onPress={() => navigation.navigate('LicaoPreview', { licaoId: licao.id, origem })}
+              />
+            </View>
+          )}
+          {!criando && alterada && <AppText style={styles.suave}>Há alterações não salvas. A prévia mostra o que está salvo.</AppText>}
 
           <BarraSalvar rotulo={criando ? 'CRIAR LIÇÃO' : 'SALVAR LIÇÃO'} ocupado={ocupado} onSalvar={salvar} onCancelar={() => navigation.goBack()} erro={erro} mensagem={msg} />
         </>
@@ -187,8 +297,11 @@ export default function EditarLicaoScreen({ config, route }: Props) {
 
 const styles = StyleSheet.create({
   suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
-  opcao: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  marca: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: painel.cardBorda, alignItems: 'center', justifyContent: 'center', marginTop: -10 },
-  marcaOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  marcaCheck: { color: colors.white, fontFamily: typography.bold, fontSize: 14 },
+  rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: painel.cardBorda, justifyContent: 'center', backgroundColor: painel.card },
+  chipOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
+  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
+  erros: { backgroundColor: colors.exercicioErroSuave + '55', borderRadius: 12, padding: 10, gap: 2 },
+  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
 });

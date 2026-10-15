@@ -17,6 +17,14 @@ import { useGoogleAuth } from '../hooks/useGoogleAuth';
 
 const LARGURA_DESKTOP = 760;
 
+const MENSAGEM_LOGIN_INVALIDO = 'Email ou senha incorretos';
+const MENSAGEM_FALHA_CONEXAO = 'Não conseguimos conectar agora. Verifique sua internet e tente de novo';
+
+function mensagemErroLogin(error: { name?: string; status?: number }): string {
+  const semConexao = error.name === 'AuthRetryableFetchError' || error.status === 0 || (error.status ?? 0) >= 500;
+  return semConexao ? MENSAGEM_FALHA_CONEXAO : MENSAGEM_LOGIN_INVALIDO;
+}
+
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,15 +45,10 @@ export default function LoginScreen({ navigation }: any) {
     setLoading(false);
 
     if (error) {
-      let mensagem = 'Não conseguimos entrar :(';
-      if (error.message.includes('Invalid login credentials')) {
-        mensagem = 'Email ou senha estão incorretos';
-      } else if (error.message.includes('User not found')) {
-        mensagem = 'Essa conta não existe ainda';
-      } else if (error.message.includes('Email not confirmed')) {
-        mensagem = 'Confirme seu email antes de entrar';
-      }
-      showMessage(mensagem, 'error');
+      // Mesma mensagem para qualquer recusa de login (senha errada, conta inexistente, e-mail
+      // não confirmado...): mensagens diferentes revelariam quais e-mails têm conta (RF005).
+      // Só falha de conexão/servidor tem texto próprio, pois não diz nada sobre a conta.
+      showMessage(mensagemErroLogin(error), 'error');
       return;
     }
 

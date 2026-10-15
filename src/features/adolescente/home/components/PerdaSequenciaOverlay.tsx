@@ -4,7 +4,7 @@
 // CelebracaoSequenciaModal (fase "hero" com o foguinho sozinho, ganhando
 // destaque e depois assentando) só que invertida: o foguinho verde vira
 // vermelho, uma mensagem de perda aparece e o Bróxis triste é revelado por
-// baixo.
+// baixo (arte real: assets/img/mascot/broxis-triste.png).
 //
 // IMPORTANTE (bug corrigido): a versão anterior tentava animar a prop
 // `color` do ícone passando um Animated.Value interpolado direto nela. O
@@ -14,13 +14,13 @@
 // feita com DOIS ícones sobrepostos (um verde, um vermelho) cruzando a
 // opacidade um do outro — só opacidade/escala, sem cor animada.
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View, Easing } from 'react-native';
+import { Animated, StyleSheet, View, Easing, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import BroxisTristeFormas from './BroxisTristeFormas';
+import { feedbackPerda } from '../../../../shared/audio/feedback';
 
 export const DURACAO_MS = 3200;
 const VERMELHO_PERDA = '#E14D4D';
@@ -28,32 +28,44 @@ const VERMELHO_PERDA_ESCURO = '#B23A3A';
 
 type Props = {
   visivel: boolean;
-  /** chamado no fim da animação — quem chama deve atualizar os números pra 0/reset por baixo do overlay */
+  /** chamado no fim da animação */
   onFinalizado: () => void;
+  /** tamanho da sequência perdida — se informado (e > 1), entra na mensagem */
+  diasPerdidos?: number;
 };
 
-export default function PerdaSequenciaOverlay({ visivel, onFinalizado }: Props) {
+export default function PerdaSequenciaOverlay({ visivel, onFinalizado, diasPerdidos }: Props) {
   const t = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visivel) return;
     t.setValue(0);
-    Animated.timing(t, {
+    feedbackPerda();
+    const animacao = Animated.timing(t, {
       toValue: 1,
       duration: DURACAO_MS,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true, // só opacidade/escala/translação agora — dá pra usar o driver nativo
-    }).start(({ finished }) => {
+    });
+    animacao.start(({ finished }) => {
       if (finished) onFinalizado();
     });
+    return () => animacao.stop(); // sair da tela no meio não deixa a animação rodando
   }, [visivel]);
 
   if (!visivel) return null;
 
-  // --- lavado vermelho cobrindo a tela inteira, entra rápido e some no fim ---
+  // --- lavado vermelho cobrindo a tela inteira: entra rápido e fica até o fim ---
   const fundoOpacity = t.interpolate({
-    inputRange: [0, 0.12, 0.85, 1],
-    outputRange: [0, 1, 1, 0],
+    inputRange: [0, 0.12],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+  // --- saída: tudo (fundo, mascote e legenda) some junto no final, em vez de o fundo
+  // sumir antes e deixar a legenda branca solta sobre a tela clara ---
+  const saidaOpacity = t.interpolate({
+    inputRange: [0.9, 1],
+    outputRange: [1, 0],
     extrapolate: 'clamp',
   });
 
@@ -114,7 +126,7 @@ export default function PerdaSequenciaOverlay({ visivel, onFinalizado }: Props) 
   });
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <Animated.View style={[StyleSheet.absoluteFill, { opacity: saidaOpacity }]} pointerEvents="none">
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fundoOpacity }]}>
         <LinearGradient
           colors={[VERMELHO_PERDA, VERMELHO_PERDA_ESCURO]}
@@ -141,7 +153,11 @@ export default function PerdaSequenciaOverlay({ visivel, onFinalizado }: Props) 
         </Animated.View>
 
         <Animated.View style={{ opacity: textoOpacity, transform: [{ translateY: textoTranslateY }], marginTop: 24 }}>
-          <AppText style={styles.textoPerdeu}>Você perdeu a sequência!</AppText>
+          <AppText style={styles.textoPerdeu}>
+            {diasPerdidos && diasPerdidos > 1
+              ? `Você perdeu a sequência de ${diasPerdidos} dias!`
+              : 'Você perdeu a sequência!'}
+          </AppText>
         </Animated.View>
 
         <Animated.View
@@ -150,7 +166,12 @@ export default function PerdaSequenciaOverlay({ visivel, onFinalizado }: Props) 
             { opacity: mascoteOpacity, transform: [{ scale: mascoteEscala }] },
           ]}
         >
-          <BroxisTristeFormas size={120} />
+          <Image
+            source={require('../../../../../assets/img/mascot/broxis-triste.png')}
+            style={styles.mascoteImagem}
+            resizeMode="contain"
+            accessibilityLabel="Bróxis triste"
+          />
           <Animated.View style={{ opacity: legendaOpacity, marginTop: 12, paddingHorizontal: 32 }}>
             <AppText style={styles.legenda}>
               Tudo bem! Comece uma nova sequência hoje mesmo.
@@ -158,7 +179,7 @@ export default function PerdaSequenciaOverlay({ visivel, onFinalizado }: Props) 
           </Animated.View>
         </Animated.View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -182,6 +203,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     textAlign: 'center',
   },
+  mascoteImagem: { width: 120, height: 120 },
   mascoteBloco: {
     position: 'absolute',
     alignItems: 'center',

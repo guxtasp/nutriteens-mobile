@@ -9,6 +9,7 @@
 import React, { useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { AppText } from '../../../shared/ui/AppText';
@@ -24,6 +25,7 @@ import { useAuth } from '../../../shared/contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { TIPO_ESCOLA_OPTIONS } from '../constants/tipoEscolaOptions';
 import { GENERO_OPTIONS } from '../constants/generoOptions';
+import { VERSAO_TERMOS, CONTEUDO_CONSENTIMENTO } from '../../legal/data/textosLegais';
 import { toIsoDate, validateNome, validateDataNascimento } from '../utils/signupValidators';
 
 interface Props {
@@ -34,6 +36,7 @@ interface Props {
 }
 
 export default function CompletarCadastroScreen({ userId, nomeSugerido, onConcluido, onSair }: Props) {
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { definirNomeCompleto } = useAuth();
   const { message, type, showMessage, clearMessage } = useMessageBanner();
@@ -83,8 +86,8 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
         const { error: erroConsent } = await supabase.from('consentimentos').insert({
           user_id: userId,
           aceite_termos: true,
-          versao_termo: '1.0',
-          conteudo: 'Termos de uso e política de privacidade versão 1.0',
+          versao_termo: VERSAO_TERMOS,
+          conteudo: CONTEUDO_CONSENTIMENTO,
         });
         if (erroConsent) {
           console.error('Erro ao salvar consentimento (Google):', erroConsent);
@@ -139,8 +142,18 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
           onChange={setAceitouTermos}
           label={
             <AppText style={styles.termsText}>
-              Li e aceito os <AppText style={styles.link}>Termos de Uso</AppText> e a{' '}
-              <AppText style={styles.link}>Política de Privacidade</AppText>
+              Li e aceito os{' '}
+              <AppText style={styles.link} onPress={() => navigation.navigate('TermosDeUso')} accessibilityRole="link">
+                Termos de Uso
+              </AppText>{' '}
+              e a{' '}
+              <AppText
+                style={styles.link}
+                onPress={() => navigation.navigate('PoliticaPrivacidade')}
+                accessibilityRole="link"
+              >
+                Política de Privacidade
+              </AppText>
             </AppText>
           }
         />

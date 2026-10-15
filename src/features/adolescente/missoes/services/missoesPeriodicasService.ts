@@ -126,16 +126,15 @@ export async function buscarMissoesDoPeriodo(userId: string, periodo: Periodo): 
     let creditado = jaCreditados.has(def.codigo);
 
     if (progresso.concluida && !creditado) {
-      const { data: inserido, error } = await supabase
-        .from('missoes_periodicas_resgates')
-        .upsert(
-          { user_id: userId, codigo: def.codigo, periodo_inicio: intervalo.inicio, pontos: def.pontos },
-          { onConflict: 'user_id,codigo,periodo_inicio', ignoreDuplicates: true },
-        )
-        .select('id');
-      if (error) throw error;
-      if (inserido && inserido.length > 0) await concederXp(userId, def.pontos);
-      creditado = true;
+      // O servidor confere o período, grava o resgate e soma o valor do catálogo numa
+      // transação só (origem `missao_periodica`); repetir a chamada devolve 0.
+      try {
+        await concederXp('missao_periodica', `${def.codigo}|${intervalo.inicio}`);
+        creditado = true;
+      } catch (erro) {
+        // uma recusa/falha não derruba a tela das outras missões; tenta de novo na próxima abertura
+        console.error('Erro ao conceder pontos da missão do período:', erro);
+      }
     }
 
     missoes.push({ def, progresso, pontosCreditados: creditado });

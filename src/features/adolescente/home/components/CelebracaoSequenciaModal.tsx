@@ -20,6 +20,7 @@ import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { IMAGENS_STATUS_DIA, DiaSemana } from '../types/statusDia';
 import { obterConteudoCelebracao } from '../utils/celebracaoSequencia';
+import { feedbackCelebracao } from '../../../../shared/audio/feedback';
 import { Dimensions } from 'react-native';
 
 const CORES_STATUS_MANTIDO = new Set(['mantido', 'hoje_mantido']);
@@ -122,6 +123,9 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
         Animated.timing(heroScale, { toValue: 0.5, duration: 220, easing: Easing.in(Easing.ease), useNativeDriver: true }),
       ]),
     ]).start(() => {
+      // fanfarra + vibração de sucesso quando a tela da celebração é revelada
+      feedbackCelebracao();
+
       // 5. retorna para a tela original — badge, "X dias de sequência"
       // (fixo no lugar dele), mascote, texto, semana e botão, revelados agora
       Animated.sequence([

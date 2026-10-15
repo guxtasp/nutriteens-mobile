@@ -21,6 +21,7 @@ import { buscarFontes } from '../services/fontesService';
 import { detalheDoNutriente, AlimentoCatalogo } from '../utils/fontesNutriente';
 import FontesGrade, { ItemFonte } from '../components/FontesGrade';
 import { vit } from '../ui/tokens';
+import { HeroNutriente } from '../components/SimboloAnimado';
 
 type Nav = NativeStackNavigationProp<AdolescenteStackParamList, 'NutrienteDetalhe'>;
 type Rota = RouteProp<AdolescenteStackParamList, 'NutrienteDetalhe'>;
@@ -86,14 +87,7 @@ export default function NutrienteDetalheScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-        <MotiView
-          from={{ opacity: 0, scale: 0.6 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', damping: 12, stiffness: 140 }}
-          style={styles.heroBox}
-        >
-          <View style={styles.hero}><AppText style={styles.heroTexto}>{info.simbolo}</AppText></View>
-        </MotiView>
+        <HeroNutriente simbolo={info.simbolo} />
 
         <MotiView from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 320, delay: 120 }}>
           <AppText style={styles.secaoTitulo} accessibilityRole="header">Para que serve</AppText>
@@ -165,9 +159,6 @@ const styles = StyleSheet.create({
   titulo: { fontFamily: typography.bold, fontSize: 20, color: vit.texto, textAlign: 'center' },
   subtitulo: { fontFamily: typography.regular, fontSize: 13, color: vit.textoSuave, textAlign: 'center', marginTop: 2 },
   conteudo: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120, gap: 20 },
-  heroBox: { alignItems: 'center' },
-  hero: { width: 84, height: 84, borderRadius: 42, backgroundColor: vit.destaque, alignItems: 'center', justifyContent: 'center' },
-  heroTexto: { fontFamily: typography.bold, fontSize: 30, color: vit.texto },
   secaoTitulo: { fontFamily: typography.bold, fontSize: 16, color: vit.texto, marginBottom: 10 },
   card: { borderWidth: 1.5, borderColor: vit.borda, borderRadius: 16, padding: 16 },
   texto: { fontFamily: typography.regular, fontSize: 14, color: vit.textoSuave, lineHeight: 21 },

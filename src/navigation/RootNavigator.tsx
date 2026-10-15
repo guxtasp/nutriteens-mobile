@@ -10,7 +10,7 @@ import SignupScreen from '../features/auth/screens/SignupScreen';
 import EsqueciSenhaScreen from '../features/auth/screens/EsqueciSenhaScreen';
 import RedefinirSenhaScreen from '../features/auth/screens/RedefinirSenhaScreen';
 import CompletarCadastroScreen from '../features/auth/screens/CompletarCadastroScreen';
-import LegalPlaceholderScreen from '../features/legal/screens/LegalPlaceholdersScreen';
+import LegalDocumentoScreen from '../features/legal/screens/LegalDocumentoScreen';
 import SplashScreen from '../shared/ui/SplashScreen';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { signupState } from '../shared/state/signupFlag';
@@ -26,12 +26,16 @@ export type RootStackParamList = {
   Signup: undefined;
   EsqueciSenha: undefined;
   RedefinirSenha: undefined;
-  TermosDeUso: { title: string };
-  PoliticaPrivacidade: { title: string };
+  TermosDeUso: { documento: 'termos' };
+  PoliticaPrivacidade: { documento: 'privacidade' };
 };
 
 const StackRecuperacao = createNativeStackNavigator<{ RedefinirSenha: undefined }>();
-const StackCompletarCadastro = createNativeStackNavigator<{ CompletarCadastro: undefined }>();
+const StackCompletarCadastro = createNativeStackNavigator<{
+  CompletarCadastro: undefined;
+  TermosDeUso: { documento: 'termos' };
+  PoliticaPrivacidade: { documento: 'privacidade' };
+}>();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -180,6 +184,16 @@ if (error?.code === 'PGRST116') {
               />
             )}
           </StackCompletarCadastro.Screen>
+          <StackCompletarCadastro.Screen
+            name="TermosDeUso"
+            component={LegalDocumentoScreen}
+            initialParams={{ documento: 'termos' }}
+          />
+          <StackCompletarCadastro.Screen
+            name="PoliticaPrivacidade"
+            component={LegalDocumentoScreen}
+            initialParams={{ documento: 'privacidade' }}
+          />
         </StackCompletarCadastro.Navigator>
       </NavigationContainer>
     );
@@ -214,13 +228,13 @@ if (error?.code === 'PGRST116') {
           <Stack.Screen name="EsqueciSenha" component={EsqueciSenhaScreen} />
           <Stack.Screen
             name="TermosDeUso"
-            component={LegalPlaceholderScreen}
-            initialParams={{ title: 'Termos de Uso' }}
+            component={LegalDocumentoScreen}
+            initialParams={{ documento: 'termos' }}
           />
           <Stack.Screen
             name="PoliticaPrivacidade"
-            component={LegalPlaceholderScreen}
-            initialParams={{ title: 'Política de Privacidade' }}
+            component={LegalDocumentoScreen}
+            initialParams={{ documento: 'privacidade' }}
           />
         </Stack.Navigator>
       )}

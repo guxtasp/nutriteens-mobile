@@ -76,6 +76,16 @@ export default function ProfileScreen() {
             </View>
             <AppText style={styles.barraValor}>{xpTotal}</AppText>
           </View>
+
+          <Pressable
+            style={styles.linkExtrato}
+            onPress={() => navigation.navigate('ExtratoXp')}
+            accessibilityRole="button"
+            accessibilityLabel="Ver o extrato de pontos"
+          >
+            <Ionicons name="receipt-outline" size={14} color={colors.primaryDark} />
+            <AppText style={styles.linkExtratoTexto}>Ver extrato de pontos</AppText>
+          </Pressable>
         </View>
 
         {/* Insígnias: únicas com arte exclusiva (placeholders até o design entregar) */}
@@ -207,6 +217,8 @@ const styles = StyleSheet.create({
   barra: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch', marginTop: 14, paddingHorizontal: 8 },
   barraRotulo: { width: 28, fontSize: 12, fontFamily: typography.bold, color: colors.primaryDark },
   barraValor: { minWidth: 40, textAlign: 'right', fontSize: 12, fontFamily: typography.bold, color: colors.primaryDark },
+  linkExtrato: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingVertical: 6, paddingHorizontal: 10 },
+  linkExtratoTexto: { fontSize: 12, fontFamily: typography.semiBold, color: colors.primaryDark, textDecorationLine: 'underline' },
   secaoTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 22, marginBottom: 10 },
   secaoTitulo: { fontSize: 14, fontFamily: typography.bold, color: colors.primaryDark },
   secaoLado: { fontSize: 12, fontFamily: typography.semiBold, color: colors.placeholder },

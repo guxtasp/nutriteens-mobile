@@ -19,6 +19,8 @@ import { NUTRIENTES_INFO, NutrienteInfo } from '../data/nutrientesInfo';
 import { buscarNutrientesComFonte } from '../services/fontesService';
 import type { NutrienteChave } from '../../alimentacao/utils/nutrientesPorGrupo';
 import { vit } from '../ui/tokens';
+import { SimboloLista } from '../components/SimboloAnimado';
+import * as Haptics from 'expo-haptics';
 
 type Nav = NativeStackNavigationProp<AdolescenteStackParamList, 'Vitaminas'>;
 
@@ -26,6 +28,40 @@ const SECOES: { titulo: string; tipo: NutrienteInfo['tipo'] }[] = [
   { titulo: 'Vitaminas', tipo: 'VITAMINA' },
   { titulo: 'Minerais', tipo: 'MINERAL' },
 ];
+
+function CardNutriente({ n, atraso, emBreve, onPress }: { n: NutrienteInfo; atraso: number; emBreve: boolean; onPress: () => void }) {
+  const [pressionado, setPressionado] = useState(false);
+  return (
+    <MotiView
+      from={{ opacity: 0, translateY: 24, scale: 0.92 }}
+      animate={{ opacity: 1, translateY: 0, scale: 1 }}
+      transition={{ type: 'spring', damping: 14, stiffness: 160, delay: atraso }}
+    >
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.pressionado]}
+        onPressIn={() => { setPressionado(true); Haptics.selectionAsync().catch(() => {}); }}
+        onPressOut={() => setPressionado(false)}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={emBreve ? `${n.nome}, alimentos em breve` : n.nome}
+        accessibilityHint="Abre a página do nutriente"
+      >
+        <View style={styles.cardEsquerda}>
+          <SimboloLista simbolo={n.simbolo} fase={(atraso / 50) * 120} pressionado={pressionado} />
+          <AppText style={styles.cardTexto}>{n.nome}</AppText>
+        </View>
+        {emBreve && <View style={styles.emBreve}><AppText style={styles.emBreveTexto}>Em breve</AppText></View>}
+        <MotiView
+          animate={{ translateX: pressionado ? 4 : 0 }}
+          transition={{ type: 'spring', damping: 10, stiffness: 250 }}
+          style={styles.botao}
+        >
+          <Ionicons name="chevron-forward" size={18} color={vit.texto} />
+        </MotiView>
+      </Pressable>
+    </MotiView>
+  );
+}
 
 export default function VitaminasScreen() {
   const navigation = useNavigation<Nav>();
@@ -68,27 +104,13 @@ export default function VitaminasScreen() {
               const atraso = Math.min(indice++, 10) * 50;
               const emBreve = comFonte !== null && !comFonte.has(n.chave);
               return (
-                <MotiView
+                <CardNutriente
                   key={n.chave}
-                  from={{ opacity: 0, translateY: 16 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  transition={{ type: 'timing', duration: 300, delay: atraso }}
-                >
-                  <Pressable
-                    style={({ pressed }) => [styles.card, pressed && styles.pressionado]}
-                    onPress={() => navigation.navigate('NutrienteDetalhe', { nutriente: n.chave })}
-                    accessibilityRole="button"
-                    accessibilityLabel={emBreve ? `${n.nome}, alimentos em breve` : n.nome}
-                    accessibilityHint="Abre a página do nutriente"
-                  >
-                    <View style={styles.cardEsquerda}>
-                      <View style={styles.simbolo}><AppText style={styles.simboloTexto}>{n.simbolo}</AppText></View>
-                      <AppText style={styles.cardTexto}>{n.nome}</AppText>
-                    </View>
-                    {emBreve && <View style={styles.emBreve}><AppText style={styles.emBreveTexto}>Em breve</AppText></View>}
-                    <View style={styles.botao}><Ionicons name="chevron-forward" size={18} color={vit.texto} /></View>
-                  </Pressable>
-                </MotiView>
+                  n={n}
+                  atraso={atraso}
+                  emBreve={emBreve}
+                  onPress={() => navigation.navigate('NutrienteDetalhe', { nutriente: n.chave })}
+                />
               );
             })}
           </View>
@@ -116,8 +138,6 @@ const styles = StyleSheet.create({
   },
   pressionado: { transform: [{ scale: 0.98 }], opacity: 0.9 },
   cardEsquerda: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  simbolo: { width: 38, height: 38, borderRadius: 19, backgroundColor: vit.fundoSuave, alignItems: 'center', justifyContent: 'center' },
-  simboloTexto: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
   cardTexto: { fontFamily: typography.bold, fontSize: 16, color: colors.primaryDark, flex: 1 },
   emBreve: { backgroundColor: vit.fundoSuave, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, marginRight: 8 },
   emBreveTexto: { fontFamily: typography.bold, fontSize: 11, color: vit.textoSuave },

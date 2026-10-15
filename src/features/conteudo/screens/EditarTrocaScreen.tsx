@@ -19,7 +19,7 @@ import type { Papel } from '../utils/regrasAprovacao';
 import { AvisoEdicao, BarraSalvar, campoMultilinha } from '../components/CamposEdicao';
 import { CONTEXTO_CATEGORIA, ROTULO_CATEGORIA, type CategoriaTroca } from '../../adolescente/trocas/utils/trocas';
 
-type Props = { config: ConfigPainel; route: { params: { trocaId: string } } };
+type Props = { config: ConfigPainel; route: { params: { trocaId: string; origem?: string } } };
 const MAX_FRASE = 240;
 const MAX_DICA = 220;
 

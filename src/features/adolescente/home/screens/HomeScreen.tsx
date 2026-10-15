@@ -13,12 +13,15 @@ import ChatFab from '../../_shared/components/ChatFab';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
 import MissoesWidget from '../../missoes/components/MissoesWidget';
 import CelebracaoSequenciaModal from '../components/CelebracaoSequenciaModal';
+import PerdaSequenciaOverlay from '../components/PerdaSequenciaOverlay';
 import { useHomeData } from '../hooks/useHomeData';
 import { colors } from '../../../../shared/theme/colors';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { useAguaHoje } from '../../agua/hooks/useAguaHoje';
 import { jaMostrouCelebracaoHoje, marcarCelebracaoMostrada } from '../utils/celebracaoGate';
 import { obterConteudoCelebracao } from '../utils/celebracaoSequencia';
+import { detectarPerdaSequencia } from '../utils/perdaSequencia';
+import { lerUltimaSequenciaVista, salvarUltimaSequenciaVista } from '../utils/perdaSequenciaStorage';
 import { concederXp } from '../../../../shared/services/xpService';
 import { useRecompensasStore } from '../../recompensas/store/recompensasStore';
 
@@ -38,6 +41,7 @@ export default function HomeScreen() {
 
   const navigation = useNavigation<NavigationProp>();
   const {
+    dadosCarregados,
     dias: diasComStatus,
     sequenciaAtual,
     missao,
@@ -96,7 +100,8 @@ export default function HomeScreen() {
         const conteudo = obterConteudoCelebracao(sequenciaAtual);
         if (conteudo.xpGanho > 0) {
           try {
-            await concederXp(userId, conteudo.xpGanho);
+            // o servidor confere o marco e o valor; a data é a chave que impede pagar duas vezes
+            await concederXp('marco_sequencia', hojeISO);
             recarregar(); // atualiza o contador de XP do header na hora, sem esperar o próximo foco
           } catch (erro) {
             console.error('Erro ao conceder XP da celebração de sequência:', erro);
@@ -114,6 +119,47 @@ export default function HomeScreen() {
       cancelado = true;
     };
   }, [diaDeHojeMantido, userId, hojeISO, sequenciaAtual]);
+
+  // --- perda de sequência ---
+  //
+  // Compara a sequência de agora com a última que o aluno viu neste aparelho (ver
+  // perdaSequencia.ts). Só roda depois de uma carga bem-sucedida: antes disso os números
+  // são os iniciais (0) e pareceriam uma perda falsa. A "última vista" é gravada ANTES de
+  // mostrar a animação, então fechar o app no meio não faz ela repetir na próxima abertura.
+  //
+  // Só mostra com o dia de hoje ainda pendente (o caso normal: abriu o app depois de
+  // faltar um dia). Se hoje já contou, a celebração do foguinho assume a tela, e duas
+  // animações cheias nunca devem aparecer juntas.
+  const [perdaVisivel, setPerdaVisivel] = useState(false);
+  const [diasPerdidos, setDiasPerdidos] = useState(0);
+
+  useEffect(() => {
+    if (perdaVisivel) pausarRecompensas('perda');
+    else retomarRecompensas('perda');
+    return () => retomarRecompensas('perda');
+  }, [perdaVisivel, pausarRecompensas, retomarRecompensas]);
+
+  useEffect(() => {
+    if (!dadosCarregados || !userId) return;
+    let cancelado = false;
+
+    (async () => {
+      const ultimaVista = await lerUltimaSequenciaVista(userId);
+      if (cancelado) return; // a dependência mudou durante a leitura: a próxima execução refaz tudo
+
+      const { perdeu, diasPerdidos: perdidos } = detectarPerdaSequencia(ultimaVista, sequenciaAtual);
+      await salvarUltimaSequenciaVista(userId, sequenciaAtual);
+
+      if (perdeu && !diaDeHojeMantido) {
+        setDiasPerdidos(perdidos);
+        setPerdaVisivel(true);
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [dadosCarregados, userId, sequenciaAtual, diaDeHojeMantido]);
 
   function handleSelecionarAcao(opcao: 'alimentacao' | 'agua' | 'atividade') {
     setMenuAberto(false);
@@ -148,6 +194,12 @@ export default function HomeScreen() {
         sequenciaAtual={sequenciaAtual}
         dias={diasComStatus}
         onFechar={() => setCelebracaoVisivel(false)}
+      />
+
+      <PerdaSequenciaOverlay
+        visivel={perdaVisivel}
+        diasPerdidos={diasPerdidos}
+        onFinalizado={() => setPerdaVisivel(false)}
       />
     </SafeAreaView>
   );

@@ -26,7 +26,7 @@ async function carregarHoje(userId: string): Promise<MissaoHoje> {
   const progresso = await calcularProgressoMissaoDoDia(userId, hojeISO, missao);
   if (progresso.concluida) {
     // idempotente: só credita na primeira vez (mesma regra da Home)
-    await concederPontosMissaoSeNecessario(userId, missao.id, missao.pontosRecompensa).catch((e) =>
+    await concederPontosMissaoSeNecessario(userId, missao.id).catch((e) =>
       console.error('Erro ao conceder pontos da missão do dia:', e),
     );
   }
