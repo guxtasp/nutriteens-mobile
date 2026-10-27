@@ -7,7 +7,8 @@
 
 export type TipoRegular = 'agua' | 'alimentacao' | 'trilha' | 'missao' | 'atividade';
 // 'saudade' e 'jornada' não disputam a vaga diária dos tipos regulares (ver utils/jornadaSemanal.ts)
-export type TipoLembrete = TipoRegular | 'saudade' | 'jornada';
+// 'aniversario' também é peça separada: agendada só perto da data (ver utils/aniversarioLembrete.ts)
+export type TipoLembrete = TipoRegular | 'saudade' | 'jornada' | 'aniversario';
 
 // Ordem = prioridade em caso de empate na escolha do dia
 // (missão > alimentação > atividade > água > trilha).
@@ -57,6 +58,12 @@ export const MENSAGENS_LEMBRETE: MensagemLembrete[] = [
   { id: 'jornada-1', tipo: 'jornada', titulo: 'Sua jornada da semana', texto: 'Vem ver o que você registrou e aprendeu nos últimos 7 dias.', destino: 'Metricas' },
   { id: 'jornada-2', tipo: 'jornada', titulo: 'Bróxis preparou um resumo', texto: 'Sem nota e sem comparação com ninguém: só você e a sua jornada.', destino: 'Metricas' },
   { id: 'jornada-3', tipo: 'jornada', titulo: 'Olha só a sua semana', texto: 'Seu resumo está pronto. Quer dar uma olhada com o Bróxis?', destino: 'Metricas' },
+
+  // Aniversário (1 por ano, na data, desligável). Sem nome, idade, comida ou corpo: a
+  // notificação aparece na tela bloqueada, então o texto é genérico e a mensagem completa
+  // fica dentro do app (modal da Home).
+  { id: 'aniversario-1', tipo: 'aniversario', titulo: 'Feliz aniversário!', texto: 'O Bróxis preparou uma surpresa pra você. Vem ver!', destino: 'Home' },
+  { id: 'aniversario-2', tipo: 'aniversario', titulo: 'Hoje é o seu dia', texto: 'Passa aqui: tem uma mensagem do Bróxis esperando por você.', destino: 'Home' },
 
   // Saudade (só quando a pessoa fica alguns dias sem abrir o app)
   { id: 'saudade-1', tipo: 'saudade', titulo: 'O Bróxis sentiu sua falta', texto: 'Quando quiser, é só voltar. Tem novidade te esperando.', destino: 'Home' },

@@ -216,6 +216,27 @@ export default function LembretesScreen() {
         </View>
         <AppText style={styles.aviso}>No dia do resumo, ele ocupa o lugar do lembrete diário: nunca chegam dois.</AppText>
 
+        <AppText style={styles.secao}>Datas especiais</AppText>
+        <View style={[styles.cartao, !controlesAtivos && styles.desativado]}>
+          <View style={styles.linha}>
+            <View style={styles.iconeCirculo}>
+              <Ionicons name="gift" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.textos}>
+              <AppText style={styles.linhaTitulo}>Aniversário</AppText>
+              <AppText style={styles.linhaSub}>Um aviso do Bróxis no dia do seu aniversário, uma vez por ano</AppText>
+            </View>
+            <Switch
+              value={config.aniversario !== false}
+              onValueChange={(valor) => atualizar({ ...config, aniversario: valor })}
+              disabled={!controlesAtivos}
+              trackColor={{ false: '#D9D9D9', true: colors.primary }}
+              thumbColor={colors.white}
+              accessibilityLabel="Aviso de aniversário"
+            />
+          </View>
+        </View>
+
         <AppText style={styles.secao}>Quantos por dia</AppText>
         <View style={[styles.segmentos, !controlesAtivos && styles.desativado]}>
           {([1, 2] as const).map((valor) => {

@@ -34,6 +34,8 @@ export type ConfigLembretes = {
   porDia: 1 | 2;
   /** resumo semanal da jornada; ausente (configs antigas) conta como ligado */
   jornadaSemanal?: boolean;
+  /** aviso no dia do aniversário; ausente (configs antigas) conta como ligado */
+  aniversario?: boolean;
 };
 
 export const CONFIG_PADRAO: ConfigLembretes = {
@@ -41,6 +43,7 @@ export const CONFIG_PADRAO: ConfigLembretes = {
   tipos: { agua: true, alimentacao: true, trilha: true, missao: true, atividade: true },
   porDia: 1,
   jornadaSemanal: true,
+  aniversario: true,
 };
 
 /** true = ainda está pendente hoje (vale lembrar). */

@@ -1,6 +1,7 @@
 // src/features/adolescente/trilha/components/exercicios/Memoria.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useLarguraTela } from '../../../../../shared/ui/LarguraTela';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -139,7 +140,7 @@ function CartaMemoria({ indice, texto, larguraCarta, aberta, achada, errada, dis
  * achar um par. Errar não tem som de bronca: o jogo é sem nota.
  */
 export default function Memoria({ pares, resposta, respondido, onMudar }: Props) {
-  const { width } = useWindowDimensions();
+  const width = useLarguraTela();
   const cartas = useMemo(() => montarCartas(pares), [pares]);
 
   const [viradas, setViradas] = useState<string[]>([]);

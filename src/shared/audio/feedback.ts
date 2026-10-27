@@ -42,6 +42,12 @@ export function feedbackPerda(): void {
   vibrar(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning));
 }
 
+/** Mensagem de feliz aniversário do Bróxis: jingle de festa + vibração de sucesso. */
+export function feedbackAniversario(): void {
+  tocarSom('aniversario');
+  vibrar(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
+}
+
 /** Momento de comemoração (celebração da sequência): fanfarra + vibração de sucesso. */
 export function feedbackCelebracao(): void {
   tocarSom('fanfarra');

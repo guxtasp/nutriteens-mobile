@@ -13,7 +13,8 @@
 // pronto do backend em trilhaService.ts — este componente só desenha o que
 // recebe.
 import React, { useEffect, useMemo, useRef } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-native';
+import { useLarguraTela } from '../../../../shared/ui/LarguraTela';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -74,7 +75,7 @@ function ehPendente(no: NoTrilha) {
 
 /** Caminho contínuo com TODOS os nós da trilha, atravessando módulos. */
 export function TrilhaCaminho({ grupos, onPressNo, onMedirGrupos, onMedirNoAtual }: TrilhaCaminhoProps) {
-  const { width } = useWindowDimensions();
+  const width = useLarguraTela();
 
   // achata os grupos numa lista única de pontos (x, y), carregando junto o
   // índice global (pra manter a onda contínua através dos módulos, em vez de

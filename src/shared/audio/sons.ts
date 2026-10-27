@@ -28,6 +28,7 @@ const FONTES = {
   notificacao: require('../../../assets/sounds/notificacao.wav'),
   sucessoSuave: require('../../../assets/sounds/sucessoSuave.wav'),
   quase: require('../../../assets/sounds/quase.wav'),
+  aniversario: require('../../../assets/sounds/aniversario.wav'),
 } as const;
 
 export type NomeSom = keyof typeof FONTES;

@@ -13,6 +13,9 @@ import { supabase } from '../../../../lib/supabase';
 import { escolherMensagem, DestinoLembrete, TipoRegular } from '../data/mensagensLembrete';
 import { atualizarIgnoradas, horaOrganica, planejarLembretes } from '../utils/escolherLembrete';
 import { combinarComJornada, planejarJornadaSemanal } from '../utils/jornadaSemanal';
+import { planejarAniversario } from '../utils/aniversarioLembrete';
+import { jaCelebrouAniversario } from '../../home/utils/aniversarioStorage';
+import { formatarDataISO } from '../../../../shared/utils/data';
 import { buscarPendentesHoje } from './lembreteEstadoService';
 import { carregarConfig, carregarEstado, LembreteAgendadoSalvo, salvarEstado } from './lembreteStorage';
 
@@ -92,6 +95,36 @@ if (suportado) {
   });
 }
 
+// data de nascimento só em memória (nunca vai pro AsyncStorage dos lembretes), por usuário
+let nascimentoEmCache: { userId: string; valor: string | null } | null = null;
+
+async function buscarDataNascimento(userId: string): Promise<string | null> {
+  if (nascimentoEmCache?.userId === userId) return nascimentoEmCache.valor;
+  try {
+    const { data, error } = await supabase.from('profiles').select('data_nascimento').eq('id', userId).maybeSingle();
+    if (error) return null; // sem rede/sem permissão: sem aviso de aniversário desta vez
+    const valor = data?.data_nascimento ?? null;
+    nascimentoEmCache = { userId, valor };
+    return valor;
+  } catch {
+    return null;
+  }
+}
+
+// Aviso de aniversário: peça separada, que ocupa a vaga do dia (como o resumo semanal).
+async function planejarAniversarioDoUsuario(userId: string, agora: Date, config: Awaited<ReturnType<typeof carregarConfig>>) {
+  if (!config.ativado || config.aniversario === false) return null;
+  const dataNascimento = await buscarDataNascimento(userId);
+  if (!dataNascimento) return null;
+
+  const anoAtual = agora.getFullYear();
+  const anosCelebrados: number[] = [];
+  for (const ano of [anoAtual, anoAtual + 1]) {
+    if (await jaCelebrouAniversario(userId, ano)) anosCelebrados.push(ano);
+  }
+  return planejarAniversario({ agora, config, dataNascimento, hojeISO: formatarDataISO(agora), anosCelebrados });
+}
+
 async function executarReagendamento(userId: string): Promise<void> {
   const agora = new Date();
   const agoraMs = agora.getTime();
@@ -109,7 +142,7 @@ async function executarReagendamento(userId: string): Promise<void> {
   const ultimoPorTipo = { ...estado.ultimoPorTipo };
   const ultimaMensagemPorTipo = { ...estado.ultimaMensagemPorTipo };
   for (const lembrete of estado.agendados.filter((a) => a.quando <= agoraMs)) {
-    if (lembrete.tipo !== 'saudade' && lembrete.tipo !== 'jornada') {
+    if (lembrete.tipo !== 'saudade' && lembrete.tipo !== 'jornada' && lembrete.tipo !== 'aniversario') {
       ultimoPorTipo[lembrete.tipo] = Math.max(ultimoPorTipo[lembrete.tipo] ?? 0, lembrete.quando);
     }
     ultimaMensagemPorTipo[lembrete.tipo] = lembrete.mensagemId;
@@ -136,7 +169,7 @@ async function executarReagendamento(userId: string): Promise<void> {
     ultimaAbertura: agoraMs,
   });
   // Resumo semanal: peça separada, que ocupa a vaga do dia em que cai (nunca soma lembretes).
-  const plano = combinarComJornada(
+  const planoComJornada = combinarComJornada(
     planoDiario,
     planejarJornadaSemanal({
       agora,
@@ -147,6 +180,8 @@ async function executarReagendamento(userId: string): Promise<void> {
       ultimaAbertura: agoraMs,
     }),
   );
+  // O aviso de aniversário vem por último: no dia dele, toma o lugar de qualquer outro.
+  const plano = combinarComJornada(planoComJornada, await planejarAniversarioDoUsuario(userId, agora, config));
 
   // 4. Agenda de verdade.
   await garantirCanal();
@@ -166,8 +201,11 @@ async function executarReagendamento(userId: string): Promise<void> {
           channelId: CANAL_ID,
         },
       });
-      novosAgendados.push({ quando: lembrete.quando.getTime(), tipo: lembrete.tipo, mensagemId: mensagem.id });
-      ultimaMensagemPorTipo[lembrete.tipo] = mensagem.id;
+      // o aniversário fica de fora do histórico: não conta pro freio de "lembretes ignorados"
+      if (lembrete.tipo !== 'aniversario') {
+        novosAgendados.push({ quando: lembrete.quando.getTime(), tipo: lembrete.tipo, mensagemId: mensagem.id });
+        ultimaMensagemPorTipo[lembrete.tipo] = mensagem.id;
+      }
     } catch (erro) {
       console.warn('Falha ao agendar lembrete:', erro);
     }

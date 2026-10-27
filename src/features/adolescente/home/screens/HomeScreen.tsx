@@ -15,7 +15,9 @@ import MissoesWidget from '../../missoes/components/MissoesWidget';
 import CartaoMetricasHome from '../../metricas/components/CartaoMetricasHome';
 import CelebracaoSequenciaModal from '../components/CelebracaoSequenciaModal';
 import PerdaSequenciaOverlay from '../components/PerdaSequenciaOverlay';
+import AniversarioModal from '../components/AniversarioModal';
 import { useHomeData } from '../hooks/useHomeData';
+import { useAniversario } from '../hooks/useAniversario';
 import { colors } from '../../../../shared/theme/colors';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { useAguaHoje } from '../../agua/hooks/useAguaHoje';
@@ -133,6 +135,9 @@ export default function HomeScreen() {
   // animações cheias nunca devem aparecer juntas.
   const [perdaVisivel, setPerdaVisivel] = useState(false);
   const [diasPerdidos, setDiasPerdidos] = useState(0);
+  // vira true depois da primeira checagem de perda terminar (com ou sem aviso) — o aniversário
+  // espera por isso para nunca competir com o aviso de perda, que decide de forma assíncrona
+  const [perdaVerificada, setPerdaVerificada] = useState(false);
 
   useEffect(() => {
     if (perdaVisivel) pausarRecompensas('perda');
@@ -155,12 +160,32 @@ export default function HomeScreen() {
         setDiasPerdidos(perdidos);
         setPerdaVisivel(true);
       }
+      setPerdaVerificada(true);
     })();
 
     return () => {
       cancelado = true;
     };
   }, [dadosCarregados, userId, sequenciaAtual, diaDeHojeMantido]);
+
+  // --- feliz aniversário ---
+  //
+  // Mensagem do Bróxis no dia do aniversário (ou até 3 dias depois), uma vez por ano. Fica
+  // pendente enquanto a celebração de sequência ou o aviso de perda estão na tela e aparece
+  // quando terminam: duas animações cheias nunca juntas. Sem XP (ver useAniversario.ts).
+  const aniversario = useAniversario({
+    userId,
+    hojeISO,
+    primeiroNome: nomeCompleto?.trim().split(' ')[0] || null,
+    podeMostrar:
+      dadosCarregados && perdaVerificada && !celebracaoVisivel && !verificandoCelebracao && !perdaVisivel,
+  });
+
+  useEffect(() => {
+    if (aniversario.pendente) pausarRecompensas('aniversario');
+    else retomarRecompensas('aniversario');
+    return () => retomarRecompensas('aniversario');
+  }, [aniversario.pendente, pausarRecompensas, retomarRecompensas]);
 
   function handleSelecionarAcao(opcao: 'alimentacao' | 'agua' | 'atividade') {
     setMenuAberto(false);
@@ -203,6 +228,8 @@ export default function HomeScreen() {
         diasPerdidos={diasPerdidos}
         onFinalizado={() => setPerdaVisivel(false)}
       />
+
+      <AniversarioModal visivel={aniversario.visivel} mensagem={aniversario.mensagem} onFechar={aniversario.fechar} />
     </SafeAreaView>
   );
 }

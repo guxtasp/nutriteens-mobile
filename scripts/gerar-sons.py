@@ -186,6 +186,26 @@ def fanfarra_trilha():
     return misturar(cam, pico=0.88)
 
 
+def aniversario():
+    # mensagem de aniversário: estouro de buzina de festa + melodia alegre (original, em
+    # dó maior) + acorde final com brilhos. Dura ~4 s: só toca ao abrir o modal.
+    F5 = 698.46
+    cam = [
+        (0.00, sweep(400, 1400, 0.18, 0.45, queda=2.0)),
+        (0.05, sweep(500, 1750, 0.16, 0.28, queda=2.0)),
+    ]
+    melodia = [C5, E5, G5, E5, A5, G5, E5, G5, F5, A5, C6, A5, G5]
+    passo = 0.17
+    for i, f in enumerate(melodia):
+        cam.append((0.32 + passo * i, nota(f, 0.30, 0.50, SINO, queda=4.5)))
+    fim = 0.32 + passo * len(melodia)
+    for f, v in [(C5, 0.34), (E5, 0.30), (G5, 0.38), (C6, 0.42), (E6, 0.34)]:
+        cam.append((fim, nota(f, 1.50, v, SINO, queda=3.0)))
+    for i, f in enumerate([G6, E6, C6, G6, E6, G6]):
+        cam.append((fim + 0.10 + 0.09 * i, nota(f, 0.22, 0.14, SINO, queda=5.0)))
+    return misturar(cam, pico=0.86)
+
+
 # ---- sons novos (jogos e avisos): curtos, macios, sem agudo cansativo ----
 
 def selecionar():
@@ -300,6 +320,7 @@ SONS = {
     "notificacao": notificacao,
     "sucessoSuave": sucesso_suave,
     "quase": quase,
+    "aniversario": aniversario,
 }
 
 if __name__ == "__main__":

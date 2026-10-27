@@ -1,6 +1,7 @@
 // src/features/adolescente/trilha/components/exercicios/Prato.tsx
 import React, { useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useLarguraTela } from '../../../../../shared/ui/LarguraTela';
 import { AnimatePresence, MotiView } from 'moti';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -63,7 +64,7 @@ export default function Prato({
   mensagemFinal,
   onMudar,
 }: Props) {
-  const { width } = useWindowDimensions();
+  const width = useLarguraTela();
   const util = width - layout.margemFluxoH * 2;
 
   const cap = normalizarCapacidade(capacidade);

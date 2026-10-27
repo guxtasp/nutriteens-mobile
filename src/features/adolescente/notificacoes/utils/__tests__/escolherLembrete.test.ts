@@ -220,7 +220,7 @@ describe('mensagens', () => {
   it('tem pelo menos 10 mensagens e cobre todos os tipos', () => {
     expect(MENSAGENS_LEMBRETE.length).toBeGreaterThanOrEqual(10);
     const tipos = new Set(MENSAGENS_LEMBRETE.map((m) => m.tipo));
-    expect(Array.from(tipos).sort()).toEqual(['agua', 'alimentacao', 'atividade', 'jornada', 'missao', 'saudade', 'trilha']);
+    expect(Array.from(tipos).sort()).toEqual(['agua', 'alimentacao', 'aniversario', 'atividade', 'jornada', 'missao', 'saudade', 'trilha']);
   });
 
   it('ids são únicos', () => {
