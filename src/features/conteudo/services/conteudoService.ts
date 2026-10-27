@@ -45,3 +45,15 @@ export async function buscarLicaoParaRevisao(licaoId: string): Promise<LicaoPara
     })),
   };
 }
+
+/** Ingredientes com quantidade de uma receita (receita_ingredientes), em ordem alfabética. A equipe lê qualquer status. */
+export async function buscarIngredientesDaReceita(receitaId: string): Promise<{ nome: string; quantidade: string }[]> {
+  const { data, error } = await supabase
+    .from('receita_ingredientes')
+    .select('quantidade_texto, alimentos(nome)')
+    .eq('receita_id', receitaId);
+  if (error) throw error;
+  return (data ?? [])
+    .map((i: any) => ({ nome: i.alimentos?.nome ?? '', quantidade: i.quantidade_texto ?? '' }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}

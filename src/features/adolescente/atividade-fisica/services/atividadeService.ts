@@ -3,6 +3,7 @@ import { supabase } from '../../../../lib/supabase';
 import { obterOuCriarRegistroDiario } from '../../../../shared/services/registroDiarioService';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { comCache } from '../../../../shared/offline/cacheLocal';
 
 export type AtividadeCatalogo = {
   id: string;
@@ -13,6 +14,8 @@ export type AtividadeCatalogo = {
 export type ItemParaRegistrar = {
   nomeAtividade: string;
   duracaoMinutos: number;
+  /** HH:MM:SS em que o adolescente fez/registrou; sem isso, usa a hora do envio */
+  horarioRegistro?: string;
 };
 
 function normalizar(texto: string): string {
@@ -24,13 +27,16 @@ function normalizar(texto: string): string {
 
 /** Busca no catálogo, com filtro opcional por termo (pesquisa, ignora acento) */
 export async function buscarAtividades(termo: string = ''): Promise<AtividadeCatalogo[]> {
-  const { data, error } = await supabase
-    .from('atividades')
-    .select('id, nome, duracao_padrao_min')
-    .order('nome');
+  // catálogo com cópia local: sem internet, a busca continua funcionando
+  const todas = await comCache<AtividadeCatalogo[]>('atividades:catalogo', async () => {
+    const { data, error } = await supabase
+      .from('atividades')
+      .select('id, nome, duracao_padrao_min')
+      .order('nome');
 
-  if (error) throw error;
-  const todas = data ?? [];
+    if (error) throw error;
+    return data ?? [];
+  });
 
   if (!termo.trim()) return todas;
 
@@ -53,7 +59,7 @@ export async function registrarAtividades(params: {
     registro_diario_id: registroDiarioId,
     tipo_atividade: item.nomeAtividade,
     duracao_minutos: item.duracaoMinutos,
-    horario_registro: horarioRegistro,
+    horario_registro: item.horarioRegistro ?? horarioRegistro,
   }));
 
   const { error } = await supabase.from('registros_atividade_fisica').insert(linhas);

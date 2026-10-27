@@ -41,13 +41,20 @@ async function idsPratosPermitidos(classificacao: ClassificacaoEbia): Promise<st
 }
 
 async function obterClassificacaoEbiaAtual(userId: string): Promise<ClassificacaoEbia> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('classificacao_ebia_atual')
-    .eq('id', userId)
-    .single();
-
-  return !error && data?.classificacao_ebia_atual ? data.classificacao_ebia_atual : 'INSEGURANCA_GRAVE';
+  try {
+    // mesma chave do alimentacaoService: o nível real vale também sem internet
+    return await comCache<ClassificacaoEbia>(`ebia:${userId}`, async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('classificacao_ebia_atual')
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      return data?.classificacao_ebia_atual ?? 'INSEGURANCA_GRAVE';
+    });
+  } catch {
+    return 'INSEGURANCA_GRAVE';
+  }
 }
 
 export async function listarReceitas(userId: string): Promise<ReceitaComAlimento[]> {
@@ -100,4 +107,57 @@ export async function buscarReceitaPorId(receitaId: string): Promise<ReceitaComA
 
   if (error) throw error;
   return (data ?? null) as any;
+}
+
+// ---------------------------------------------------------------------
+// "Receitas com o que tenho" (RF023 a RF029): receitas já com os ingredientes.
+// Ingredientes = receita_ingredientes (com quantidade em texto) + prato_ingredientes
+// do prato resultante (que é o que a equipe edita hoje no painel).
+import { comCache } from '../../../../shared/offline/cacheLocal';
+import { unirIngredientes, type IngredienteReceita } from '../../receitas-ingredientes/utils/combinarReceitas';
+
+export type ReceitaComIngredientes = ReceitaComAlimento & { ingredientes: IngredienteReceita[] };
+
+export async function listarReceitasComIngredientes(userId: string): Promise<ReceitaComIngredientes[]> {
+  return comCache<ReceitaComIngredientes[]>(`receitas:ingredientes:${userId}`, async () => {
+    const classificacao = await obterClassificacaoEbiaAtual(userId);
+    const idsPratos = await idsPratosPermitidos(classificacao);
+    if (idsPratos.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('receitas')
+      .select(
+        `*, alimento_resultante:alimentos!receitas_alimento_resultante_id_fkey(${COLUNAS_ALIMENTO_EMBUTIDO}),
+         receita_ingredientes(alimento_id, quantidade_texto, alimentos(nome))`
+      )
+      .in('alimento_resultante_id', idsPratos)
+      .order('titulo');
+    if (error) throw error;
+
+    const receitas = (data ?? []) as any[];
+    const idsResultantes = receitas.map((r) => r.alimento_resultante_id);
+
+    const { data: doPrato, error: erroPrato } = await supabase
+      .from('prato_ingredientes')
+      .select('prato_id, ingrediente_id, alimentos!prato_ingredientes_ingrediente_id_fkey(nome)')
+      .in('prato_id', idsResultantes);
+    if (erroPrato) throw erroPrato;
+
+    const porPrato = new Map<string, IngredienteReceita[]>();
+    ((doPrato ?? []) as any[]).forEach((linha) => {
+      const lista = porPrato.get(linha.prato_id) ?? [];
+      lista.push({ alimentoId: linha.ingrediente_id, nome: linha.alimentos?.nome ?? 'Ingrediente', quantidadeTexto: null });
+      porPrato.set(linha.prato_id, lista);
+    });
+
+    return receitas.map((r) => {
+      const daReceita: IngredienteReceita[] = (r.receita_ingredientes ?? []).map((i: any) => ({
+        alimentoId: i.alimento_id,
+        nome: i.alimentos?.nome ?? 'Ingrediente',
+        quantidadeTexto: i.quantidade_texto ?? null,
+      }));
+      const { receita_ingredientes: _descartado, ...resto } = r;
+      return { ...resto, ingredientes: unirIngredientes(daReceita, porPrato.get(r.alimento_resultante_id) ?? []) } as ReceitaComIngredientes;
+    });
+  });
 }

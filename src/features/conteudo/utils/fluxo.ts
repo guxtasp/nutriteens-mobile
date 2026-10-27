@@ -67,7 +67,8 @@ export function acoesPermitidas(papel: PapelPainel, status: StatusFluxo): AcaoFl
   // fluxo simplificado: a nutricionista aprova e publica numa só ação
   if (nutri && (status === 'RASCUNHO' || status === 'AGUARDANDO_APROVACAO' || status === 'APROVADO' || status === 'REJEITADO')) r.push('PUBLICAR');
   if (nutri && (status === 'AGUARDANDO_APROVACAO' || status === 'APROVADO' || status === 'PUBLICADO')) r.push('REJEITAR');
-  if (status !== 'ARQUIVADO') r.push('ARQUIVAR');
+  // arquivar conteúdo PUBLICADO o tira do ar (despublicar): só a nutricionista (migration_regras_publicado.sql)
+  if (status !== 'ARQUIVADO' && !(status === 'PUBLICADO' && !nutri)) r.push('ARQUIVAR');
   if (status === 'REJEITADO' || status === 'ARQUIVADO') r.push('REABRIR');
   return r;
 }

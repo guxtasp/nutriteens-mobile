@@ -15,6 +15,8 @@ import type { FeedbackBroxis, ProximoPasso } from '../utils/feedbackBroxis';
 import { ACENTOS, TEXTO_SUAVE } from '../ui/tokens';
 import { BroxisFeedback } from './BroxisFeedback';
 import { SeloComparacao } from './SeloComparacao';
+import { DetalheMetrica } from './DetalheMetrica';
+import type { Detalhe } from '../utils/detalhes';
 
 type Props = {
   cartao: CartaoId;
@@ -27,9 +29,13 @@ type Props = {
   celebrar?: boolean;
   indice?: number;
   onProximoPasso?: (passo: ProximoPasso) => void;
+  /** números de apoio, dicas e sugestões (expande em "Ver detalhes") */
+  detalhe?: Detalhe;
+  /** observação discreta sobre os dados (limitação conhecida) */
+  nota?: string | null;
 };
 
-export function CartaoMetrica({ cartao, feedback, destaque, comparacao, children, celebrar, indice = 0, onProximoPasso }: Props) {
+export function CartaoMetrica({ cartao, feedback, destaque, comparacao, children, celebrar, indice = 0, onProximoPasso, detalhe, nota }: Props) {
   const info = CARTOES_INFO[cartao];
   const ac = ACENTOS[cartao];
   return (
@@ -61,7 +67,16 @@ export function CartaoMetrica({ cartao, feedback, destaque, comparacao, children
 
       {!!children && <View style={styles.grafico}>{children}</View>}
 
+      {!!nota && (
+        <View style={styles.nota} accessible accessibilityLabel={`Observação: ${nota}`}>
+          <Ionicons name="information-circle-outline" size={16} color={TEXTO_SUAVE} />
+          <AppText style={styles.notaTexto}>{nota}</AppText>
+        </View>
+      )}
+
       <BroxisFeedback feedback={feedback} corFundo={ac.suave} corTexto={ac.cor} onProximoPasso={onProximoPasso} />
+
+      {detalhe && <DetalheMetrica detalhe={detalhe} cor={ac.cor} corSuave={ac.suave} />}
     </MotiView>
   );
 }
@@ -77,4 +92,6 @@ const styles = StyleSheet.create({
   valor: { fontFamily: typography.bold, fontSize: 36, lineHeight: 42 },
   rotulo: { fontFamily: typography.semiBold, fontSize: 14, color: '#1B4332', flexShrink: 1 },
   grafico: { marginTop: 14 },
+  nota: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', marginTop: 10 },
+  notaTexto: { flex: 1, fontFamily: typography.regular, fontSize: 12, lineHeight: 17, color: TEXTO_SUAVE },
 });

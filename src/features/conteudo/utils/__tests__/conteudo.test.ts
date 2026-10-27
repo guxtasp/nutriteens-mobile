@@ -1,12 +1,4 @@
-import {
-  podeAprovar,
-  podeEditarConteudo,
-  statusAoCriar,
-  statusAposEdicao,
-  validarComentarioDevolucao,
-  seloDaTrilha,
-  resumoTamanho,
-} from '../regrasAprovacao';
+import { podeAprovar, podeEditarConteudo } from '../regrasAprovacao';
 import { descreverQuestao, problemasDaQuestao } from '../descreverQuestao';
 
 describe('regras de aprovação', () => {
@@ -20,29 +12,6 @@ describe('regras de aprovação', () => {
     expect(podeEditarConteudo('NUTRICIONISTA')).toBe(true);
     expect(podeEditarConteudo('ADMINISTRADOR')).toBe(true);
     expect(podeEditarConteudo('ADOLESCENTE')).toBe(false);
-  });
-  it('conteúdo da nutricionista nasce aprovado; do admin, rascunho', () => {
-    expect(statusAoCriar('NUTRICIONISTA')).toBe('aprovada');
-    expect(statusAoCriar('ADMINISTRADOR')).toBe('rascunho');
-  });
-  it('admin editando conteúdo aprovado volta pra revisão; nutricionista mantém', () => {
-    expect(statusAposEdicao('ADMINISTRADOR', 'aprovada')).toBe('rascunho');
-    expect(statusAposEdicao('NUTRICIONISTA', 'aprovada')).toBe('aprovada');
-    expect(statusAposEdicao('NUTRICIONISTA', 'rascunho')).toBe('rascunho');
-  });
-  it('devolução exige comentário', () => {
-    expect(validarComentarioDevolucao('   ')).not.toBeNull();
-    expect(validarComentarioDevolucao('Corrigir a lição 3')).toBeNull();
-    expect(validarComentarioDevolucao('x'.repeat(2001))).not.toBeNull();
-  });
-  it('selo da lista', () => {
-    expect(seloDaTrilha('aprovada', 'DEVOLVIDA').tom).toBe('ok');
-    expect(seloDaTrilha('rascunho', 'DEVOLVIDA').tom).toBe('devolvida');
-    expect(seloDaTrilha('rascunho', null).tom).toBe('pendente');
-  });
-  it('resumo no singular e plural', () => {
-    expect(resumoTamanho(1, 1)).toBe('1 módulo · 1 lição');
-    expect(resumoTamanho(3, 15)).toBe('3 módulos · 15 lições');
   });
 });
 

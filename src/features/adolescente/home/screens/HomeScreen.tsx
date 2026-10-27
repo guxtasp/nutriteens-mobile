@@ -12,6 +12,7 @@ import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import ChatFab from '../../_shared/components/ChatFab';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
 import MissoesWidget from '../../missoes/components/MissoesWidget';
+import CartaoMetricasHome from '../../metricas/components/CartaoMetricasHome';
 import CelebracaoSequenciaModal from '../components/CelebracaoSequenciaModal';
 import PerdaSequenciaOverlay from '../components/PerdaSequenciaOverlay';
 import { useHomeData } from '../hooks/useHomeData';
@@ -183,6 +184,7 @@ export default function HomeScreen() {
       <WaterProgressCard mlAtual={mlHoje} mlMeta={metaMl} />
 
       {missao && <MissoesWidget missao={missao} concluida={missaoConcluida} onPress={() => navigation.navigate('Missoes')} />}
+      <CartaoMetricasHome onPress={() => navigation.navigate('Metricas')} />
       </ScrollView>
 
       {!menuAberto && <ChatFab />}

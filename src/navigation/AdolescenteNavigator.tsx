@@ -9,6 +9,9 @@ import RecordatorioRefeicaoScreen from '../features/adolescente/triagem/recordat
 import EbiaPerguntaScreen from '../features/adolescente/triagem/ebia/screens/EbiaPerguntaScreen';
 import HomeScreen from '../features/adolescente/home/screens/HomeScreen';
 import SequenciaScreen from '../features/adolescente/home/screens/SequenciaScreen';
+import JogosScreen from '../features/adolescente/jogos/screens/JogosScreen';
+import JogoMemoriaScreen from '../features/adolescente/jogos/screens/JogoMemoriaScreen';
+import JogoNovaScreen from '../features/adolescente/jogos/screens/JogoNovaScreen';
 import VitaminasScreen from '../features/adolescente/vitaminas/screens/VitaminasScreen';
 import NutrienteDetalheScreen from '../features/adolescente/vitaminas/screens/NutrienteDetalheScreen';
 import type { NutrienteChave } from '../features/adolescente/alimentacao/utils/nutrientesPorGrupo';
@@ -16,6 +19,7 @@ import ScannerAlimentoScreen from '../features/adolescente/scanner/screens/Scann
 import ResultadoScannerScreen from '../features/adolescente/scanner/screens/ResultadoScannerScreen';
 import CadastroProdutoScannerScreen from '../features/adolescente/scanner/screens/CadastroProdutoScannerScreen';
 import type { MotivoSolicitacao } from '../features/adolescente/scanner/services/scannerService';
+import ReceitasComIngredientesScreen from '../features/adolescente/receitas-ingredientes/screens/ReceitasComIngredientesScreen';
 import SugestoesAlimentaresScreen from '../features/adolescente/alimentacao/screens/SugestoesAlimentaresScreen';
 import AlimentacaoHomeScreen from '../features/adolescente/alimentacao/screens/AlimentacaoHomeScreen';
 import TrilhaScreen from '../features/adolescente/trilha/screens/TrilhaScreen';
@@ -44,10 +48,13 @@ import { AlimentacaoProvider } from '../features/adolescente/alimentacao/context
 import LembretesScreen from '../features/adolescente/notificacoes/screens/LembretesScreen';
 import LembretesGate from '../features/adolescente/notificacoes/components/LembretesGate';
 import MissoesScreen from '../features/adolescente/missoes/screens/MissoesScreen';
+import MetricasScreen from '../features/adolescente/metricas/screens/MetricasScreen';
 import AlbumCartasScreen from '../features/adolescente/cartas/screens/AlbumCartasScreen';
 import ExtratoXpScreen from '../features/adolescente/perfil/screens/ExtratoXpScreen';
 import type { CategoriaTroca } from '../features/adolescente/trocas/utils/trocas';
 import type { TrocaSugerida } from '../features/adolescente/trocas/services/trocasService';
+import OfflineBanner from '../shared/offline/OfflineBanner';
+import { OfflineProvider } from '../shared/offline/OfflineContext';
 import RecompensasHost from '../features/adolescente/recompensas/components/RecompensasHost';
 
 export type AdolescenteStackParamList = {
@@ -58,9 +65,14 @@ export type AdolescenteStackParamList = {
   Home: undefined;
   Sequencia: undefined;
   Missoes: undefined;
+  Metricas: undefined;
   Alimentacao: undefined;
   SugestoesAlimentares: { categoria?: CategoriaTroca } | undefined;
+  ReceitasIngredientes: undefined;
   Vitaminas: undefined;
+  Jogos: undefined;
+  JogoNova: undefined;
+  JogoMemoria: undefined;
   NutrienteDetalhe: { nutriente: NutrienteChave };
   Trilha: undefined;
   LicaoDetalhe: {
@@ -122,6 +134,7 @@ interface Props {
 
 export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
   return (
+    <OfflineProvider>
     <AtividadeFisicaProvider>
         <AlimentacaoProvider>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -134,12 +147,17 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Sequencia" component={SequenciaScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Missoes" component={MissoesScreen} />
+                    <Stack.Screen name="Metricas" component={MetricasScreen} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
+                    <Stack.Screen name="ReceitasIngredientes" component={ReceitasComIngredientesScreen} />
                     <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
                     <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
                     <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />
                     <Stack.Screen name="Vitaminas" component={VitaminasScreen} />
+                    <Stack.Screen name="Jogos" component={JogosScreen} />
+                    <Stack.Screen name="JogoNova" component={JogoNovaScreen} />
+                    <Stack.Screen name="JogoMemoria" component={JogoMemoriaScreen} />
                     <Stack.Screen name="NutrienteDetalhe" component={NutrienteDetalheScreen} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
@@ -172,10 +190,14 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Sequencia" component={SequenciaScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
+                    <Stack.Screen name="ReceitasIngredientes" component={ReceitasComIngredientesScreen} />
                     <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
                     <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
                     <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />
                     <Stack.Screen name="Vitaminas" component={VitaminasScreen} />
+                    <Stack.Screen name="Jogos" component={JogosScreen} />
+                    <Stack.Screen name="JogoNova" component={JogoNovaScreen} />
+                    <Stack.Screen name="JogoMemoria" component={JogoMemoriaScreen} />
                     <Stack.Screen name="NutrienteDetalhe" component={NutrienteDetalheScreen} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
@@ -189,6 +211,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Notificacoes" component={NotificacoesScreen} />
                     <Stack.Screen name="ReceitaCompartilhada" component={ReceitaCompartilhadaScreen} />
                     <Stack.Screen name="Missoes" component={MissoesScreen} />
+                    <Stack.Screen name="Metricas" component={MetricasScreen} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
                     <Stack.Screen name="BuscaAtividade" component={BuscaAtividadeScreen} />
                     <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -208,7 +231,9 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
             {/* lembretes só depois da triagem (durante o onboarding não dispara nada) */}
             <LembretesGate ativo={etapaOnboarding !== 'TRIAGEM'} />
             <RecompensasHost ativo={etapaOnboarding !== 'TRIAGEM'} />
+            <OfflineBanner />
       </AlimentacaoProvider>
     </AtividadeFisicaProvider>
+    </OfflineProvider>
   );
 }

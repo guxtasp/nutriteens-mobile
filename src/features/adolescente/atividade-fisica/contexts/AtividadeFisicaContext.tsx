@@ -3,6 +3,7 @@ import { ItemCarrinho } from '../../atividade-fisica/types/atividadeFisica';
 import { horarioAgora, registrarAtividades } from '../services/atividadeService';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
+import { useOffline } from '../../../../shared/offline/OfflineContext';
 
 const MAX_BUSCAS_RECENTES = 5;
 
@@ -21,6 +22,7 @@ const AtividadeFisicaContext = createContext<AtividadeFisicaContextValue | undef
 
 export function AtividadeFisicaProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
+  const { executarOuGuardar } = useOffline();
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [buscasRecentes, setBuscasRecentes] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -54,22 +56,23 @@ export function AtividadeFisicaProvider({ children }: { children: ReactNode }) {
     if (carrinho.length === 0 || enviando || !userId) return 0;
     setEnviando(true);
     try {
-      await registrarAtividades({
-        userId,
-        data: formatarDataISO(new Date()),
-        itens: carrinho.map((item) => ({
-          nomeAtividade: item.nomeAtividade,
-          duracaoMinutos: item.duracaoMinutos,
-          horarioRegistro: item.horarioRegistro,
-        })),
-      });
+      const dataISO = formatarDataISO(new Date());
+      const itens = carrinho.map((item) => ({
+        nomeAtividade: item.nomeAtividade,
+        duracaoMinutos: item.duracaoMinutos,
+        horarioRegistro: item.horarioRegistro,
+      }));
+      // sem internet, o registro fica guardado no celular e sobe sozinho depois
+      await executarOuGuardar({ tipo: 'ATIVIDADE', payload: { dataISO, itens } }, () =>
+        registrarAtividades({ userId, data: dataISO, itens })
+      );
       const quantidade = carrinho.length;
       setCarrinho([]);
       return quantidade;
     } finally {
       setEnviando(false);
     }
-  }, [carrinho, enviando, userId]);
+  }, [carrinho, enviando, userId, executarOuGuardar]);
 
   return (
     <AtividadeFisicaContext.Provider

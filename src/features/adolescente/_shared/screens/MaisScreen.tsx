@@ -50,6 +50,22 @@ export default function MaisScreen() {
       </View>
 
       <View style={styles.conteudo}>
+        <AppText style={styles.secao}>Minha jornada</AppText>
+
+        <View style={styles.cartao}>
+          <Pressable style={styles.linha} onPress={() => navigation.navigate('Metricas')}>
+            <View style={styles.iconeCirculo}>
+              <Ionicons name="stats-chart" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.textos}>
+              <AppText style={styles.linhaTitulo}>Minha jornada</AppText>
+              <AppText style={styles.linhaSub}>O que você registrou e aprendeu, com o Bróxis</AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9AA5A0" />
+          </Pressable>
+        </View>
+
+        <View style={{ height: 16 }} />
         <AppText style={styles.secao}>Configurações</AppText>
 
         <View style={styles.cartao}>

@@ -69,15 +69,15 @@ def misturar(camadas, pico=0.8):
     return [v * k for v in buf]
 
 
-def salvar(nome, amostras):
+def salvar(nome, amostras, sr=None):
     os.makedirs(PASTA, exist_ok=True)
     caminho = os.path.join(PASTA, nome + ".wav")
     with wave.open(caminho, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
-        w.setframerate(SR)
+        w.setframerate(sr or SR)
         w.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, v)) * 32767)) for v in amostras))
-    print(f"{nome}.wav  {len(amostras) / SR:.2f}s")
+    print(f"{nome}.wav  {len(amostras) / (sr or SR):.2f}s")
 
 
 # ---------------------------------------------------------------- sons
@@ -186,6 +186,101 @@ def fanfarra_trilha():
     return misturar(cam, pico=0.88)
 
 
+# ---- sons novos (jogos e avisos): curtos, macios, sem agudo cansativo ----
+
+def selecionar():
+    # "tec" bem baixinho ao tocar numa opção
+    return misturar([(0, sweep(700, 480, 0.04, 0.8, queda=8))], pico=0.35)
+
+
+def avancar():
+    # "fiu" suave: passar para a próxima pergunta
+    return misturar([(0, sweep(380, 640, 0.09, 0.8, queda=5))], pico=0.4)
+
+
+def sequencia():
+    # três notas rápidas subindo: sequência de acertos
+    return misturar([
+        (0.00, nota(E5, 0.14, 0.5, SUAVE, queda=4)),
+        (0.08, nota(G5, 0.14, 0.5, SUAVE, queda=4)),
+        (0.16, nota(B5, 0.40, 0.6, SINO, queda=4.5)),
+    ], pico=0.6)
+
+
+def estrela():
+    # "ding" único e brilhante: uma estrela aparecendo
+    return misturar([
+        (0.00, nota(C6, 0.50, 0.6, SINO, queda=4.5)),
+        (0.00, nota(E6, 0.50, 0.14, SINO, queda=5)),
+    ], pico=0.55)
+
+
+def notificacao():
+    # duas notas gentis: lembrete/aviso do app
+    return misturar([
+        (0.00, nota(G5, 0.18, 0.5, SUAVE, queda=4)),
+        (0.14, nota(D5, 0.34, 0.5, SUAVE, queda=4.5)),
+    ], pico=0.5)
+
+
+def sucesso_suave():
+    # confirmação discreta (salvar, enviar)
+    return misturar([
+        (0.00, nota(C5, 0.16, 0.45, SUAVE, queda=4)),
+        (0.10, nota(G5, 0.38, 0.5, SUAVE, queda=4.5)),
+    ], pico=0.5)
+
+
+def quase():
+    # duas notas suaves descendo: "quase!", sem bronca
+    return misturar([
+        (0.00, nota(E5, 0.16, 0.45, SUAVE, queda=4)),
+        (0.12, nota(C5, 0.30, 0.45, SUAVE, queda=4.5)),
+    ], pico=0.45)
+
+
+def musica_jogo():
+    """Música de fundo calma, em loop: 8 compassos (C - Am - F - G), 90 bpm, 22,05 kHz.
+    Pad macio + arpejo pentatônico leve. Termina e recomeça sem estalo."""
+    global SR
+    SR = 22050
+    try:
+        bpm = 90.0
+        beat = 60.0 / bpm
+        compasso = 4 * beat
+        acordes = [  # (baixo, [notas do acorde])
+            (130.81, [C4, E4, G4]),        # C
+            (110.00, [220.00, C4, E4]),    # Am
+            (174.61, [220.00, C4, 349.23]),  # F
+            (196.00, [246.94, D4 * 1.0, G4]),  # G
+        ]
+        penta = [C5, D5, E5, G5, A5]
+        camadas = []
+        for rep in range(2):
+            for i, (baixo, notas) in enumerate(acordes):
+                t0 = (rep * 4 + i) * compasso
+                # pad: acorde sustentado
+                for f in notas:
+                    camadas.append((t0, nota(f, compasso * 1.05, 0.18, SUAVE, ataque=0.25, queda=1.6)))
+                camadas.append((t0, nota(baixo, compasso * 1.0, 0.30, SUAVE, ataque=0.05, queda=2.2)))
+                # arpejo leve: 4 notas por compasso, padrão que varia com o acorde
+                ordem = [0, 2, 1, 3, 2, 4, 3, 1]
+                for k in range(4):
+                    f = penta[ordem[(i * 2 + k + rep) % len(ordem)]]
+                    camadas.append((t0 + k * beat, nota(f, beat * 1.6, 0.22, SINO, queda=5)))
+        amostras = misturar(camadas, pico=0.6)
+        # entrada e saída suaves (loop sem clique)
+        n = len(amostras)
+        fade = int(0.05 * SR)
+        for j in range(fade):
+            g = j / fade
+            amostras[j] *= g
+            amostras[n - 1 - j] *= g
+        return amostras
+    finally:
+        SR = 44100
+
+
 SONS = {
     "toque": toque,
     "acerto": acerto,
@@ -198,9 +293,17 @@ SONS = {
     "conquista": conquista,
     "fanfarra": fanfarra,
     "fanfarraTrilha": fanfarra_trilha,
+    "selecionar": selecionar,
+    "avancar": avancar,
+    "sequencia": sequencia,
+    "estrela": estrela,
+    "notificacao": notificacao,
+    "sucessoSuave": sucesso_suave,
+    "quase": quase,
 }
 
 if __name__ == "__main__":
     for nome, fn in SONS.items():
         salvar(nome, fn())
+    salvar("musicaJogo", musica_jogo(), sr=22050)
     print(f"\nPronto! Arquivos em: {os.path.normpath(PASTA)}")

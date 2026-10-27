@@ -7,8 +7,8 @@ import { MessageBanner } from '../../../../shared/ui/MessageBanner';
 import { useMessageBanner } from '../../../../shared/hooks/useMessageBanner';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import type { ReceitaComAlimento, PassoReceita } from '../services/receitasService';
-import { buscarPassosDaReceita } from '../services/receitasService';
+import type { ReceitaComAlimento, PassoReceita, IngredienteReceita } from '../services/receitasService';
+import { buscarPassosDaReceita, buscarIngredientesDaReceita } from '../services/receitasService';
 import GuiaPreparoReceitaSheet from './GuiaPreparoReceitaSheet';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
 
@@ -19,12 +19,15 @@ type Props = {
   onAdicionarAoCarrinho?: (receita: ReceitaComAlimento) => void;
   /** com esta função aparece o botão "Enviar para um amigo" */
   onEnviarParaAmigo?: (receita: ReceitaComAlimento) => void;
+  /** prévia da equipe (painel): mesma tela do adolescente, mas sem registrar eventos de uso */
+  previa?: boolean;
 };
 
 const ROTULO_DIFICULDADE = { FACIL: 'Fácil', MEDIO: 'Médio', DIFICIL: 'Difícil' };
 
-export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCarrinho, onEnviarParaAmigo }: Props) {
+export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCarrinho, onEnviarParaAmigo, previa = false }: Props) {
   const [passos, setPassos] = useState<PassoReceita[]>([]);
+  const [ingredientes, setIngredientes] = useState<IngredienteReceita[]>([]);
   const [guiaVisivel, setGuiaVisivel] = useState(false);
   const [carregandoPassos, setCarregandoPassos] = useState(false);
   const { message, type, showMessage, clearMessage } = useMessageBanner();
@@ -38,14 +41,19 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
     // passos da receita anterior ficavam "grudados" na próxima que abrisse
     setGuiaVisivel(false);
     setPassos([]);
+    setIngredientes([]);
     setCarregandoPassos(false);
     clearMessage();
     if (!receitaId) return;
+    let ativo = true;
+    // falha ao carregar ingredientes não impede de ver a receita: a seção só não aparece
+    buscarIngredientesDaReceita(receitaId).then((l) => { if (ativo) setIngredientes(l); }).catch(() => {});
     guiaAbertaRef.current = false;
     concluidaRef.current = false;
-    registrarEvento('receita_visualizada', { receita_id: receitaId });
+    if (!previa) registrarEvento('receita_visualizada', { receita_id: receitaId });
     return () => {
-      if (guiaAbertaRef.current && !concluidaRef.current) {
+      ativo = false;
+      if (!previa && guiaAbertaRef.current && !concluidaRef.current) {
         registrarEvento('conteudo_abandonado', { tipo: 'receita', receita_id: receitaId });
       }
     };
@@ -138,6 +146,17 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
                 </Pressable>
               )}
 
+              {ingredientes.length > 0 && (
+                <View style={styles.ingredientes}>
+                  <AppText style={styles.secaoTitulo}>Ingredientes</AppText>
+                  {ingredientes.map((i, k) => (
+                    <AppText key={k} style={styles.ingrediente}>
+                      • {i.quantidade} de {i.nome.toLowerCase()}
+                    </AppText>
+                  ))}
+                </View>
+              )}
+
               <AppText style={styles.secaoTitulo}>Modo de preparo</AppText>
               <AppText style={styles.modoPreparo}>{receita.modo_preparo}</AppText>
             </ScrollView>
@@ -157,7 +176,7 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
             onConcluir={() => {
               if (concluidaRef.current) return;
               concluidaRef.current = true;
-              registrarEvento('receita_concluida', { receita_id: receita.id });
+              if (!previa) registrarEvento('receita_concluida', { receita_id: receita.id });
             }}
           />
         </View>
@@ -193,6 +212,8 @@ const styles = StyleSheet.create({
   },
   botaoGuiaTexto: { fontFamily: typography.bold, fontSize: 13, color: colors.primaryDark },
   secaoTitulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark, marginBottom: 8 },
+  ingredientes: { marginBottom: 16 },
+  ingrediente: { fontFamily: typography.regular, fontSize: 14, color: '#5A6B63', lineHeight: 22 },
   modoPreparo: { fontFamily: typography.regular, fontSize: 14, color: '#5A6B63', lineHeight: 22 },
   botaoAdicionar: { marginTop: 16, backgroundColor: colors.primaryDark, borderRadius: 24, paddingVertical: 14, alignItems: 'center' },
   botaoAdicionarTexto: { fontFamily: typography.bold, fontSize: 13, color: '#fff', letterSpacing: 0.5 },

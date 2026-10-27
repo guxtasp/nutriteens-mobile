@@ -32,12 +32,15 @@ export type ConfigLembretes = {
   ativado: boolean;
   tipos: Record<TipoRegular, boolean>;
   porDia: 1 | 2;
+  /** resumo semanal da jornada; ausente (configs antigas) conta como ligado */
+  jornadaSemanal?: boolean;
 };
 
 export const CONFIG_PADRAO: ConfigLembretes = {
   ativado: true,
   tipos: { agua: true, alimentacao: true, trilha: true, missao: true, atividade: true },
   porDia: 1,
+  jornadaSemanal: true,
 };
 
 /** true = ainda está pendente hoje (vale lembrar). */

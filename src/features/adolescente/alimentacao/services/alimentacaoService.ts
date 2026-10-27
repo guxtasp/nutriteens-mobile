@@ -7,6 +7,9 @@ import { valoresEbiaAceitaveis } from '../../triagem/ebia/utils/ordemEbia';
 import { inferirNutrientesPorGrupo, inferirAtencaoPorGrupo } from '../utils/nutrientesPorGrupo';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
 import { buscarTrocaDaRefeicao, TrocaSugerida } from '../../trocas/services/trocasService';
+import { comCache, lerCache } from '../../../../shared/offline/cacheLocal';
+import { ehErroDeRede } from '../../../../shared/offline/erroRede';
+import { normalizarTexto } from '../utils/filtrosAlimento';
 
 export type TipoRefeicao = 'CAFE_DA_MANHA' | 'LANCHE_MANHA' | 'ALMOCO' | 'LANCHE_TARDE' | 'JANTAR' | 'CEIA';
 
@@ -29,19 +32,24 @@ let cacheClassificacao: { userId: string; valor: ClassificacaoEbia } | null = nu
 async function obterClassificacaoEbiaAtual(userId: string): Promise<ClassificacaoEbia> {
   if (cacheClassificacao?.userId === userId) return cacheClassificacao.valor;
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('classificacao_ebia_atual')
-    .eq('id', userId)
-    .single();
-
   // se ainda não fez a triagem ou deu erro, não filtra ninguém de fora —
-  // trata como o nível mais severo (mostra tudo) até ter uma classificação real
-  const valor: ClassificacaoEbia =
-    !error && data?.classificacao_ebia_atual ? data.classificacao_ebia_atual : 'INSEGURANCA_GRAVE';
-
-  cacheClassificacao = { userId, valor };
-  return valor;
+  // trata como o nível mais severo (mostra tudo) até ter uma classificação real.
+  // Com cópia local (comCache), o nível real continua valendo sem internet.
+  try {
+    const valor = await comCache<ClassificacaoEbia>(`ebia:${userId}`, async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('classificacao_ebia_atual')
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      return data?.classificacao_ebia_atual ?? 'INSEGURANCA_GRAVE';
+    });
+    cacheClassificacao = { userId, valor };
+    return valor;
+  } catch {
+    return 'INSEGURANCA_GRAVE';
+  }
 }
 
 export async function criarAlimento(params: {
@@ -115,11 +123,12 @@ export async function registrarRefeicao(params: {
   dataISO: string;
   tipo: TipoRefeicao;
   itens: { alimento: Alimento; quantidade: number }[];
+  /** HH:MM:SS real do registro (modo offline); sem isso, usa a hora do envio */
+  horario?: string;
 }): Promise<{ refeicaoId: string; troca: TrocaSugerida | null } & FeedbackRefeicao> {
   const registroDiarioId = await obterOuCriarRegistroDiarioId(params.userId, params.dataISO);
 
-  const agora = new Date();
-  const horario = agora.toTimeString().slice(0, 8); // HH:MM:SS
+  const horario = params.horario ?? new Date().toTimeString().slice(0, 8); // HH:MM:SS
 
   const { data: refeicao, error: erroRefeicao } = await supabase
     .from('refeicoes')
@@ -162,6 +171,11 @@ export async function registrarRefeicao(params: {
   const troca = await buscarTrocaDaRefeicao({ tipo: params.tipo, itens: params.itens });
   return { refeicaoId: refeicao.id, ...feedback, troca };
 }
+function filtrarPorNome(lista: Alimento[], termo: string): Alimento[] {
+  const t = normalizarTexto(termo);
+  return lista.filter((a) => normalizarTexto(a.nome).includes(t));
+}
+
 export async function buscarAlimentos(termo: string, userId: string): Promise<Alimento[]> {
   if (!termo.trim()) return [];
   const classificacao = await obterClassificacaoEbiaAtual(userId);
@@ -173,48 +187,61 @@ export async function buscarAlimentos(termo: string, userId: string): Promise<Al
     .ilike('nome', `%${termo.trim()}%`)
     .order('nome');
 
-  if (error) throw error;
+  if (error) {
+    // sem internet: procura na cópia local da lista completa
+    if (ehErroDeRede(error)) {
+      const copia = await lerCache<Alimento[]>(`alimentos:ini:${userId}`);
+      if (copia) return filtrarPorNome(copia, termo);
+    }
+    throw error;
+  }
   return data ?? [];
 }
 
 export async function listarAlimentosIniciais(userId: string): Promise<Alimento[]> {
   const classificacao = await obterClassificacaoEbiaAtual(userId);
 
-  const { data, error } = await supabase
-    .from('alimentos')
-    .select(COLUNAS_ALIMENTO)
-    .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
-    .order('nome');
+  return comCache<Alimento[]>(`alimentos:ini:${userId}`, async () => {
+    const { data, error } = await supabase
+      .from('alimentos')
+      .select(COLUNAS_ALIMENTO)
+      .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
+      .order('nome');
 
-  if (error) throw error;
-  return data ?? [];
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 // alimentos cadastrados pelo próprio adolescente: sempre aparecem pra ele,
 // então aqui não filtra por escala EBIA (só troca * pelas colunas explícitas)
 export async function listarMeusAlimentos(userId: string): Promise<Alimento[]> {
-  const { data, error } = await supabase
-    .from('alimentos')
-    .select(COLUNAS_ALIMENTO)
-    .eq('criado_por', userId)
-    .order('nome');
+  return comCache<Alimento[]>(`alimentos:meus:${userId}`, async () => {
+    const { data, error } = await supabase
+      .from('alimentos')
+      .select(COLUNAS_ALIMENTO)
+      .eq('criado_por', userId)
+      .order('nome');
 
-  if (error) throw error;
-  return data ?? [];
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function listarPratos(userId: string): Promise<Alimento[]> {
   const classificacao = await obterClassificacaoEbiaAtual(userId);
 
-  const { data, error } = await supabase
-    .from('alimentos')
-    .select(COLUNAS_ALIMENTO)
-    .eq('eh_prato_composto', true)
-    .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
-    .order('nome');
+  return comCache<Alimento[]>(`pratos:ini:${userId}`, async () => {
+    const { data, error } = await supabase
+      .from('alimentos')
+      .select(COLUNAS_ALIMENTO)
+      .eq('eh_prato_composto', true)
+      .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
+      .order('nome');
 
-  if (error) throw error;
-  return data ?? [];
+    if (error) throw error;
+    return data ?? [];
+  });
 }
 
 export async function buscarPratos(termo: string, userId: string): Promise<Alimento[]> {
@@ -228,6 +255,12 @@ export async function buscarPratos(termo: string, userId: string): Promise<Alime
     .ilike('nome', `%${termo.trim()}%`)
     .order('nome');
 
-  if (error) throw error;
+  if (error) {
+    if (ehErroDeRede(error)) {
+      const copia = await lerCache<Alimento[]>(`pratos:ini:${userId}`);
+      if (copia) return filtrarPorNome(copia, termo);
+    }
+    throw error;
+  }
   return data ?? [];
 }

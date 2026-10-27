@@ -4,6 +4,8 @@
 // pelo próprio adolescente (entrada) e os números calculados a partir deles (saída).
 // Nada é inferido: receita, missão ou conteúdo visualizado NÃO viram consumo.
 
+import type { ClassificacaoNova } from '../../alimentacao/utils/regraFeedbackRefeicao';
+
 /** AAAA-MM-DD. Datas são tratadas como texto, sem fuso (o serviço entrega o dia local já resolvido). */
 export type DataISO = string;
 
@@ -15,7 +17,13 @@ export type Janelas = { atual: Janela; anterior: Janela };
 
 // ---------- Entrada (o serviço da Fase 4 monta isto a partir do Supabase) ----------
 
-export type AlimentoRegistrado = { alimentoId: string; nome: string; grupos: string[] };
+export type AlimentoRegistrado = {
+  alimentoId: string;
+  nome: string;
+  grupos: string[];
+  /** classificação NOVA gravada no catálogo; ausente/null = não classificado (fica fora do termômetro) */
+  classificacaoNova?: ClassificacaoNova | null;
+};
 export type RefeicaoRegistrada = { id: string; data: DataISO; tipo: string; alimentos: AlimentoRegistrado[] };
 export type RegistroAgua = { data: DataISO; ml: number };
 export type RegistroAtividade = { data: DataISO; tipo: string; minutos: number };
@@ -41,6 +49,8 @@ export type DadosBrutos = {
   conquistas: ConquistaObtida[];
   trilhas: ProgressoTrilha[];
   primeiraAparicaoAlimentos: PrimeiraAparicaoAlimento[];
+  /** quantos dias de histórico o serviço carregou; sem isso não se afirma "melhor semana" */
+  diasCarregados?: number;
 };
 
 // ---------- Saída ----------
@@ -72,6 +82,8 @@ export type MetricasHabitos = {
 
 export type MetricasEngajamento = {
   missoes: { atribuidas: number; concluidas: number };
+  /** missões de dias anteriores a hoje sem XP concedido: podem ter sido feitas sem o app registrar */
+  missoesSemRegistroAntesDeHoje: number;
   licoes: number;
   /** estado atual (não restrito ao período) */
   trilhas: { emAndamento: ProgressoTrilha[]; finalizadas: number };

@@ -7,6 +7,8 @@ import { ItemCarrinhoAlimento } from '../types/alimentacao';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { tocarSom } from '../../../../shared/audio/sons';
+import { useOffline } from '../../../../shared/offline/OfflineContext';
+import { ehErroDeRede } from '../../../../shared/offline/erroRede';
 
 interface AlimentacaoContextValue {
   carrinho: ItemCarrinhoAlimento[];
@@ -15,14 +17,21 @@ interface AlimentacaoContextValue {
   decrementarItem: (alimentoId: string) => void;
   removerDoCarrinho: (alimentoId: string) => void;
   limparCarrinho: () => void;
-  registrarCarrinho: (tipo: TipoRefeicao) => Promise<({ quantidade: number; troca: TrocaSugerida | null } & FeedbackRefeicao) | null>;
+  registrarCarrinho: (tipo: TipoRefeicao) => Promise<ResultadoRegistro | null>;
   enviando: boolean;
 }
+
+/** Registro feito com internet: traz o feedback da refeição na hora. */
+export type RegistroOnline = { offline?: false; quantidade: number; troca: TrocaSugerida | null } & FeedbackRefeicao;
+/** Registro guardado no celular (sem internet): o feedback chega depois, na sincronização. */
+export type RegistroOffline = { offline: true; quantidade: number };
+export type ResultadoRegistro = RegistroOnline | RegistroOffline;
 
 const AlimentacaoContext = createContext<AlimentacaoContextValue | undefined>(undefined);
 
 export function AlimentacaoProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth();
+  const { guardar } = useOffline();
   const [carrinho, setCarrinho] = useState<ItemCarrinhoAlimento[]>([]);
   const [enviando, setEnviando] = useState(false);
 
@@ -66,13 +75,21 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
     async (tipo: TipoRefeicao) => {
       if (carrinho.length === 0 || enviando || !userId) return null;
       setEnviando(true);
+      const dataISO = formatarDataISO(new Date());
+      const horario = new Date().toTimeString().slice(0, 8);
       try {
-        const resultado = await registrarRefeicao({
-          userId,
-          dataISO: formatarDataISO(new Date()),
-          tipo,
-          itens: carrinho,
-        });
+        let resultado;
+        try {
+          resultado = await registrarRefeicao({ userId, dataISO, tipo, itens: carrinho, horario });
+        } catch (erro) {
+          if (!ehErroDeRede(erro)) throw erro;
+          // sem internet: guarda a refeição no celular; o feedback sai na sincronização
+          await guardar({ tipo: 'REFEICAO', payload: { dataISO, horario, tipoRefeicao: tipo, itens: carrinho } });
+          const quantidade = carrinho.length;
+          setCarrinho([]);
+          tocarSom('registro');
+          return { offline: true as const, quantidade };
+        }
         const quantidade = carrinho.length;
         setCarrinho([]);
         tocarSom('registro');
@@ -82,7 +99,7 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
         setEnviando(false);
       }
     },
-    [carrinho, enviando, userId]
+    [carrinho, enviando, userId, guardar]
   );
 
   return (

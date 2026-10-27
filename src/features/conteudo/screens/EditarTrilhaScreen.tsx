@@ -235,6 +235,12 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
               {visivel ? `Hoje o app mostra aos adolescentes uma trilha por vez: "${visivel.titulo}" (ordem ${visivel.ordem}), a publicada de menor ordem.` : 'Hoje nenhuma trilha está publicada para os adolescentes. O app mostra a publicada de menor ordem.'}
             </AppText>
             {!!avisoOrdem && <AppText style={styles.alerta}>{avisoOrdem}</AppText>}
+            {!criando && <AppText style={styles.suave}>Mudar título, descrição, tema, ordem ou XP bônus de uma trilha já enviada ou publicada conta como edição: o Administrador a devolve para rascunho (ela sai do ar até a nutricionista aprovar de novo); a nutricionista mantém o status e a versão sobe.</AppText>}
+            {!criando && trilha && (
+              <View style={{ flexDirection: 'row' }}>
+                <AppButton label="PRÉ-VISUALIZAR TRILHA" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} style={styles.botaoPequeno} onPress={() => navigation.navigate('TrilhaPreview', { trilhaId: trilha.id, origem })} />
+              </View>
+            )}
             <BarraSalvar
               rotulo={criando ? 'CRIAR TRILHA' : 'SALVAR'}
               ocupado={ocupado}

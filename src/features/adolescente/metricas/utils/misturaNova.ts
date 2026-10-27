@@ -1,0 +1,72 @@
+// src/features/adolescente/metricas/utils/misturaNova.ts
+//
+// Termômetro da regra de ouro: a MISTURA, na janela, entre alimentos in natura (ou
+// ingredientes culinários), processados e ultraprocessados (classificação NOVA do Guia
+// Alimentar). Pura (sem rede, sem relógio).
+//
+// Regras:
+//  - conta o que o adolescente REGISTROU (cada alimento em cada refeição = 1 item);
+//  - alimento sem classificação NOVA fica fora da conta (não chutamos);
+//  - com poucos dias ou poucos itens classificados não se afirma padrão: `sem_dados`;
+//  - nada aqui vira nota, número exibido ou comparação com outras pessoas.
+import type { DadosBrutos, Janela } from '../types/metricas';
+import { MIN_DIAS_PADRAO } from './comparacao';
+import { dentro } from './periodos';
+
+export type EstadoTermometro = 'sem_dados' | 'mais_natural' | 'mistura' | 'mais_industrializado';
+
+/** Itens classificados mínimos para falar em mistura. PROPOSTA: validar com a nutricionista. */
+export const MIN_ITENS_CLASSIFICADOS = 6;
+/** Mesmos cortes da regra por refeição (regraFeedbackRefeicao.ts). PROPOSTA: validar com a nutricionista. */
+export const CORTE_PREDOMINIO = 0.5;
+
+export type MisturaNova = {
+  /** in natura + ingrediente culinário */
+  natural: number;
+  processado: number;
+  ultra: number;
+  /** natural + processado + ultra */
+  classificados: number;
+  /** itens sem classificação NOVA (fora da conta) */
+  semClassificacao: number;
+  diasComRefeicao: number;
+  estado: EstadoTermometro;
+};
+
+export function calcularMisturaNova(dados: DadosBrutos, janela: Janela): MisturaNova {
+  let natural = 0;
+  let processado = 0;
+  let ultra = 0;
+  let semClassificacao = 0;
+  const dias = new Set<string>();
+
+  for (const r of dados.refeicoes) {
+    if (!dentro(r.data, janela)) continue;
+    dias.add(r.data);
+    for (const a of r.alimentos) {
+      switch (a.classificacaoNova) {
+        case 'IN_NATURA':
+        case 'INGREDIENTE_CULINARIO':
+          natural++;
+          break;
+        case 'PROCESSADO':
+          processado++;
+          break;
+        case 'ULTRAPROCESSADO':
+          ultra++;
+          break;
+        default:
+          semClassificacao++;
+      }
+    }
+  }
+
+  const classificados = natural + processado + ultra;
+  let estado: EstadoTermometro;
+  if (dias.size < MIN_DIAS_PADRAO || classificados < MIN_ITENS_CLASSIFICADOS) estado = 'sem_dados';
+  else if (ultra / classificados >= CORTE_PREDOMINIO) estado = 'mais_industrializado';
+  else if (natural / classificados >= CORTE_PREDOMINIO) estado = 'mais_natural';
+  else estado = 'mistura';
+
+  return { natural, processado, ultra, classificados, semClassificacao, diasComRefeicao: dias.size, estado };
+}

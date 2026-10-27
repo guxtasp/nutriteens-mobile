@@ -32,16 +32,23 @@ export async function buscarConsumoAguaHoje(userId: string, data: string): Promi
   return (registros ?? []).reduce((soma, r) => soma + r.quantidade_ml, 0);
 }
 
-/** Registra um consumo de água (ex: 200ml) e retorna o novo total do dia */
-export async function registrarConsumoAgua(params: {
+/**
+ * Só grava o registro (sem reler o total). Separado de registrarConsumoAgua para
+ * o modo offline: se a releitura falhasse por falta de internet, o chamador não
+ * poderia saber se o registro foi gravado e acabaria enviando duas vezes.
+ * `horario` (HH:MM:SS) permite gravar a hora real em que o adolescente bebeu,
+ * mesmo quando o envio acontece depois, na sincronização.
+ */
+export async function inserirRegistroAgua(params: {
   userId: string;
   data: string;
   quantidadeMl: number;
-}): Promise<number> {
+  horario?: string;
+}): Promise<void> {
   const { userId, data, quantidadeMl } = params;
 
   const registroDiarioId = await obterOuCriarRegistroDiario(userId, data);
-  const horarioRegistro = new Date().toTimeString().slice(0, 8);
+  const horarioRegistro = params.horario ?? new Date().toTimeString().slice(0, 8);
 
   const { error } = await supabase.from('registros_agua').insert({
     registro_diario_id: registroDiarioId,
@@ -51,8 +58,16 @@ export async function registrarConsumoAgua(params: {
 
   if (error) throw error;
   registrarEvento('agua_registrada', undefined, { userId });
+}
 
-  return buscarConsumoAguaHoje(userId, data);
+/** Registra um consumo de água (ex: 200ml) e retorna o novo total do dia */
+export async function registrarConsumoAgua(params: {
+  userId: string;
+  data: string;
+  quantidadeMl: number;
+}): Promise<number> {
+  await inserirRegistroAgua(params);
+  return buscarConsumoAguaHoje(params.userId, params.data);
 }
 
 /** Progresso semanal/mensal (média de ml/dia) — usado nos cards de progresso */

@@ -6,7 +6,8 @@
 // abre direto o lugar certo.
 
 export type TipoRegular = 'agua' | 'alimentacao' | 'trilha' | 'missao' | 'atividade';
-export type TipoLembrete = TipoRegular | 'saudade';
+// 'saudade' e 'jornada' não disputam a vaga diária dos tipos regulares (ver utils/jornadaSemanal.ts)
+export type TipoLembrete = TipoRegular | 'saudade' | 'jornada';
 
 // Ordem = prioridade em caso de empate na escolha do dia
 // (missão > alimentação > atividade > água > trilha).
@@ -14,7 +15,7 @@ export const TIPOS_REGULARES: TipoRegular[] = ['missao', 'alimentacao', 'ativida
 
 // Nomes das telas do AdolescenteNavigator (mantidos como string simples pra
 // este arquivo continuar puro e testável fora do React Native).
-export type DestinoLembrete = 'ConsumoAgua' | 'TipoRefeicao' | 'Trilha' | 'Home' | 'AtividadeFisica';
+export type DestinoLembrete = 'ConsumoAgua' | 'TipoRefeicao' | 'Trilha' | 'Home' | 'AtividadeFisica' | 'Metricas';
 
 export type MensagemLembrete = {
   id: string;
@@ -50,6 +51,12 @@ export const MENSAGENS_LEMBRETE: MensagemLembrete[] = [
   { id: 'atividade-1', tipo: 'atividade', titulo: 'Hora de se mexer', texto: 'Uma atividade, mesmo curtinha, já faz diferença. Bora?', destino: 'AtividadeFisica' },
   { id: 'atividade-2', tipo: 'atividade', titulo: 'Energia pra gastar?', texto: 'Registra o que você fez hoje ou escolhe uma atividade nova.', destino: 'AtividadeFisica' },
   { id: 'atividade-3', tipo: 'atividade', titulo: 'Movimento do dia', texto: 'Dança, caminhada, jogo com os amigos... tudo conta!', destino: 'AtividadeFisica' },
+
+  // Resumo semanal da jornada (1 por semana, desligável). Texto fixo e sem número: a
+  // notificação é agendada antes e o dado pode mudar até o disparo.
+  { id: 'jornada-1', tipo: 'jornada', titulo: 'Sua jornada da semana', texto: 'Vem ver o que você registrou e aprendeu nos últimos 7 dias.', destino: 'Metricas' },
+  { id: 'jornada-2', tipo: 'jornada', titulo: 'Bróxis preparou um resumo', texto: 'Sem nota e sem comparação com ninguém: só você e a sua jornada.', destino: 'Metricas' },
+  { id: 'jornada-3', tipo: 'jornada', titulo: 'Olha só a sua semana', texto: 'Seu resumo está pronto. Quer dar uma olhada com o Bróxis?', destino: 'Metricas' },
 
   // Saudade (só quando a pessoa fica alguns dias sem abrir o app)
   { id: 'saudade-1', tipo: 'saudade', titulo: 'O Bróxis sentiu sua falta', texto: 'Quando quiser, é só voltar. Tem novidade te esperando.', destino: 'Home' },

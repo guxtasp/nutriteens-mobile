@@ -50,3 +50,5 @@ export function pluralizar(n: number, singular: string, plural: string): string 
 export function textoAcessivelDias(marcados: number, total: number, o_que: string): string {
   return `${marcados} de ${total} dias ${o_que}`;
 }
+
+// A nota sobre missões possivelmente subcontadas vive em utils/notas.ts (notaMissoes).

@@ -11,7 +11,8 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../../../../lib/supabase';
 import { escolherMensagem, DestinoLembrete, TipoRegular } from '../data/mensagensLembrete';
-import { atualizarIgnoradas, planejarLembretes } from '../utils/escolherLembrete';
+import { atualizarIgnoradas, horaOrganica, planejarLembretes } from '../utils/escolherLembrete';
+import { combinarComJornada, planejarJornadaSemanal } from '../utils/jornadaSemanal';
 import { buscarPendentesHoje } from './lembreteEstadoService';
 import { carregarConfig, carregarEstado, LembreteAgendadoSalvo, salvarEstado } from './lembreteStorage';
 
@@ -108,7 +109,7 @@ async function executarReagendamento(userId: string): Promise<void> {
   const ultimoPorTipo = { ...estado.ultimoPorTipo };
   const ultimaMensagemPorTipo = { ...estado.ultimaMensagemPorTipo };
   for (const lembrete of estado.agendados.filter((a) => a.quando <= agoraMs)) {
-    if (lembrete.tipo !== 'saudade') {
+    if (lembrete.tipo !== 'saudade' && lembrete.tipo !== 'jornada') {
       ultimoPorTipo[lembrete.tipo] = Math.max(ultimoPorTipo[lembrete.tipo] ?? 0, lembrete.quando);
     }
     ultimaMensagemPorTipo[lembrete.tipo] = lembrete.mensagemId;
@@ -124,7 +125,7 @@ async function executarReagendamento(userId: string): Promise<void> {
 
   // 3. O que ainda falta fazer hoje + plano.
   const pendentes = await buscarPendentesHoje(userId, agora);
-  const plano = planejarLembretes({
+  const planoDiario = planejarLembretes({
     agora,
     config,
     pendentes,
@@ -134,6 +135,18 @@ async function executarReagendamento(userId: string): Promise<void> {
     // quem está com o app aberto (ou acabou de fechar) acabou de usar
     ultimaAbertura: agoraMs,
   });
+  // Resumo semanal: peça separada, que ocupa a vaga do dia em que cai (nunca soma lembretes).
+  const plano = combinarComJornada(
+    planoDiario,
+    planejarJornadaSemanal({
+      agora,
+      config,
+      aberturas: estado.aberturas,
+      ignoradasSeguidas,
+      hora: horaOrganica(estado.aberturas, agoraMs),
+      ultimaAbertura: agoraMs,
+    }),
+  );
 
   // 4. Agenda de verdade.
   await garantirCanal();

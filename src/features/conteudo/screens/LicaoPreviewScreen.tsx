@@ -1,23 +1,35 @@
 // src/features/conteudo/screens/LicaoPreviewScreen.tsx
-// Pré-visualização de uma lição PARA REVISÃO: mostra o gabarito e alerta
-// problemas objetivos (ex.: quiz sem resposta correta).
+// Pré-visualização de uma lição, em duas abas:
+//  - "Como o adolescente vê": roda a lição com os componentes reais do app (sem gabarito antes
+//    de responder, sem salvar progresso nem XP);
+//  - "Revisão (com gabarito)": visão editorial, com as respostas certas e alertas de problemas
+//    objetivos (ex.: quiz sem resposta correta).
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { AppText } from '../../../shared/ui/AppText';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { buscarLicaoParaRevisao, type LicaoParaRevisao } from '../services/conteudoService';
+import { buscarLicaoEditavel, type LicaoEditavel } from '../services/edicaoService';
+import { AbasPrevia, type AbaPrevia } from '../components/preview/AbasPrevia';
+import LicaoUsoPreview from '../components/preview/LicaoUsoPreview';
 import { descreverQuestao, problemasDaQuestao } from '../utils/descreverQuestao';
 
 export default function LicaoPreviewScreen({ route }: any) {
   const licaoId: string = route.params.licaoId;
   const [licao, setLicao] = useState<LicaoParaRevisao | null>(null);
+  const [uso, setUso] = useState<LicaoEditavel | null>(null);
+  const [aba, setAba] = useState<AbaPrevia>(route.params.aba ?? 'uso');
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     buscarLicaoParaRevisao(licaoId)
       .then(setLicao)
       .catch((e) => setErro(e?.message ?? 'Não foi possível carregar a lição.'));
+    // a prévia de uso precisa de ids de opção, ícone e hábito: leitura direta (a equipe lê qualquer status)
+    buscarLicaoEditavel(licaoId)
+      .then(setUso)
+      .catch((e) => setErro((atual) => atual ?? e?.message ?? 'Não foi possível carregar a lição.'));
   }, [licaoId]);
 
   if (erro) return <AppText style={styles.erro}>{erro}</AppText>;
@@ -31,6 +43,15 @@ export default function LicaoPreviewScreen({ route }: any) {
       <AppText style={styles.meta}>
         {licao.tipo} · {licao.xpRecompensa} XP · {licao.questoes.length} passo(s)
       </AppText>
+
+      <View style={{ marginTop: 14, marginBottom: 6 }}>
+        <AbasPrevia aba={aba} onTrocar={setAba} />
+      </View>
+
+      {aba === 'uso' && (uso ? <LicaoUsoPreview licao={uso} /> : <ActivityIndicator color={colors.primaryDark} style={{ marginTop: 40 }} />)}
+
+      {aba === 'revisao' && (
+        <>
 
       {totalProblemas > 0 && (
         <AppText style={styles.alerta}>
@@ -70,6 +91,8 @@ export default function LicaoPreviewScreen({ route }: any) {
 
       {licao.questoes.length === 0 && !licao.texto && (
         <AppText style={styles.meta}>Esta lição não tem conteúdo cadastrado (ex.: lição de hábito rastreável).</AppText>
+      )}
+        </>
       )}
     </ScrollView>
   );

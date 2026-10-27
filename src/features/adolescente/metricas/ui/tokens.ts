@@ -23,3 +23,11 @@ export const ACENTOS: Record<CartaoId, { cor: string; suave: string; icone: Icon
   engajamento: { cor: '#5B4BC4', suave: '#E8E4FB', icone: 'flag' },
   conquistas: { cor: colors.warningShadow, suave: '#FDEBC8', icone: 'trophy' },
 };
+
+/** Termômetro da regra de ouro: não é um CartaoId (ver CartaoTermometro). */
+export const ACENTO_TERMOMETRO: { cor: string; suave: string; icone: IconeNome } = {
+  cor: colors.primaryDark, suave: '#E2F3D3', icone: 'thermometer',
+};
+
+/** Segmentos da barra de mistura. Sem vermelho: o ultraprocessado não é tratado como alerta. */
+export const COR_MISTURA = { natural: colors.primaryShadow, processado: '#E0A526', ultra: '#6B7FA3' } as const;

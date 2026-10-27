@@ -24,11 +24,41 @@ import CarrinhoAlimentosBar from '../components/CarrinhoAlimentarBar';
 import CarrinhoAlimentosSheet from '../components/CarrinhoAlimentarSheet';
 import ReceitaDetalheSheet from '../components/ReceitaDetalheSheet';
 import { EnviarReceitaSheet } from '../../social/components/EnviarReceitaSheet';
+import { FiltroChips } from '../../../../shared/ui/FiltroChips';
+import { buscarGruposAlimentaresInfo } from '../services/gruposAlimentaresService';
+import {
+  FILTRO_ALIMENTO_VAZIO,
+  FILTRO_RECEITA_VAZIO,
+  OPCOES_TEMPO_MIN,
+  filtrarAlimentos,
+  filtrarReceitas,
+  filtroAlimentoAtivo,
+  filtroReceitaAtivo,
+  gruposDisponiveis,
+  rotuloDoGrupo,
+  type Dificuldade,
+  type FiltroAlimento,
+  type FiltroReceita,
+} from '../utils/filtrosAlimento';
+import type { ClassificacaoNova } from '../utils/regraFeedbackRefeicao';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'BuscaAlimento'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'BuscaAlimento'>;
 
 type Aba = 'alimento' | 'prato' | 'receita';
+
+const OPCOES_NOVA = [
+  { chave: 'IN_NATURA', label: 'In natura' },
+  { chave: 'INGREDIENTE_CULINARIO', label: 'Culinário' },
+  { chave: 'PROCESSADO', label: 'Processado' },
+  { chave: 'ULTRAPROCESSADO', label: 'Ultraprocessado' },
+];
+const OPCOES_DIFICULDADE = [
+  { chave: 'FACIL', label: 'Fácil' },
+  { chave: 'MEDIO', label: 'Médio' },
+  { chave: 'DIFICIL', label: 'Difícil' },
+];
+const OPCOES_TEMPO = OPCOES_TEMPO_MIN.map((m) => ({ chave: String(m), label: `Até ${m} min` }));
 
 function rotuloClassificacao(c: Alimento['classificacao_nova']) {
   switch (c) {
@@ -54,9 +84,25 @@ export default function BuscaAlimentoScreen() {
   const [buscando, setBuscando] = useState(false);
   const [sheetCarrinho, setSheetCarrinho] = useState(false);
   const [receitaAberta, setReceitaAberta] = useState<ReceitaComAlimento | null>(null);
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [filtroAlimento, setFiltroAlimento] = useState<FiltroAlimento>(FILTRO_ALIMENTO_VAZIO);
+  const [filtroReceita, setFiltroReceita] = useState<FiltroReceita>(FILTRO_RECEITA_VAZIO);
+  const [titulosGrupos, setTitulosGrupos] = useState<Record<string, string>>({});
   const [receitaParaEnviar, setReceitaParaEnviar] = useState<{ id: string; titulo: string } | null>(null);
 
   const ultimoIdProcessado = useRef<string | null>(null);
+
+  // nomes amigáveis dos grupos (tabela grupos_alimentares_info); se falhar, o rótulo é gerado do código
+  useEffect(() => {
+    buscarGruposAlimentaresInfo()
+      .then((info) => setTitulosGrupos(Object.fromEntries(Object.values(info).map((g) => [g.grupo, g.titulo_amigavel]))))
+      .catch(() => undefined);
+  }, []);
+
+  // grupo de "Prato" não existe em "Alimento" e vice-versa: ao trocar de aba, limpa para não esconder resultados sem querer
+  useEffect(() => {
+    setFiltroAlimento(FILTRO_ALIMENTO_VAZIO);
+  }, [aba]);
 
   // FIX: Adiciona item recém-criado ao carrinho de forma segura e limpa
   useEffect(() => {
@@ -113,6 +159,14 @@ export default function BuscaAlimentoScreen() {
       const resultado = await registrarCarrinho(params.tipo);
       if (!resultado) return;
       setSheetCarrinho(false);
+      if (resultado.offline) {
+        Alert.alert(
+          'Refeição guardada! 📱',
+          'Você está sem internet, então guardamos o registro no celular. Ele sobe sozinho quando a conexão voltar e o retorno da refeição aparece depois.',
+          [{ text: 'Ok', onPress: () => navigation.navigate('Alimentacao') }]
+        );
+        return;
+      }
       navigation.navigate('FeedbackRefeicao', {
         tipo: params.tipo,
         nomeRefeicao: params.nomeRefeicao,
@@ -136,7 +190,21 @@ export default function BuscaAlimentoScreen() {
     setSheetCarrinho(true);
   }, [adicionarAoCarrinho]);
 
-  const mostrarSecaoMeusAlimentos = aba === 'alimento' && !termo.trim() && meusAlimentos.length > 0;
+  const resultadosFiltrados = filtrarAlimentos(resultados, filtroAlimento);
+  const meusFiltrados = filtrarAlimentos(meusAlimentos, filtroAlimento);
+  const receitasFiltradas = filtrarReceitas(receitasResultados, filtroReceita);
+  const opcoesGrupo = gruposDisponiveis(aba === 'alimento' ? [...meusAlimentos, ...resultados] : resultados).map((g) => ({
+    chave: g,
+    label: rotuloDoGrupo(g, titulosGrupos),
+  }));
+  const filtroAtivo = aba === 'receita' ? filtroReceitaAtivo(filtroReceita) : filtroAlimentoAtivo(filtroAlimento);
+
+  function limparFiltros() {
+    setFiltroAlimento(FILTRO_ALIMENTO_VAZIO);
+    setFiltroReceita(FILTRO_RECEITA_VAZIO);
+  }
+
+  const mostrarSecaoMeusAlimentos = aba === 'alimento' && !termo.trim() && meusFiltrados.length > 0;
 
   // Renderizadores otimizados para FlatList evitando re-criação de funções
   const renderItemAlimentoPrato = useCallback(({ item }: { item: Alimento }) => (
@@ -189,6 +257,14 @@ export default function BuscaAlimentoScreen() {
           <Pressable style={styles.botaoInfo} accessibilityLabel="Informações">
             <Ionicons name="information" size={18} color="#fff" />
           </Pressable>
+          <Pressable
+            style={[styles.botaoInfo, filtrosAbertos && styles.botaoFiltroAberto]}
+            onPress={() => setFiltrosAbertos((v) => !v)}
+            accessibilityLabel={filtrosAbertos ? 'Esconder filtros' : 'Mostrar filtros'}
+          >
+            <Ionicons name="options" size={18} color="#fff" />
+            {filtroAtivo && <View style={styles.pontoFiltro} />}
+          </Pressable>
           {aba !== 'receita' && (
             <Pressable style={styles.botaoAdicionar} onPress={irParaCadastro} accessibilityLabel="Cadastrar novo alimento">
               <Ionicons name="add" size={20} color="#fff" />
@@ -219,18 +295,61 @@ export default function BuscaAlimentoScreen() {
           </Pressable>
         </View>
 
+        {filtrosAbertos && (
+          <View style={styles.painelFiltros}>
+            {aba === 'receita' ? (
+              <>
+                <FiltroChips
+                  rotuloTodos="Qualquer dificuldade"
+                  opcoes={OPCOES_DIFICULDADE}
+                  valor={filtroReceita.dificuldade}
+                  onChange={(c) => setFiltroReceita((f) => ({ ...f, dificuldade: c as Dificuldade | null }))}
+                />
+                <FiltroChips
+                  rotuloTodos="Qualquer tempo"
+                  opcoes={OPCOES_TEMPO}
+                  valor={filtroReceita.tempoMaxMin === null ? null : String(filtroReceita.tempoMaxMin)}
+                  onChange={(c) => setFiltroReceita((f) => ({ ...f, tempoMaxMin: c === null ? null : Number(c) }))}
+                />
+              </>
+            ) : (
+              <>
+                <FiltroChips
+                  rotuloTodos="Qualquer tipo"
+                  opcoes={OPCOES_NOVA}
+                  valor={filtroAlimento.nova}
+                  onChange={(c) => setFiltroAlimento((f) => ({ ...f, nova: c as ClassificacaoNova | null }))}
+                />
+                {opcoesGrupo.length > 0 && (
+                  <FiltroChips
+                    rotuloTodos="Todos os grupos"
+                    opcoes={opcoesGrupo}
+                    valor={filtroAlimento.grupo}
+                    onChange={(c) => setFiltroAlimento((f) => ({ ...f, grupo: c }))}
+                  />
+                )}
+              </>
+            )}
+            {filtroAtivo && (
+              <Pressable onPress={limparFiltros} style={styles.limparFiltros}>
+                <AppText style={styles.limparFiltrosTexto}>Limpar filtros</AppText>
+              </Pressable>
+            )}
+          </View>
+        )}
+
         {buscando && <ActivityIndicator color="#8BC34A" style={{ marginTop: 20 }} />}
 
         {!buscando && aba !== 'receita' && (
           <FlatList
-            data={resultados}
+            data={resultadosFiltrados}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ gap: 12, paddingTop: 4, paddingBottom: carrinho.length > 0 ? 100 : 20 }}
             ListHeaderComponent={
               mostrarSecaoMeusAlimentos ? (
                 <View style={{ marginBottom: 12 }}>
                   <AppText style={styles.secaoLabel}>Cadastrados por você</AppText>
-                  {meusAlimentos.map((item) => (
+                  {meusFiltrados.map((item) => (
                     <Pressable key={`meu-${item.id}`} style={styles.itemCard} onPress={() => adicionarAoCarrinho(item)}>
                       <View style={{ flex: 1 }}>
                         <AppText style={styles.itemNome} numberOfLines={2}>
@@ -250,7 +369,9 @@ export default function BuscaAlimentoScreen() {
               ) : null
             }
             ListEmptyComponent={
-              termo.trim().length > 0 ? (
+              filtroAtivo && resultados.length > 0 ? (
+                <AppText style={styles.vazioTexto}>Nada com esses filtros. Toque em "Limpar filtros" pra ver tudo.</AppText>
+              ) : termo.trim().length > 0 ? (
                 <AppText style={styles.vazioTexto}>
                   {aba === 'prato'
                     ? 'Nenhum prato encontrado.'
@@ -264,11 +385,15 @@ export default function BuscaAlimentoScreen() {
 
         {!buscando && aba === 'receita' && (
           <FlatList
-            data={receitasResultados}
+            data={receitasFiltradas}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ gap: 12, paddingTop: 4, paddingBottom: carrinho.length > 0 ? 100 : 20 }}
             ListEmptyComponent={
-              <AppText style={styles.vazioTexto}>Nenhuma receita encontrada.</AppText>
+              <AppText style={styles.vazioTexto}>
+                {filtroAtivo && receitasResultados.length > 0
+                  ? 'Nenhuma receita com esses filtros. Toque em "Limpar filtros" pra ver tudo.'
+                  : 'Nenhuma receita encontrada.'}
+              </AppText>
             }
             renderItem={renderItemReceita}
           />
@@ -316,6 +441,11 @@ const styles = StyleSheet.create({
   buscaInput: { flex: 1, fontFamily: typography.regular, fontSize: 14, color: colors.primaryDark },
   botaoInfo: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#8BC34A', alignItems: 'center', justifyContent: 'center' },
   botaoAdicionar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#8BC34A', alignItems: 'center', justifyContent: 'center' },
+  botaoFiltroAberto: { backgroundColor: colors.primaryDark },
+  pontoFiltro: { position: 'absolute', top: 4, right: 4, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF9800', borderWidth: 1, borderColor: '#fff' },
+  painelFiltros: { gap: 2, marginBottom: 12 },
+  limparFiltros: { alignSelf: 'flex-start', paddingVertical: 4 },
+  limparFiltrosTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark, textDecorationLine: 'underline' },
   abasLinha: { flexDirection: 'row', gap: 50, marginBottom: 20, justifyContent: 'center' },
   aba: { alignItems: 'center', gap: 6, paddingVertical: 4 },
   abaTextoAtivo: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },

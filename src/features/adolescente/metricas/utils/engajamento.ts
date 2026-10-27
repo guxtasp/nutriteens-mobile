@@ -35,6 +35,7 @@ export function calcularEngajamento(dados: DadosBrutos, janela: Janela): Metrica
   const acoes = acoesPorDia(dados, janela);
   return {
     missoes: { atribuidas: missoes.length, concluidas: missoes.filter((m) => m.concluida).length },
+    missoesSemRegistroAntesDeHoje: missoes.filter((m) => !m.concluida && m.data < dados.hoje).length,
     licoes: licoes.size,
     trilhas: {
       emAndamento: dados.trilhas.filter((t) => t.licoesConcluidas > 0 && t.licoesConcluidas < t.totalLicoes),

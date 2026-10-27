@@ -24,7 +24,7 @@ import {
   type CorpoTroca,
   type DetalheConteudo,
 } from '../services/fluxoService';
-import { obterPapelAtual } from '../services/conteudoService';
+import { buscarIngredientesDaReceita, obterPapelAtual } from '../services/conteudoService';
 import { CONTEXTO_CATEGORIA, type CategoriaTroca } from '../../adolescente/trocas/utils/trocas';
 import {
   ACAO_LABEL,
@@ -101,7 +101,7 @@ function CorpoTrilhaView({ corpo, navigation, origem }: { corpo: CorpoTrilha; na
   );
 }
 
-function CorpoReceitaView({ corpo }: { corpo: CorpoReceita }) {
+function CorpoReceitaView({ corpo, ingredientesReceita }: { corpo: CorpoReceita; ingredientesReceita: { nome: string; quantidade: string }[] | null }) {
   return (
     <View style={{ gap: 10 }}>
       <AppText style={styles.meta}>
@@ -111,15 +111,27 @@ function CorpoReceitaView({ corpo }: { corpo: CorpoReceita }) {
       </AppText>
 
       <View style={styles.bloco}>
-        <AppText style={styles.blocoTitulo}>Ingredientes</AppText>
-        {corpo.ingredientes.length === 0 && <AppText style={styles.meta}>Nenhum ingrediente cadastrado.</AppText>}
-        {corpo.ingredientes.map((i, k) => (
+        <AppText style={styles.blocoTitulo}>Ingredientes da receita</AppText>
+        {ingredientesReceita === null && <AppText style={styles.meta}>Carregando…</AppText>}
+        {ingredientesReceita !== null && ingredientesReceita.length === 0 && <AppText style={styles.meta}>Nenhum ingrediente cadastrado.</AppText>}
+        {(ingredientesReceita ?? []).map((i, k) => (
           <AppText key={k} style={styles.texto}>
-            • {i.nome}
-            {i.proporcao != null ? ` (${i.proporcao}%)` : ''}
+            • {i.quantidade} de {i.nome}
           </AppText>
         ))}
       </View>
+
+      {corpo.ingredientes.length > 0 && (
+        <View style={styles.bloco}>
+          <AppText style={styles.blocoTitulo}>Composição do prato (usada na classificação nutricional)</AppText>
+          {corpo.ingredientes.map((i, k) => (
+            <AppText key={k} style={styles.texto}>
+              • {i.nome}
+              {i.proporcao != null ? ` (${i.proporcao}%)` : ''}
+            </AppText>
+          ))}
+        </View>
+      )}
 
       {!!corpo.modo_preparo && (
         <View style={styles.bloco}>
@@ -175,6 +187,7 @@ export default function ConteudoDetalheScreen({ config, route }: Props) {
   const { tipo, conteudoId, origem } = route.params;
   const navigation = useNavigation<any>();
   const [dados, setDados] = useState<DetalheConteudo | null>(null);
+  const [ingredientesReceita, setIngredientesReceita] = useState<{ nome: string; quantidade: string }[] | null>(null);
   const [papel, setPapel] = useState<PapelPainel | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -188,6 +201,7 @@ export default function ConteudoDetalheScreen({ config, route }: Props) {
     try {
       const [d, p] = await Promise.all([buscarDetalhe(tipo, conteudoId), obterPapelAtual()]);
       setDados(d);
+      if (tipo === 'RECEITA') buscarIngredientesDaReceita(conteudoId).then(setIngredientesReceita).catch(() => setIngredientesReceita([]));
       setPapel(p === 'NUTRICIONISTA' || p === 'ADMINISTRADOR' ? p : null);
       setErro(null);
     } catch (e: any) {
@@ -244,6 +258,7 @@ export default function ConteudoDetalheScreen({ config, route }: Props) {
           papel={papel}
           navigation={navigation}
           origem={origem}
+          ingredientesReceita={ingredientesReceita}
           aviso={aviso}
           erroAcao={erroAcao}
           pendente={pendente}
@@ -271,6 +286,7 @@ function Detalhe(p: {
   papel: PapelPainel;
   navigation: any;
   origem?: string;
+  ingredientesReceita: { nome: string; quantidade: string }[] | null;
   aviso: string | null;
   erroAcao: string | null;
   pendente: AcaoFluxo | null;
@@ -336,23 +352,40 @@ function Detalhe(p: {
           subtitulo="Exatamente o que será avaliado"
           ajuda="Aqui você lê tudo antes de qualquer ação. Em trilhas, abra cada lição para ver texto, perguntas e gabarito."
           direita={
-            perm.editar ? (
-              <AppButton
-                label="EDITAR"
-                fullWidth={false}
-                size="compact"
-                outlineColor={colors.primaryDark}
-                textColor={colors.primaryDark}
-                style={styles.botao}
-                onPress={() =>
-                  dados.tipo === 'TRILHA'
-                    ? p.navigation.navigate('EditarTrilha', { trilhaId: dados.conteudoId, origem: p.origem })
-                    : dados.tipo === 'TROCA'
-                      ? p.navigation.navigate('EditarTroca', { trocaId: dados.conteudoId, origem: p.origem })
-                      : p.navigation.navigate('EditarReceita', { receitaId: dados.conteudoId, origem: p.origem })
-                }
-              />
-            ) : undefined
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {dados.tipo !== 'TROCA' && (
+                <AppButton
+                  label="PRÉ-VISUALIZAR"
+                  fullWidth={false}
+                  size="compact"
+                  outlineColor={colors.primaryDark}
+                  textColor={colors.primaryDark}
+                  style={styles.botao}
+                  onPress={() =>
+                    dados.tipo === 'TRILHA'
+                      ? p.navigation.navigate('TrilhaPreview', { trilhaId: dados.conteudoId, origem: p.origem })
+                      : p.navigation.navigate('ReceitaPreview', { receitaId: dados.conteudoId, origem: p.origem })
+                  }
+                />
+              )}
+              {perm.editar && (
+                <AppButton
+                  label="EDITAR"
+                  fullWidth={false}
+                  size="compact"
+                  outlineColor={colors.primaryDark}
+                  textColor={colors.primaryDark}
+                  style={styles.botao}
+                  onPress={() =>
+                    dados.tipo === 'TRILHA'
+                      ? p.navigation.navigate('EditarTrilha', { trilhaId: dados.conteudoId, origem: p.origem })
+                      : dados.tipo === 'TROCA'
+                        ? p.navigation.navigate('EditarTroca', { trocaId: dados.conteudoId, origem: p.origem })
+                        : p.navigation.navigate('EditarReceita', { receitaId: dados.conteudoId, origem: p.origem })
+                  }
+                />
+              )}
+            </View>
           }
         >
           {dados.tipo === 'TRILHA' ? (
@@ -360,7 +393,7 @@ function Detalhe(p: {
           ) : dados.tipo === 'TROCA' ? (
             <CorpoTrocaView corpo={dados.corpo as CorpoTroca} />
           ) : (
-            <CorpoReceitaView corpo={dados.corpo as CorpoReceita} />
+            <CorpoReceitaView corpo={dados.corpo as CorpoReceita} ingredientesReceita={p.ingredientesReceita} />
           )}
         </CartaoSecao>
 

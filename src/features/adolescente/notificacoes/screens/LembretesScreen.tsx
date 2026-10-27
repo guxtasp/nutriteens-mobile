@@ -194,6 +194,28 @@ export default function LembretesScreen() {
           <AppText style={styles.aviso}>Com todos os tipos desligados, o Bróxis não manda nenhum lembrete.</AppText>
         )}
 
+        <AppText style={styles.secao}>Resumo da jornada</AppText>
+        <View style={[styles.cartao, !controlesAtivos && styles.desativado]}>
+          <View style={styles.linha}>
+            <View style={styles.iconeCirculo}>
+              <Ionicons name="stats-chart" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.textos}>
+              <AppText style={styles.linhaTitulo}>Resumo semanal</AppText>
+              <AppText style={styles.linhaSub}>Um aviso por semana, no domingo, para ver o que você registrou e aprendeu</AppText>
+            </View>
+            <Switch
+              value={config.jornadaSemanal !== false}
+              onValueChange={(valor) => atualizar({ ...config, jornadaSemanal: valor })}
+              disabled={!controlesAtivos}
+              trackColor={{ false: '#D9D9D9', true: colors.primary }}
+              thumbColor={colors.white}
+              accessibilityLabel="Resumo semanal da jornada"
+            />
+          </View>
+        </View>
+        <AppText style={styles.aviso}>No dia do resumo, ele ocupa o lugar do lembrete diário: nunca chegam dois.</AppText>
+
         <AppText style={styles.secao}>Quantos por dia</AppText>
         <View style={[styles.segmentos, !controlesAtivos && styles.desativado]}>
           {([1, 2] as const).map((valor) => {

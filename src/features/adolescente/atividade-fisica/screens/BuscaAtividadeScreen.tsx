@@ -13,6 +13,16 @@ import { useAtividadeFisica } from '../contexts/AtividadeFisicaContext';
 import CarrinhoBar from '../components/CarrinhoBar';
 import CarrinhoAtividadesSheet from '../components/CarrinhoAtividadesSheet';
 import SucessoRegistroModal from '../../_shared/components/SucessoRegistroModal';
+import { FiltroChips } from '../../../../shared/ui/FiltroChips';
+import {
+  FAIXAS_DURACAO,
+  FILTRO_ATIVIDADE_VAZIO,
+  filtrarEOrdenarAtividades,
+  filtroAtividadeAtivo,
+  type FaixaDuracao,
+  type FiltroAtividade,
+  type OrdemAtividade,
+} from '../utils/filtrosAtividade';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'BuscaAtividade'>;
 
@@ -31,10 +41,19 @@ export default function BuscaAtividadeScreen() {
 
   const [termoBusca, setTermoBusca] = useState('');
   const [resultados, setResultados] = useState<AtividadeCatalogo[]>([]);
+  const [catalogo, setCatalogo] = useState<AtividadeCatalogo[]>([]);
+  const [filtro, setFiltro] = useState<FiltroAtividade>(FILTRO_ATIVIDADE_VAZIO);
   const [buscou, setBuscou] = useState(false);
   const [sheetCarrinho, setSheetCarrinho] = useState(false);
   const [sucessoVisivel, setSucessoVisivel] = useState(false);
   const [quantidadeRegistrada, setQuantidadeRegistrada] = useState(0);
+
+  // catálogo completo para navegar sem digitar (e para filtrar por duração)
+  useEffect(() => {
+    buscarAtividades('')
+      .then(setCatalogo)
+      .catch(() => setCatalogo([]));
+  }, []);
 
   useEffect(() => {
     if (termoBusca.trim().length === 0) {
@@ -57,10 +76,16 @@ export default function BuscaAtividadeScreen() {
     return () => clearTimeout(timeout);
   }, [termoBusca, registrarBuscaRecente]);
 
-  const semResultado = buscou && resultados.length === 0;
-  const mostrarPromptInicial = termoBusca.length === 0 && buscasRecentes.length === 0;
-  const mostrarBuscasRecentes = termoBusca.length === 0 && buscasRecentes.length > 0;
-  const mostrarResultados = termoBusca.length > 0 && resultados.length > 0;
+  const comTermo = termoBusca.trim().length > 0;
+  const base = comTermo ? resultados : catalogo;
+  const lista = filtrarEOrdenarAtividades(base, filtro);
+  const filtroAtivo = filtroAtividadeAtivo(filtro);
+
+  const semResultado = comTermo && buscou && resultados.length === 0;
+  const filtroEsvaziou = !semResultado && lista.length === 0 && base.length > 0;
+  const mostrarPromptInicial = !comTermo && buscasRecentes.length === 0 && catalogo.length === 0;
+  const mostrarBuscasRecentes = !comTermo && buscasRecentes.length > 0;
+  const mostrarResultados = lista.length > 0;
 
   async function handleRegistrar() {
     try {
@@ -93,6 +118,24 @@ export default function BuscaAtividadeScreen() {
         </Pressable>
       </View>
 
+      <View style={styles.filtrosBloco}>
+        <FiltroChips
+          rotuloTodos="Qualquer duração"
+          opcoes={FAIXAS_DURACAO}
+          valor={filtro.faixa}
+          onChange={(c) => setFiltro((f) => ({ ...f, faixa: c as FaixaDuracao | null }))}
+        />
+        <FiltroChips
+          rotuloTodos="A–Z"
+          opcoes={[
+            { chave: 'MAIS_CURTAS', label: 'Mais curtas' },
+            { chave: 'MAIS_LONGAS', label: 'Mais longas' },
+          ]}
+          valor={filtro.ordem === 'NOME' ? null : filtro.ordem}
+          onChange={(c) => setFiltro((f) => ({ ...f, ordem: (c ?? 'NOME') as OrdemAtividade }))}
+        />
+      </View>
+
       {mostrarBuscasRecentes && (
         <View style={styles.buscasRecentesBloco}>
           <AppText style={styles.buscasRecentesTitulo}>Buscas recentes</AppText>
@@ -110,7 +153,7 @@ export default function BuscaAtividadeScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 }}
           keyboardShouldPersistTaps="handled"
         >
-          {resultados.map((atividade) => (
+          {lista.map((atividade) => (
             <View key={atividade.id} style={styles.itemCatalogo}>
               <View style={styles.itemInfo}>
                 <AppText style={styles.itemNome}>{atividade.nome}</AppText>
@@ -134,6 +177,19 @@ export default function BuscaAtividadeScreen() {
             Quer procurar alguma coisa? Digite o que deseja encontrar. Se não encontrar o que procura,
             toque em "Cancelar" e, em seguida, no botão "+" localizado acima da barra de pesquisa.
           </AppText>
+        </View>
+      )}
+
+      {filtroEsvaziou && (
+        <View style={styles.broxisBloco}>
+          <Image source={MASCOTE_BROXIS} style={styles.broxisImagem} resizeMode="contain" />
+          <AppText style={styles.broxisTitulo}>Nada nessa duração</AppText>
+          <AppText style={styles.broxisTexto}>Nenhuma atividade combina com esse filtro. Tente outra duração.</AppText>
+          {filtroAtivo && (
+            <Pressable onPress={() => setFiltro(FILTRO_ATIVIDADE_VAZIO)}>
+              <AppText style={styles.limparFiltros}>Limpar filtros</AppText>
+            </Pressable>
+          )}
         </View>
       )}
 
@@ -193,6 +249,8 @@ const styles = StyleSheet.create({
   },
   buscaTexto: { flex: 1, fontFamily: typography.regular, fontSize: 14, color: colors.primaryDark },
   cancelar: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
+  filtrosBloco: { paddingHorizontal: 20, paddingBottom: 4 },
+  limparFiltros: { fontFamily: typography.bold, fontSize: 13, color: colors.primaryDark, textDecorationLine: 'underline', marginTop: 12 },
   buscasRecentesBloco: { paddingHorizontal: 20, gap: 10 },
   buscasRecentesTitulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark, marginBottom: 4 },
   buscaRecenteItem: { fontFamily: typography.regular, fontSize: 14, color: '#7A8B94', paddingVertical: 4 },

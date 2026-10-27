@@ -12,6 +12,13 @@ describe('fluxo de aprovação', () => {
   it('admin envia rascunho e arquiva', () => {
     expect(acoesPermitidas('ADMINISTRADOR', 'RASCUNHO')).toEqual(['ENVIAR', 'ARQUIVAR']);
   });
+  it('só a nutricionista arquiva (despublica) conteúdo publicado', () => {
+    expect(acoesPermitidas('ADMINISTRADOR', 'PUBLICADO')).not.toContain('ARQUIVAR');
+    expect(acoesPermitidas('NUTRICIONISTA', 'PUBLICADO')).toContain('ARQUIVAR');
+    for (const s of ['RASCUNHO', 'AGUARDANDO_APROVACAO', 'APROVADO', 'REJEITADO'] as const) {
+      expect(acoesPermitidas('ADMINISTRADOR', s)).toContain('ARQUIVAR');
+    }
+  });
   it('nutricionista aprova e publica direto (fluxo simplificado), mas não o que já está publicado', () => {
     expect(acoesPermitidas('NUTRICIONISTA', 'RASCUNHO')).toContain('PUBLICAR');
     expect(acoesPermitidas('NUTRICIONISTA', 'AGUARDANDO_APROVACAO')).toEqual(expect.arrayContaining(['APROVAR', 'PUBLICAR', 'REJEITAR']));

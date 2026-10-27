@@ -21,6 +21,13 @@ const FONTES = {
   conquista: require('../../../assets/sounds/conquista.wav'),
   fanfarra: require('../../../assets/sounds/fanfarra.wav'),
   fanfarraTrilha: require('../../../assets/sounds/fanfarraTrilha.wav'),
+  selecionar: require('../../../assets/sounds/selecionar.wav'),
+  avancar: require('../../../assets/sounds/avancar.wav'),
+  sequencia: require('../../../assets/sounds/sequencia.wav'),
+  estrela: require('../../../assets/sounds/estrela.wav'),
+  notificacao: require('../../../assets/sounds/notificacao.wav'),
+  sucessoSuave: require('../../../assets/sounds/sucessoSuave.wav'),
+  quase: require('../../../assets/sounds/quase.wav'),
 } as const;
 
 export type NomeSom = keyof typeof FONTES;

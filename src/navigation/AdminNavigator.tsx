@@ -15,10 +15,13 @@ import ConfiguracoesScreen from '../features/admin/screens/ConfiguracoesScreen';
 import DesafiosScreen from '../shared/painel/screens/DesafiosScreen';
 import EditarTrilhaScreen from '../features/conteudo/screens/EditarTrilhaScreen';
 import EditarLicaoScreen from '../features/conteudo/screens/EditarLicaoScreen';
+import TrilhaPreviewScreen from '../features/conteudo/screens/TrilhaPreviewScreen';
+import ReceitaPreviewScreen from '../features/conteudo/screens/ReceitaPreviewScreen';
 import EditarReceitaScreen from '../features/conteudo/screens/EditarReceitaScreen';
 import AnalyticsScreen from '../shared/painel/screens/AnalyticsScreen';
 import FluxoConteudoScreen from '../features/conteudo/screens/FluxoConteudoScreen';
 import AuditoriaScreen from '../features/conteudo/screens/AuditoriaScreen';
+import ImagensJogosScreen from '../features/adolescente/jogos/admin/ImagensJogosScreen';
 import EditarTrocaScreen from '../features/conteudo/screens/EditarTrocaScreen';
 import ConteudoDetalheScreen from '../features/conteudo/screens/ConteudoDetalheScreen';
 import SolicitacoesScannerScreen from '../features/adolescente/scanner/screens/SolicitacoesScannerScreen';
@@ -34,6 +37,7 @@ export type AdminStackParamList = {
   AdminConteudos: undefined;
   AdminTrilhas: undefined;
   AdminTrocas: undefined;
+  AdminImagensJogos: undefined;
   AdminProdutosScanner: undefined;
   AdminDesafios: undefined;
   AdminModeracao: undefined;
@@ -41,7 +45,9 @@ export type AdminStackParamList = {
   AdminAuditoria: undefined;
   AdminConfiguracoes: undefined;
   ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string; origem?: string };
-  LicaoPreview: { licaoId: string; origem?: string };
+  LicaoPreview: { licaoId: string; origem?: string; aba?: 'uso' | 'revisao' };
+  TrilhaPreview: { trilhaId: string; origem?: string };
+  ReceitaPreview: { receitaId: string; origem?: string };
   UsuarioDetalhe: { id: string };
   EditarTrilha: { trilhaId?: string; origem?: string } | undefined;
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
@@ -79,6 +85,9 @@ const Desafios = () => <DesafiosScreen config={ADMIN_PAINEL} />;
 const EditarTrilha = (props: any) => <EditarTrilhaScreen config={ADMIN_PAINEL} route={props.route} />;
 const EditarLicao = (props: any) => <EditarLicaoScreen config={ADMIN_PAINEL} route={props.route} />;
 const EditarReceita = (props: any) => <EditarReceitaScreen config={ADMIN_PAINEL} route={props.route} />;
+const TrilhaPreview = (props: any) => <TrilhaPreviewScreen config={ADMIN_PAINEL} route={props.route} />;
+const ReceitaPreview = (props: any) => <ReceitaPreviewScreen config={ADMIN_PAINEL} route={props.route} />;
+const ImagensJogos = () => <ImagensJogosScreen config={ADMIN_PAINEL} />;
 const EditarTroca = (props: any) => <EditarTrocaScreen config={ADMIN_PAINEL} route={props.route} />;
 
 export default function AdminNavigator() {
@@ -96,6 +105,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminTrilhas" component={Trilhas} />
       <Stack.Screen name="AdminProdutosScanner" component={ProdutosScanner} />
       <Stack.Screen name="AdminTrocas" component={Trocas} />
+      <Stack.Screen name="AdminImagensJogos" component={ImagensJogos} />
       <Stack.Screen name="AdminDesafios" component={Desafios} />
       <Stack.Screen name="AdminModeracao" component={ModeracaoScreen} />
       <Stack.Screen name="Metricas" component={MetricasNoPainel} />
@@ -106,6 +116,8 @@ export default function AdminNavigator() {
       <Stack.Screen name="EditarTrilha" component={EditarTrilha} />
       <Stack.Screen name="EditarLicao" component={EditarLicao} />
       <Stack.Screen name="EditarReceita" component={EditarReceita} />
+      <Stack.Screen name="TrilhaPreview" component={TrilhaPreview} />
+      <Stack.Screen name="ReceitaPreview" component={ReceitaPreview} />
       <Stack.Screen name="EditarTroca" component={EditarTroca} />
     </Stack.Navigator>
   );

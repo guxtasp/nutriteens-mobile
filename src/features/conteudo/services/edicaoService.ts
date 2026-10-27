@@ -4,6 +4,7 @@
 // conteúdo para rascunho, e o status só muda por conteudo_transicionar.
 import { supabase } from '../../../lib/supabase';
 import type { LicaoPayload, PassoPayload } from '../utils/passosEdicao';
+import type { ReceitaPayload } from '../utils/receitaEdicao';
 
 function falha(error: { message: string } | null): never | void {
   if (error) throw error;
@@ -22,7 +23,7 @@ export type TrilhaEditavel = {
     titulo: string;
     ordem: number;
     xpBonus: number | null;
-    licoes: { id: string; titulo: string; ordem: number; tipo: string; xp: number }[];
+    licoes: { id: string; titulo: string; ordem: number; tipo: string; xp: number; icone: string | null; passos: number }[];
   }[];
 };
 
@@ -35,7 +36,7 @@ export async function listarTemas(): Promise<string[]> {
 export async function buscarTrilhaEditavel(id: string): Promise<TrilhaEditavel> {
   const { data, error } = await supabase
     .from('trilhas')
-    .select('id, titulo, descricao, tema, ordem, xp_bonus, modulos_trilha(id, titulo, ordem, xp_bonus, licoes(id, titulo, ordem, tipo, xp_recompensa))')
+    .select('id, titulo, descricao, tema, ordem, xp_bonus, modulos_trilha(id, titulo, ordem, xp_bonus, licoes(id, titulo, ordem, tipo, xp_recompensa, icone, questoes_quiz(count)))')
     .eq('id', id)
     .single();
   falha(error);
@@ -56,7 +57,15 @@ export async function buscarTrilhaEditavel(id: string): Promise<TrilhaEditavel> 
         xpBonus: m.xp_bonus ?? null,
         licoes: [...(m.licoes ?? [])]
           .sort((a: any, b: any) => a.ordem - b.ordem)
-          .map((l: any) => ({ id: l.id, titulo: l.titulo, ordem: l.ordem, tipo: String(l.tipo), xp: l.xp_recompensa })),
+          .map((l: any) => ({
+            id: l.id,
+            titulo: l.titulo,
+            ordem: l.ordem,
+            tipo: String(l.tipo),
+            xp: l.xp_recompensa,
+            icone: l.icone ?? null,
+            passos: l.questoes_quiz?.[0]?.count ?? 0,
+          })),
       })),
   };
 }
@@ -265,7 +274,8 @@ export async function criarLicaoLeitura(moduloId: string, d: { titulo: string; t
 }
 
 // ---------------------------------------------------------------- receita
-export type PassoEditavel = { id: string | null; ordem: number; titulo: string; descricao: string };
+export type PassoEditavel = { id: string | null; ordem: number; titulo: string; descricao: string; fotoUrl?: string | null };
+export type IngredienteEditavel = { id: string; alimentoId: string; nome: string; quantidade: string };
 export type ReceitaEditavel = {
   id: string;
   titulo: string;
@@ -274,13 +284,16 @@ export type ReceitaEditavel = {
   porcoes: number | null;
   dificuldade: string;
   alimentoResultanteId: string;
+  alimentoResultanteNome: string;
+  fotoUrl: string | null;
+  ingredientes: IngredienteEditavel[];
   passos: PassoEditavel[];
 };
 
 export async function buscarReceitaEditavel(id: string): Promise<ReceitaEditavel> {
   const { data, error } = await supabase
     .from('receitas')
-    .select('id, titulo, modo_preparo, tempo_preparo_min, porcoes, dificuldade, alimento_resultante_id, receita_passos(id, ordem, titulo, descricao)')
+    .select('id, titulo, modo_preparo, tempo_preparo_min, porcoes, dificuldade, foto_url, alimento_resultante_id, prato:alimentos!receitas_alimento_resultante_id_fkey(nome), receita_ingredientes(id, alimento_id, quantidade_texto, alimentos(nome)), receita_passos(id, ordem, titulo, descricao, foto_url)')
     .eq('id', id)
     .single();
   falha(error);
@@ -293,9 +306,14 @@ export async function buscarReceitaEditavel(id: string): Promise<ReceitaEditavel
     porcoes: r.porcoes,
     dificuldade: String(r.dificuldade ?? 'FACIL'),
     alimentoResultanteId: r.alimento_resultante_id,
+    alimentoResultanteNome: r.prato?.nome ?? '',
+    fotoUrl: r.foto_url ?? null,
+    ingredientes: (r.receita_ingredientes ?? [])
+      .map((i: any) => ({ id: i.id, alimentoId: i.alimento_id, nome: i.alimentos?.nome ?? '', quantidade: i.quantidade_texto ?? '' }))
+      .sort((a: IngredienteEditavel, b: IngredienteEditavel) => a.nome.localeCompare(b.nome, 'pt-BR')),
     passos: [...(r.receita_passos ?? [])]
       .sort((a: any, b: any) => a.ordem - b.ordem)
-      .map((p: any) => ({ id: p.id, ordem: p.ordem, titulo: p.titulo, descricao: p.descricao })),
+      .map((p: any) => ({ id: p.id, ordem: p.ordem, titulo: p.titulo, descricao: p.descricao, fotoUrl: p.foto_url ?? null })),
   };
 }
 
@@ -305,6 +323,31 @@ export async function listarPratos(busca: string): Promise<{ id: string; nome: s
   const { data, error } = await q;
   falha(error);
   return (data ?? []) as { id: string; nome: string }[];
+}
+
+/** Busca alimentos do catálogo (para escolher o ingrediente de uma receita). */
+export async function listarAlimentosBusca(busca: string): Promise<{ id: string; nome: string }[]> {
+  let q = supabase.from('alimentos').select('id, nome').order('nome').limit(30);
+  if (busca.trim()) q = q.ilike('nome', `%${busca.trim()}%`);
+  const { data, error } = await q;
+  falha(error);
+  return (data ?? []) as { id: string; nome: string }[];
+}
+
+/**
+ * Cria (sem `id`, com `alimentoId` = prato composto) ou atualiza (com `id`) uma receita COM
+ * ingredientes e passos, numa única transação (conteudo_salvar_receita, migration_receita_atomica.sql).
+ */
+export async function salvarReceitaCompleta(d: { id?: string; alimentoId?: string; dados: ReceitaPayload }): Promise<string> {
+  const { data, error } = await supabase.rpc('conteudo_salvar_receita', {
+    p_receita_id: d.id ?? null,
+    p_alimento_id: d.alimentoId ?? null,
+    p_receita: d.dados.receita,
+    p_ingredientes: d.dados.ingredientes,
+    p_passos: d.dados.passos,
+  });
+  if (error) throw erroDeFuncao(error, 'migration_receita_atomica.sql');
+  return data as string;
 }
 
 type DadosReceita = { titulo: string; modoPreparo: string; tempoPreparoMin: number | null; porcoes: number | null; dificuldade: string };
