@@ -23,9 +23,6 @@ export function BroxisEvolucao({ fase, size = 190 }: Props) {
   return (
     <View style={[styles.palco, { width: size, height: size }]}>
       <View style={[styles.aura, { width: size, height: size, borderRadius: size / 2 }]} />
-      {fase === 'adulto' && (
-        <Ionicons name="ribbon" size={size * 0.18} color={colors.warning} style={styles.coroa} />
-      )}
       {/* respiração leve; o bebê balança mais rápido */}
       <MotiView
         key={fase}
@@ -35,6 +32,13 @@ export function BroxisEvolucao({ fase, size = 190 }: Props) {
       >
         <Image source={ARTE[fase]} style={{ width: lado, height: lado }} resizeMode="contain" />
       </MotiView>
+      {/* depois da imagem na árvore + zIndex/elevation: se vier antes, o mascote
+          (que anima com transform) passa por cima e a medalha some atrás dele */}
+      {fase === 'adulto' && (
+        <View pointerEvents="none" style={styles.coroaWrap}>
+          <Ionicons name="ribbon" size={size * 0.2} color={colors.warning} />
+        </View>
+      )}
     </View>
   );
 }
@@ -42,5 +46,5 @@ export function BroxisEvolucao({ fase, size = 190 }: Props) {
 const styles = StyleSheet.create({
   palco: { alignItems: 'center', justifyContent: 'center' },
   aura: { position: 'absolute', backgroundColor: '#E2F3D3' },
-  coroa: { position: 'absolute', top: 0 },
+  coroaWrap: { position: 'absolute', top: -2, alignSelf: 'center', zIndex: 10, elevation: 10 },
 });

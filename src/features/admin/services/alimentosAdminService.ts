@@ -6,6 +6,9 @@ export type GrupoAlimentar =
   | 'CARNES_E_OVOS' | 'LEGUMINOSAS' | 'OLEAGINOSAS_E_SEMENTES' | 'OLEOS_E_GORDURAS'
   | 'ACUCARES_E_DOCES' | 'BEBIDAS';
 
+export type TipoRefeicaoRecordatorio =
+  | 'CAFE_DA_MANHA' | 'LANCHE_MANHA' | 'ALMOCO' | 'LANCHE_TARDE' | 'JANTAR' | 'CEIA';
+
 export type ClassificacaoEbia = 'SEGURANCA_ALIMENTAR' | 'INSEGURANCA_LEVE' | 'INSEGURANCA_MODERADA' | 'INSEGURANCA_GRAVE';
 
 // nível categórico de nutriente (ver migracao_alimento_nutrientes_categorico.sql).
@@ -41,6 +44,9 @@ export interface Alimento {
   // pro adolescente na busca — uso interno, nunca exposto no app dele
   nivel_maximo_ebia: ClassificacaoEbia;
   grupos_alimentares: GrupoAlimentar[];
+  // em quais refeições do Recordatório (triagem) o alimento aparece como opção.
+  // Vazio = não aparece em nenhuma.
+  tipos_refeicao_recordatorio?: TipoRefeicaoRecordatorio[];
   criado_por: string | null;
   // os dois campos abaixo não são colunas de `alimentos` — vêm de um join
   // feito só em listarAlimentos(), pra dar pra priorizar a revisão na lista

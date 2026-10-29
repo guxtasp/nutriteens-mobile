@@ -16,6 +16,7 @@ import {
   NutrienteAtencaoChave,
   NutrientesAlimento,
   FonteNutrientes,
+  TipoRefeicaoRecordatorio,
   criarAlimento,
   atualizarAlimento,
   excluirAlimento,
@@ -29,6 +30,14 @@ const GRUPOS: GrupoAlimentar[] = [
   'CEREAIS_E_TUBERCULOS', 'LEGUMES_E_VERDURAS', 'FRUTAS', 'LEITE_E_DERIVADOS',
   'CARNES_E_OVOS', 'LEGUMINOSAS', 'OLEAGINOSAS_E_SEMENTES', 'OLEOS_E_GORDURAS',
   'ACUCARES_E_DOCES', 'BEBIDAS',
+];
+const REFEICOES_RECORDATORIO: { valor: TipoRefeicaoRecordatorio; rotulo: string }[] = [
+  { valor: 'CAFE_DA_MANHA', rotulo: 'Café da manhã' },
+  { valor: 'LANCHE_MANHA', rotulo: 'Lanche da manhã' },
+  { valor: 'ALMOCO', rotulo: 'Almoço' },
+  { valor: 'LANCHE_TARDE', rotulo: 'Lanche da tarde' },
+  { valor: 'JANTAR', rotulo: 'Jantar' },
+  { valor: 'CEIA', rotulo: 'Ceia' },
 ];
 const NIVEIS_NUTRIENTE: NivelNutriente[] = ['AUSENTE', 'FONTE', 'ALTO_TEOR'];
 const NIVEIS_ATENCAO: NivelAtencao[] = ['BAIXO', 'MODERADO', 'ALTO'];
@@ -86,6 +95,9 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
     existente?.nivel_maximo_ebia ?? 'INSEGURANCA_GRAVE'
   );
   const [grupos, setGrupos] = useState<Set<GrupoAlimentar>>(new Set(existente?.grupos_alimentares ?? []));
+  const [refeicoesRecordatorio, setRefeicoesRecordatorio] = useState<Set<TipoRefeicaoRecordatorio>>(
+    new Set(existente?.tipos_refeicao_recordatorio ?? [])
+  );
   const [salvando, setSalvando] = useState(false);
 
   const [nutrientes, setNutrientes] = useState<NutrientesAlimento>({});
@@ -121,6 +133,14 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
     });
   }
 
+  function alternarRefeicao(tipo: TipoRefeicaoRecordatorio) {
+    setRefeicoesRecordatorio((atual) => {
+      const novo = new Set(atual);
+      novo.has(tipo) ? novo.delete(tipo) : novo.add(tipo);
+      return novo;
+    });
+  }
+
   const podeSalvar = nome.trim().length > 0 && classificacao !== null && grupos.size > 0;
 
   async function salvar() {
@@ -134,6 +154,7 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
         acessivel_ebia: acessivelEbia,
         nivel_maximo_ebia: nivelMaximoEbia,
         grupos_alimentares: Array.from(grupos),
+        tipos_refeicao_recordatorio: Array.from(refeicoesRecordatorio),
       };
       let idParaNutrientes: string | null;
       if (existente) {
@@ -216,6 +237,23 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
             label={g.replace(/_/g, ' ')}
             ativo={grupos.has(g)}
             onPress={() => alternarGrupo(g)}
+            style={styles.chip}
+          />
+        ))}
+      </View>
+
+      <AppText style={styles.label}>Aparece no recordatório da triagem em quais refeições?</AppText>
+      <AppText style={styles.ajuda}>
+        São as opções que o adolescente vê ao contar o que comeu ontem. Sem nenhuma marcada, o alimento não aparece no recordatório
+        (continua disponível na busca do dia a dia).
+      </AppText>
+      <View style={styles.grid}>
+        {REFEICOES_RECORDATORIO.map((r) => (
+          <OptionButton
+            key={r.valor}
+            label={r.rotulo}
+            ativo={refeicoesRecordatorio.has(r.valor)}
+            onPress={() => alternarRefeicao(r.valor)}
             style={styles.chip}
           />
         ))}

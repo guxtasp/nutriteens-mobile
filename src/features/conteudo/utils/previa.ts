@@ -41,11 +41,16 @@ export type TrilhaDaPrevia = { id: string; titulo: string; xpBonus: number | nul
  * Mapa da trilha como um adolescente NOVO vê: só a primeira lição está liberada, o resto bloqueado.
  * (Na prévia a equipe pode tocar em qualquer nó para abrir a lição.)
  */
-export function gruposDoCaminho(trilha: TrilhaDaPrevia) {
+export function gruposDoCaminho(trilha: TrilhaDaPrevia, numeroTrilha = 1) {
   let primeiro = true;
-  return trilha.modulos.map((m) => ({
+  return trilha.modulos.map((m, indice) => ({
     moduloId: m.id,
     titulo: m.titulo,
+    // a prévia mostra UMA trilha: o primeiro módulo é o começo dela
+    trilhaId: trilha.id,
+    tituloTrilha: trilha.titulo,
+    numeroTrilha,
+    inicioDeTrilha: indice === 0,
     nos: m.licoes.map((l) => {
       const status = primeiro ? ('atual' as const) : ('bloqueada' as const);
       primeiro = false;

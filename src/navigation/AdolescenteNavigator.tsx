@@ -65,7 +65,7 @@ export type AdolescenteStackParamList = {
   Home: undefined;
   Sequencia: undefined;
   Missoes: undefined;
-  Metricas: undefined;
+  Metricas: { aba?: 'resumo' | 'habitos' | 'conquistas' | string } | undefined;
   Alimentacao: undefined;
   SugestoesAlimentares: { categoria?: CategoriaTroca } | undefined;
   ReceitasIngredientes: undefined;

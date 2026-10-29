@@ -98,6 +98,34 @@ export async function buscarPassosDaReceita(receitaId: string): Promise<PassoRec
   if (error) throw error;
   return data ?? [];
 }
+/** Ingrediente já formatado para a tela de detalhe da receita. */
+export type IngredienteReceita = { nome: string; quantidade: string };
+
+// Ingredientes com quantidade (receita_ingredientes). Se a receita não tem nenhum
+// cadastrado, cai nos ingredientes do prato resultante (prato_ingredientes), que é o
+// que a equipe edita no painel — assim a seção nunca fica vazia à toa.
+export async function buscarIngredientesDaReceita(receitaId: string, pratoId?: string | null): Promise<IngredienteReceita[]> {
+  const { data, error } = await supabase
+    .from('receita_ingredientes')
+    .select('quantidade_texto, alimentos(nome)')
+    .eq('receita_id', receitaId);
+  if (error) throw error;
+
+  let lista: IngredienteReceita[] = ((data ?? []) as any[])
+    .map((i) => ({ nome: i.alimentos?.nome ?? '', quantidade: i.quantidade_texto ?? '' }))
+    .filter((i) => i.nome);
+
+  if (lista.length === 0 && pratoId) {
+    const { data: doPrato, error: erroPrato } = await supabase
+      .from('prato_ingredientes')
+      .select('alimentos!prato_ingredientes_ingrediente_id_fkey(nome)')
+      .eq('prato_id', pratoId);
+    if (erroPrato) throw erroPrato;
+    lista = ((doPrato ?? []) as any[]).map((i) => ({ nome: i.alimentos?.nome ?? '', quantidade: '' })).filter((i) => i.nome);
+  }
+  return lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
 export async function buscarReceitaPorId(receitaId: string): Promise<ReceitaComAlimento | null> {
   const { data, error } = await supabase
     .from('receitas')
@@ -114,9 +142,9 @@ export async function buscarReceitaPorId(receitaId: string): Promise<ReceitaComA
 // Ingredientes = receita_ingredientes (com quantidade em texto) + prato_ingredientes
 // do prato resultante (que é o que a equipe edita hoje no painel).
 import { comCache } from '../../../../shared/offline/cacheLocal';
-import { unirIngredientes, type IngredienteReceita } from '../../receitas-ingredientes/utils/combinarReceitas';
+import { unirIngredientes, type IngredienteReceita as IngredienteCombinacao } from '../../receitas-ingredientes/utils/combinarReceitas';
 
-export type ReceitaComIngredientes = ReceitaComAlimento & { ingredientes: IngredienteReceita[] };
+export type ReceitaComIngredientes = ReceitaComAlimento & { ingredientes: IngredienteCombinacao[] };
 
 export async function listarReceitasComIngredientes(userId: string): Promise<ReceitaComIngredientes[]> {
   return comCache<ReceitaComIngredientes[]>(`receitas:ingredientes:${userId}`, async () => {
@@ -143,7 +171,7 @@ export async function listarReceitasComIngredientes(userId: string): Promise<Rec
       .in('prato_id', idsResultantes);
     if (erroPrato) throw erroPrato;
 
-    const porPrato = new Map<string, IngredienteReceita[]>();
+    const porPrato = new Map<string, IngredienteCombinacao[]>();
     ((doPrato ?? []) as any[]).forEach((linha) => {
       const lista = porPrato.get(linha.prato_id) ?? [];
       lista.push({ alimentoId: linha.ingrediente_id, nome: linha.alimentos?.nome ?? 'Ingrediente', quantidadeTexto: null });
@@ -151,7 +179,7 @@ export async function listarReceitasComIngredientes(userId: string): Promise<Rec
     });
 
     return receitas.map((r) => {
-      const daReceita: IngredienteReceita[] = (r.receita_ingredientes ?? []).map((i: any) => ({
+      const daReceita: IngredienteCombinacao[] = (r.receita_ingredientes ?? []).map((i: any) => ({
         alimentoId: i.alimento_id,
         nome: i.alimentos?.nome ?? 'Ingrediente',
         quantidadeTexto: i.quantidade_texto ?? null,

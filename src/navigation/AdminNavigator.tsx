@@ -26,6 +26,7 @@ import EditarTrocaScreen from '../features/conteudo/screens/EditarTrocaScreen';
 import ConteudoDetalheScreen from '../features/conteudo/screens/ConteudoDetalheScreen';
 import SolicitacoesScannerScreen from '../features/adolescente/scanner/screens/SolicitacoesScannerScreen';
 import LicaoPreviewScreen from '../features/conteudo/screens/LicaoPreviewScreen';
+import GuiaCriacaoScreen from '../features/conteudo/screens/GuiaCriacaoScreen';
 
 export type AdminStackParamList = {
   AdminDashboard: undefined;
@@ -53,6 +54,7 @@ export type AdminStackParamList = {
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
   EditarReceita: { receitaId?: string; origem?: string } | undefined;
   EditarTroca: { trocaId: string; origem?: string };
+  GuiaCriacao: { passo?: number } | undefined;
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -89,6 +91,7 @@ const TrilhaPreview = (props: any) => <TrilhaPreviewScreen config={ADMIN_PAINEL}
 const ReceitaPreview = (props: any) => <ReceitaPreviewScreen config={ADMIN_PAINEL} route={props.route} />;
 const ImagensJogos = () => <ImagensJogosScreen config={ADMIN_PAINEL} />;
 const EditarTroca = (props: any) => <EditarTrocaScreen config={ADMIN_PAINEL} route={props.route} />;
+const GuiaCriacao = (props: any) => <GuiaCriacaoScreen config={ADMIN_PAINEL} route={props.route} />;
 
 export default function AdminNavigator() {
   return (
@@ -119,6 +122,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="TrilhaPreview" component={TrilhaPreview} />
       <Stack.Screen name="ReceitaPreview" component={ReceitaPreview} />
       <Stack.Screen name="EditarTroca" component={EditarTroca} />
+      <Stack.Screen name="GuiaCriacao" component={GuiaCriacao} />
     </Stack.Navigator>
   );
 }

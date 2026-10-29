@@ -21,7 +21,7 @@ import { buscarTrilhaEditavel, listarTrilhasOrdem, type TrilhaEditavel, type Tri
 import { AbasPrevia, type AbaPrevia } from '../components/preview/AbasPrevia';
 import { QuadroCelular } from '../components/preview/QuadroCelular';
 import { alertasTrilha, gruposDoCaminho, resumoTrilha } from '../utils/previa';
-import { trilhaVisivelAoAdolescente } from '../utils/trilhaEdicao';
+import { posicaoNoCaminho, textoPosicaoNoCaminho } from '../utils/trilhaEdicao';
 
 type Props = { config: ConfigPainel; route: { params: { trilhaId: string; origem?: string } } };
 
@@ -56,7 +56,7 @@ export default function TrilhaPreviewScreen({ config, route }: Props) {
   const resumo = useMemo(() => (dados ? resumoTrilha(dados) : null), [dados]);
   const alertas = useMemo(() => (dados ? alertasTrilha(dados) : []), [dados]);
   const minha = trilhas.find((t) => t.id === trilhaId);
-  const visivel = useMemo(() => trilhaVisivelAoAdolescente(trilhas), [trilhas]);
+  const posicao = useMemo(() => posicaoNoCaminho(trilhas, { id: trilhaId, ordem: trilhas.find((t) => t.id === trilhaId)?.ordem ?? trilha?.ordem ?? 0, titulo: trilha?.titulo }), [trilhas, trilhaId, trilha]);
 
   return (
     <PainelLayout config={config} titulo="Prévia da trilha" subtitulo={trilha?.titulo} voltar>
@@ -87,13 +87,11 @@ export default function TrilhaPreviewScreen({ config, route }: Props) {
 
           {aba === 'revisao' && (
             <>
-              <CartaoSecao titulo="Visibilidade" ajuda="O app mostra aos adolescentes uma trilha por vez: a publicada de menor ordem.">
+              <CartaoSecao titulo="Visibilidade" ajuda="O app mostra aos adolescentes todas as trilhas publicadas, uma depois da outra, pela ordem.">
                 <AppText style={styles.texto}>
                   {minha?.status === 'aprovada' ? 'Esta trilha está publicada.' : 'Esta trilha ainda não está publicada: os adolescentes não a veem.'} Ordem {minha?.ordem ?? trilha.ordem}.
                 </AppText>
-                <AppText style={styles.suave}>
-                  {visivel ? `Hoje o app mostra aos adolescentes: "${visivel.titulo}" (ordem ${visivel.ordem}).${visivel.id === trilhaId ? ' É esta.' : ''}` : 'Hoje nenhuma trilha está publicada para os adolescentes.'}
-                </AppText>
+                <AppText style={styles.suave}>{textoPosicaoNoCaminho(posicao, minha?.status === 'aprovada')}</AppText>
               </CartaoSecao>
 
               <CartaoSecao titulo="Resumo">

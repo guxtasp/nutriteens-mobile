@@ -2,9 +2,11 @@ import {
   avisoOrdemTrilha,
   idsAposMover,
   lerXpBonus,
+  posicaoNoCaminho,
   proximaOrdemTrilha,
   textoConfirmaExclusao,
-  trilhaVisivelAoAdolescente,
+  textoPosicaoNoCaminho,
+  trilhasVisiveisAoAdolescente,
   validarModulo,
   validarTrilha,
 } from '../trilhaEdicao';
@@ -51,17 +53,38 @@ describe('ordem da trilha e visibilidade', () => {
     expect(proximaOrdemTrilha([])).toBe(1);
     expect(proximaOrdemTrilha([1, 3, 2])).toBe(4);
   });
-  it('o adolescente vê a publicada de menor ordem; empate = mais antiga; rascunho nunca', () => {
+  it('o adolescente vê TODAS as publicadas, na ordem; empate = mais antiga; rascunho nunca', () => {
     const lista = [t('rasc', 0, 'rascunho'), t('b', 2, 'aprovada'), t('a', 2, 'aprovada', '2025-01-01'), t('c', 5, 'aprovada')];
-    expect(trilhaVisivelAoAdolescente(lista)?.id).toBe('a');
-    expect(trilhaVisivelAoAdolescente([t('x', 1, 'rascunho')])).toBeNull();
+    expect(trilhasVisiveisAoAdolescente(lista).map((x) => x.id)).toEqual(['a', 'b', 'c']);
+    expect(trilhasVisiveisAoAdolescente([t('x', 1, 'rascunho')])).toEqual([]);
   });
-  it('avisa quando a ordem escolhida passa na frente da trilha publicada', () => {
-    const lista = [t('seed', 1, 'aprovada')];
-    expect(avisoOrdemTrilha(lista, { ordem: 1 })).toBeNull();
-    expect(avisoOrdemTrilha(lista, { ordem: 2 })).toBeNull();
-    expect(avisoOrdemTrilha(lista, { ordem: 0 })).toMatch(/passa na frente de "seed"/);
+  it('posição no caminho: trilha nova no fim, no meio ou na frente', () => {
+    const lista = [t('a', 1, 'aprovada'), t('c', 3, 'aprovada'), t('rasc', 2, 'rascunho')];
+    expect(posicaoNoCaminho(lista, { ordem: 4 })).toMatchObject({ posicao: 3, total: 3, antes: { id: 'c' }, depois: null });
+    expect(posicaoNoCaminho(lista, { ordem: 2 })).toMatchObject({ posicao: 2, total: 3, antes: { id: 'a' }, depois: { id: 'c' } });
+    expect(posicaoNoCaminho(lista, { ordem: 0 })).toMatchObject({ posicao: 1, antes: null, depois: { id: 'a' } });
+    // empate de ordem: a nova fica depois da que já existe
+    expect(posicaoNoCaminho(lista, { ordem: 1 })).toMatchObject({ posicao: 2, antes: { id: 'a' } });
+    // trilha publicada que muda de ordem não conta duas vezes
+    expect(posicaoNoCaminho(lista, { id: 'a', ordem: 9 })).toMatchObject({ posicao: 2, total: 2, antes: { id: 'c' } });
+  });
+  it('avisa quando a ordem escolhida coloca a trilha antes de outra já publicada', () => {
+    const lista = [t('seed', 2, 'aprovada')];
+    expect(avisoOrdemTrilha(lista, { ordem: 3 })).toBeNull();
+    expect(avisoOrdemTrilha(lista, { ordem: 1 })).toMatch(/Trilha 1 de 2, antes de \"seed\"/);
     expect(avisoOrdemTrilha([t('seed', 1, 'aprovada')], { id: 'seed', ordem: 0 })).toBeNull();
+    // trilha já publicada que passa na frente de outra: avisa; se não mudou de vizinho, não
+    const duas = [t('a', 1, 'aprovada'), t('b', 2, 'aprovada')];
+    expect(avisoOrdemTrilha(duas, { id: 'b', ordem: 0 })).toMatch(/antes de \"a\"/);
+    expect(avisoOrdemTrilha(duas, { id: 'a', ordem: 1 })).toBeNull();
+  });
+  it('texto do lugar no caminho', () => {
+    const lista = [t('a', 1, 'aprovada'), t('c', 3, 'aprovada')];
+    const txt = textoPosicaoNoCaminho(posicaoNoCaminho(lista, { ordem: 2 }), false);
+    expect(txt).toMatch(/Quando for publicada, será a Trilha 2 de 3/);
+    expect(txt).toMatch(/depois de \"a\"/);
+    expect(txt).toMatch(/antes de \"c\"/);
+    expect(textoPosicaoNoCaminho(posicaoNoCaminho(lista, { id: 'a', ordem: 1 }), true)).toMatch(/^No app ela é a Trilha 1 de 2/);
   });
 });
 

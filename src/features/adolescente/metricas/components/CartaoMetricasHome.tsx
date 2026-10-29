@@ -1,7 +1,9 @@
 // src/features/adolescente/metricas/components/CartaoMetricasHome.tsx
 //
-// Entrada na Home. Com dados: frase do Bróxis (a mesma do resumo da tela) + os 7 dias.
-// Carregando ou erro: versão estática com prévia das áreas. Nunca derruba a Home.
+// Entrada na Home. Com dados: frase do Bróxis + mini rastreador dos 7 dias (Comida, Água,
+// Movimento) + mini termômetro da mistura + conquistas. Cada parte abre a aba certa de
+// "Minha jornada". Carregando ou erro: versão estática com prévia das áreas. Nunca derruba
+// a Home. Estático: sem animação nova.
 import React from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,11 +11,12 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import { ACENTOS, FUNDO, TRILHO } from '../ui/tokens';
+import { ACENTOS, FUNDO, TEXTO_SUAVE, TRILHO } from '../ui/tokens';
+import type { AbaId } from '../utils/abas';
 import type { CartaoId } from '../utils/cartoesInfo';
-import { textoAcessivelDias } from '../utils/apresentacao';
 import { useResumoJornadaHome } from '../hooks/useResumoJornadaHome';
-import { GraficoDias } from './graficos/GraficoDias';
+import { MiniBarraMistura } from './graficos/MiniBarraMistura';
+import { MiniRastreador } from './graficos/MiniRastreador';
 
 const CHIPS: { id: CartaoId; rotulo: string }[] = [
   { id: 'alimentacao', rotulo: 'Refeições' },
@@ -22,34 +25,75 @@ const CHIPS: { id: CartaoId; rotulo: string }[] = [
   { id: 'conquistas', rotulo: 'Conquistas' },
 ];
 
-export default function CartaoMetricasHome({ onPress }: { onPress: () => void }) {
+type Props = { onPress: (aba?: AbaId) => void };
+
+export default function CartaoMetricasHome({ onPress }: Props) {
   const estado = useResumoJornadaHome();
   const resumo = estado.status === 'pronto' ? estado.resumo : null;
+  const m = resumo?.mistura;
+  const conq = resumo?.conquistasNoPeriodo ?? 0;
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.raiz, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
-      accessibilityRole="button"
-      accessibilityLabel="Abrir Minha jornada"
-    >
+    <View style={styles.raiz}>
       {resumo ? (
         <>
-          <AppText style={styles.rotulo}>MINHA JORNADA · ÚLTIMOS 7 DIAS</AppText>
-          <View style={styles.fala}>
-            <BroxisMascot size={64} pose={resumo.pose} entrance="nenhuma" showParticles={false} />
-            <View style={styles.balao}>
-              <AppText style={styles.balaoTexto}>{resumo.texto}</AppText>
+          <Pressable
+            onPress={() => onPress()}
+            accessibilityRole="button"
+            accessibilityLabel={`Abrir Minha jornada. ${resumo.texto}`}
+            style={({ pressed }) => pressed && { opacity: 0.9 }}
+          >
+            <AppText style={styles.rotulo}>MINHA JORNADA · ÚLTIMOS 7 DIAS</AppText>
+            <View style={styles.fala}>
+              <BroxisMascot size={60} pose={resumo.pose} entrance="nenhuma" showParticles={false} />
+              <View style={styles.balao}>
+                <AppText style={styles.balaoTexto}>{resumo.texto}</AppText>
+              </View>
             </View>
-          </View>
+          </Pressable>
+
           {!resumo.semDados && (
-            <View style={{ marginTop: 12 }}>
-              <GraficoDias dias={resumo.dias} cor={colors.primaryDark} rotuloAcessivel={textoAcessivelDias(resumo.diasAtivos, resumo.total, 'com registro ou lição')} />
-            </View>
+            <>
+              <View style={styles.bloco}>
+                <MiniRastreador semana={resumo.semana} onAbrir={onPress} />
+              </View>
+
+              <View style={styles.tiles}>
+                <Pressable
+                  onPress={() => onPress('comida')}
+                  accessibilityRole="button"
+                  accessibilityLabel={m && m.estado !== 'sem_dados' ? 'Mistura da semana. Abrir o termômetro.' : 'Mistura da semana. Registre mais refeições para ver. Abrir.'}
+                  style={({ pressed }) => [styles.tile, { flex: 1.5 }, pressed && { opacity: 0.8 }]}
+                >
+                  <AppText style={styles.tileTitulo}>Mistura da semana</AppText>
+                  {m && m.estado !== 'sem_dados'
+                    ? <View style={{ marginTop: 10 }}><MiniBarraMistura valores={{ natural: m.natural, processado: m.processado, ultra: m.ultra }} /></View>
+                    : <AppText style={styles.tileSub}>Registre mais refeições para ver.</AppText>}
+                </Pressable>
+
+                <Pressable
+                  onPress={() => onPress('conquistas')}
+                  accessibilityRole="button"
+                  accessibilityLabel={conq > 0 ? `Conquistas: ${conq} ${conq === 1 ? 'nova' : 'novas'}. Abrir.` : 'Conquistas. Abrir.'}
+                  style={({ pressed }) => [styles.tile, { flex: 1 }, pressed && { opacity: 0.8 }]}
+                >
+                  <View style={styles.tileLinha}>
+                    <Ionicons name={ACENTOS.conquistas.icone} size={16} color={ACENTOS.conquistas.cor} />
+                    <AppText style={styles.tileTitulo}>Conquistas</AppText>
+                  </View>
+                  <AppText style={styles.tileSub}>{conq > 0 ? `${conq} ${conq === 1 ? 'nova' : 'novas'}` : 'Veja as suas'}</AppText>
+                </Pressable>
+              </View>
+            </>
           )}
         </>
       ) : (
-        <>
+        <Pressable
+          onPress={() => onPress()}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir Minha jornada"
+          style={({ pressed }) => pressed && { opacity: 0.9 }}
+        >
           <View style={styles.topo}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <AppText style={styles.rotulo}>SÓ SEU</AppText>
@@ -70,14 +114,19 @@ export default function CartaoMetricasHome({ onPress }: { onPress: () => void })
               </View>
             ))}
           </View>
-        </>
+        </Pressable>
       )}
 
-      <View style={styles.botao}>
+      <Pressable
+        onPress={() => onPress()}
+        accessibilityRole="button"
+        accessibilityLabel="Ver minha jornada"
+        style={({ pressed }) => [styles.botao, pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] }]}
+      >
         <AppText style={styles.botaoTexto}>Ver minha jornada</AppText>
         <Ionicons name="arrow-forward" size={16} color={colors.primaryDark} />
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
@@ -91,10 +140,16 @@ const styles = StyleSheet.create({
   fala: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
   balao: { flex: 1, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: TRILHO, paddingHorizontal: 12, paddingVertical: 10 },
   balaoTexto: { fontFamily: typography.medium, fontSize: 13, lineHeight: 19, color: colors.primaryDark },
+  bloco: { marginTop: 12, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: TRILHO, paddingHorizontal: 12, paddingVertical: 8 },
+  tiles: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  tile: { minHeight: 64, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: TRILHO, padding: 12, justifyContent: 'center' },
+  tileLinha: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tileTitulo: { fontFamily: typography.semiBold, fontSize: 12.5, color: '#1B4332' },
+  tileSub: { fontFamily: typography.regular, fontSize: 12, lineHeight: 16, color: TEXTO_SUAVE, marginTop: 4 },
   chips: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
   chip: { alignItems: 'center', flex: 1, gap: 6 },
   chipIcone: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   chipTexto: { fontSize: 12, fontFamily: typography.semiBold, color: colors.primaryDark },
-  botao: { marginTop: 16, minHeight: 46, borderRadius: 23, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  botao: { marginTop: 14, minHeight: 46, borderRadius: 23, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   botaoTexto: { fontSize: 15, fontFamily: typography.bold, color: colors.primaryDark },
 });

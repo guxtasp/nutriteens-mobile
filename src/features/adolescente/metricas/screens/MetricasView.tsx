@@ -50,11 +50,13 @@ type Props = {
   /** contexto das dicas/sugestões; sem ele os detalhes aparecem sem sugestões de alimentos */
   apoio?: ApoioDetalhes;
   semente?: string;
+  /** aba aberta de início (vem do atalho da Home); sem ela abre em Resumo */
+  abaInicial?: AbaId;
 };
 
-export function MetricasView({ estado, periodo, onMudarPeriodo, onVoltar, onTentarNovamente, onProximoPasso, gruposInfo, apoio, semente = '' }: Props) {
+export function MetricasView({ estado, periodo, onMudarPeriodo, onVoltar, onTentarNovamente, onProximoPasso, gruposInfo, apoio, semente = '', abaInicial }: Props) {
   // a aba escolhida é mantida ao trocar Semana/Mês
-  const [aba, setAba] = useState<AbaId>(ABA_INICIAL);
+  const [aba, setAba] = useState<AbaId>(abaInicial ?? ABA_INICIAL);
   return (
     <SafeAreaView style={styles.tela}>
       <View style={styles.header}>

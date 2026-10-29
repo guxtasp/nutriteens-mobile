@@ -75,7 +75,13 @@ export interface DetalheParticipante extends Participante {
   licoesConcluidas: number;
   insignias: number;
   ebia: { pontuacaoTotal: number | null; classificacao: string | null; dataRealizacao: string } | null;
-  recordatorios: { dataReferencia: string; concluido: boolean; escoreSaudavel: number | null; escoreNaoSaudavel: number | null }[];
+  recordatorios: {
+    dataReferencia: string;
+    concluido: boolean;
+    escoreSaudavel: number | null;
+    escoreNaoSaudavel: number | null;
+    refeicoes: { tipo: string; realizada: boolean; alimentos: string[] }[];
+  }[];
   ultimos14Dias: DiaRegistro[];
 }
 
@@ -112,6 +118,11 @@ export async function buscarParticipante(id: string): Promise<DetalheParticipant
       concluido: !!x.concluido,
       escoreSaudavel: x.escore_saudavel,
       escoreNaoSaudavel: x.escore_nao_saudavel,
+      refeicoes: (x.refeicoes ?? []).map((m: any) => ({
+        tipo: m.tipo,
+        realizada: !!m.realizada,
+        alimentos: (m.alimentos ?? []) as string[],
+      })),
     })),
     ultimos14Dias: (r.ultimos_14_dias ?? []).map((x: any) => ({
       data: x.data,
@@ -128,3 +139,17 @@ export function calcularImc(pesoKg: number | null, alturaCm: number | null): num
   const m = alturaCm / 100;
   return Math.round((pesoKg / (m * m)) * 10) / 10;
 }
+
+export const REFEICAO_LABEL: Record<string, string> = {
+  CAFE_DA_MANHA: 'Café da manhã',
+  LANCHE_MANHA: 'Lanche da manhã',
+  ALMOCO: 'Almoço',
+  LANCHE_TARDE: 'Lanche da tarde',
+  JANTAR: 'Jantar',
+  CEIA: 'Ceia',
+};
+const ORDEM_REFEICAO = Object.keys(REFEICAO_LABEL);
+export const ordemRefeicao = (tipo: string) => {
+  const i = ORDEM_REFEICAO.indexOf(tipo);
+  return i === -1 ? 99 : i;
+};

@@ -18,7 +18,7 @@ import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { painel } from '../../../shared/painel/painelTheme';
 import { NUTRICIONISTA_PAINEL } from '../navigation/nutricionistaMenu';
-import { DetalheParticipante, buscarParticipante, calcularImc } from '../services/participantesService';
+import { DetalheParticipante, REFEICAO_LABEL, buscarParticipante, calcularImc, ordemRefeicao } from '../services/participantesService';
 import { seloEbia } from './ParticipantesScreen';
 
 export default function ParticipanteDetalheScreen({ route }: { route: { params: { id: string } } }) {
@@ -127,7 +127,7 @@ export default function ParticipanteDetalheScreen({ route }: { route: { params: 
           <Colunas bases={[320, 320]}>
             <CartaoSecao
               titulo="Recordatório alimentar"
-              subtitulo="Últimos registros da triagem"
+              subtitulo="O que o adolescente contou da alimentação de ontem"
               ajuda="Recordatório de 24 horas feito na triagem. Escore saudável e não saudável vêm da classificação dos alimentos relatados."
             >
               {p.recordatorios.length === 0 ? (
@@ -137,8 +137,14 @@ export default function ParticipanteDetalheScreen({ route }: { route: { params: 
                   <View key={i} style={styles.recordatorio}>
                     <AppText style={styles.recData}>{dataCurta(r.dataReferencia)}{r.concluido ? '' : ' (incompleto)'}</AppText>
                     <AppText style={styles.texto}>
-                      Saudável: {r.escoreSaudavel ?? '—'} · Não saudável: {r.escoreNaoSaudavel ?? '—'}
+                      Marcadores saudáveis: {r.escoreSaudavel ?? '—'} de 3 · Não saudáveis: {r.escoreNaoSaudavel ?? '—'} de 4
                     </AppText>
+                    {[...r.refeicoes].sort((a, b) => ordemRefeicao(a.tipo) - ordemRefeicao(b.tipo)).map((m) => (
+                      <AppText key={m.tipo} style={styles.texto}>
+                        <AppText style={styles.refNome}>{REFEICAO_LABEL[m.tipo] ?? m.tipo}: </AppText>
+                        {m.alimentos.length > 0 ? m.alimentos.join(', ') : m.realizada ? 'sem itens marcados' : 'não comeu nada'}
+                      </AppText>
+                    ))}
                   </View>
                 ))
               )}
@@ -166,5 +172,6 @@ const styles = StyleSheet.create({
   td: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight },
   apagado: { color: painel.textoSuave },
   recordatorio: { borderLeftWidth: 3, borderLeftColor: painel.cardBorda, paddingLeft: 10, gap: 1 },
+  refNome: { fontFamily: typography.bold, fontSize: 13, color: colors.textOnLight },
   recData: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
 });

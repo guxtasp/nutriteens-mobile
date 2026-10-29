@@ -8,6 +8,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
 import { typography } from '../../../../shared/theme/typography';
+import { feedbackSelecao } from '../../../../shared/audio/feedback';
 import { ABAS, type AbaId } from '../utils/abas';
 import { ACENTOS, TEXTO_SUAVE } from '../ui/tokens';
 
@@ -22,7 +23,11 @@ export function AbasJornada({ valor, onChange }: Props) {
         return (
           <Pressable
             key={aba.id}
-            onPress={() => onChange(aba.id)}
+            onPress={() => {
+              if (ativa) return;
+              feedbackSelecao(); // vibração leve, sem som nem animação
+              onChange(aba.id);
+            }}
             accessibilityRole="tab"
             accessibilityLabel={aba.rotulo}
             accessibilityState={{ selected: ativa }}

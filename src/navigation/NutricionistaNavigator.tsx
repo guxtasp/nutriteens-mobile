@@ -18,6 +18,7 @@ import TrilhaPreviewScreen from '../features/conteudo/screens/TrilhaPreviewScree
 import ReceitaPreviewScreen from '../features/conteudo/screens/ReceitaPreviewScreen';
 import EditarReceitaScreen from '../features/conteudo/screens/EditarReceitaScreen';
 import EditarTrocaScreen from '../features/conteudo/screens/EditarTrocaScreen';
+import GuiaCriacaoScreen from '../features/conteudo/screens/GuiaCriacaoScreen';
 import NutricionistaDashboardScreen from '../features/nutricionista/dashboard/screens/NutricionistaDashboardScreen';
 
 export type NutricionistaStackParamList = {
@@ -40,6 +41,7 @@ export type NutricionistaStackParamList = {
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
   EditarReceita: { receitaId?: string; origem?: string } | undefined;
   EditarTroca: { trocaId: string; origem?: string };
+  GuiaCriacao: { passo?: number } | undefined;
 };
 
 const Stack = createNativeStackNavigator<NutricionistaStackParamList>();
@@ -68,6 +70,7 @@ const EditarReceita = (props: any) => <EditarReceitaScreen config={NUTRICIONISTA
 const TrilhaPreview = (props: any) => <TrilhaPreviewScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const ReceitaPreview = (props: any) => <ReceitaPreviewScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const EditarTroca = (props: any) => <EditarTrocaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
+const GuiaCriacao = (props: any) => <GuiaCriacaoScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const ProdutosScanner = () => <SolicitacoesScannerScreen config={NUTRICIONISTA_PAINEL} />;
 const Analytics = () => <AnalyticsScreen config={NUTRICIONISTA_PAINEL} />;
 
@@ -93,6 +96,7 @@ export default function NutricionistaNavigator() {
       <Stack.Screen name="TrilhaPreview" component={TrilhaPreview} />
       <Stack.Screen name="ReceitaPreview" component={ReceitaPreview} />
       <Stack.Screen name="EditarTroca" component={EditarTroca} />
+      <Stack.Screen name="GuiaCriacao" component={GuiaCriacao} />
     </Stack.Navigator>
   );
 }

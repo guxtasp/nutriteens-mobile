@@ -29,6 +29,7 @@ const COR: Record<TipoNotificacaoApp, string> = {
   missao_diaria: colors.primaryDark,
   missao_semanal: colors.primaryDark,
   missao_mensal: colors.primaryDark,
+  aniversario: '#E9578F',
 };
 
 export default function NotificacoesScreen() {

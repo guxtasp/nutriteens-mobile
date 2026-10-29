@@ -22,6 +22,8 @@ type Props = {
   onChange: (p: PassoEdicao) => void;
   onMover: (dir: -1 | 1) => void;
   onRemover: () => void;
+  /** true: sem o cartão/cabeçalho próprio (usado dentro do BlocoPasso) */
+  embutido?: boolean;
 };
 
 const AJUDA: Record<string, string> = {
@@ -79,7 +81,7 @@ function Chip({ texto, ligado, onPress }: { texto: string; ligado: boolean; onPr
 const trocar = <T,>(lista: T[], i: number, novo: T): T[] => lista.map((x, k) => (k === i ? novo : x));
 const tirar = <T,>(lista: T[], i: number): T[] => lista.filter((_, k) => k !== i);
 
-export default function PassoEditor({ passo, indice, total, erros, onChange, onMover, onRemover }: Props) {
+export default function PassoEditor({ passo, indice, total, erros, onChange, onMover, onRemover, embutido }: Props) {
   const set = (patch: Partial<PassoEdicao>) => onChange({ ...passo, ...patch });
   const extra = passo.dadosExtra ?? {};
   const setExtra = (patch: Record<string, any>) => onChange({ ...passo, dadosExtra: { ...extra, ...patch } });
@@ -127,18 +129,8 @@ export default function PassoEditor({ passo, indice, total, erros, onChange, onM
     />
   );
 
-  return (
-    <CartaoSecao
-      titulo={`Passo ${indice + 1} · ${ROTULO_FORMATO[f] ?? f}`}
-      ajuda={AJUDA[f]}
-      direita={
-        <View style={styles.linhaBotoes}>
-          <Mini label="↑" desativado={indice === 0} onPress={() => onMover(-1)} />
-          <Mini label="↓" desativado={indice === total - 1} onPress={() => onMover(1)} />
-          <Mini label="REMOVER" perigo onPress={onRemover} />
-        </View>
-      }
-    >
+  const conteudo = (
+    <>
       <LabeledInput
         label={f === 'cartao' ? 'Título do cartão' : 'Enunciado'}
         value={passo.enunciado}
@@ -221,6 +213,32 @@ export default function PassoEditor({ passo, indice, total, erros, onChange, onM
           ))}
         </View>
       )}
+    </>
+  );
+
+  // embutido: dentro de um BlocoPasso (o bloco já tem cabeçalho colorido e os botões de mover/remover)
+  if (embutido) {
+    return (
+      <View style={{ gap: 12 }}>
+        {!!AJUDA[f] && <AppText style={styles.suave}>{AJUDA[f]}</AppText>}
+        {conteudo}
+      </View>
+    );
+  }
+
+  return (
+    <CartaoSecao
+      titulo={`Passo ${indice + 1} · ${ROTULO_FORMATO[f] ?? f}`}
+      ajuda={AJUDA[f]}
+      direita={
+        <View style={styles.linhaBotoes}>
+          <Mini label="↑" desativado={indice === 0} onPress={() => onMover(-1)} />
+          <Mini label="↓" desativado={indice === total - 1} onPress={() => onMover(1)} />
+          <Mini label="REMOVER" perigo onPress={onRemover} />
+        </View>
+      }
+    >
+      {conteudo}
     </CartaoSecao>
   );
 }

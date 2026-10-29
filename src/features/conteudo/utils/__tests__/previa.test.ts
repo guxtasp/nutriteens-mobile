@@ -42,6 +42,9 @@ describe('sessão, mapa e resumo da trilha', () => {
     const g = gruposDoCaminho(trilha);
     expect(g.map((x) => x.nos.map((n) => n.status))).toEqual([['atual', 'bloqueada'], []]);
     expect(g[0].nos[0]).toMatchObject({ id: 'l1', moduloId: 'm1', icone: 'leaf-outline', tipo: 'conteudo' });
+    expect(g.map((x) => x.inicioDeTrilha)).toEqual([true, false]);
+    expect(g[0]).toMatchObject({ trilhaId: trilha.id, tituloTrilha: trilha.titulo, numeroTrilha: 1 });
+    expect(gruposDoCaminho(trilha, 3)[0].numeroTrilha).toBe(3);
   });
   it('resumo usa o XP bônus padrão quando vazio (100 por módulo, 125 por trilha)', () => {
     expect(resumoTrilha(trilha)).toEqual({ modulos: 2, licoes: 2, passos: 3, xpLicoes: 30, xpBonusModulos: 150, xpBonusTrilha: 125, xpTotal: 305 });

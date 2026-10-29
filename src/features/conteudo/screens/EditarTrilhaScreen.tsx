@@ -4,7 +4,7 @@
 // Reordenar e excluir são atômicos no banco (migration_trilha_estrutura.sql); excluir é bloqueado
 // se adolescentes já concluíram a lição. O status (rascunho/revisão/publicado) NÃO muda aqui.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
@@ -25,9 +25,11 @@ import { obterPapelAtual } from '../services/conteudoService';
 import type { Papel } from '../utils/regrasAprovacao';
 import { AvisoEdicao, BarraSalvar, campoMultilinha } from '../components/CamposEdicao';
 import { MiniBotao } from '../components/MiniBotao';
+import PreviaTrilhaAoVivo from '../components/preview/PreviaTrilhaAoVivo';
+import { BotaoComoCriar } from '../components/GuiaCriacao';
 import {
-  XP_BONUS_PADRAO_MODULO, XP_BONUS_PADRAO_TRILHA, avisoOrdemTrilha, idsAposMover, lerXpBonus, proximaOrdemTrilha,
-  textoConfirmaExclusao, trilhaVisivelAoAdolescente, validarModulo, validarTrilha,
+  XP_BONUS_PADRAO_MODULO, XP_BONUS_PADRAO_TRILHA, avisoOrdemTrilha, idsAposMover, lerXpBonus, posicaoNoCaminho, proximaOrdemTrilha,
+  textoConfirmaExclusao, textoPosicaoNoCaminho, validarModulo, validarTrilha,
 } from '../utils/trilhaEdicao';
 
 type Props = { config: ConfigPainel; route: { params?: { trilhaId?: string; origem?: string } } };
@@ -57,6 +59,10 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // prévia ao vivo: ao lado do editor em telas largas; numa aba nas estreitas
+  const [aba, setAba] = useState<'editar' | 'previa'>('editar');
+  const { width: larguraJanela } = useWindowDimensions();
+  const lado = larguraJanela >= 1280;
 
   useEffect(() => {
     obterPapelAtual().then(setPapel);
@@ -169,11 +175,30 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
     await executar(async () => { await excluirItem(alvo.nivel, alvo.id); await carregar(); }, alvo.nivel === 'MODULO' ? 'Módulo excluído.' : 'Lição excluída.');
   }
 
-  const visivel = useMemo(() => trilhaVisivelAoAdolescente(trilhasOrdem), [trilhasOrdem]);
-  const avisoOrdem = useMemo(() => {
-    const n = Number(ordem);
-    return Number.isInteger(n) ? avisoOrdemTrilha(trilhasOrdem, { id: trilha?.id, ordem: n }) : null;
-  }, [ordem, trilhasOrdem, trilha?.id]);
+  const ordemNum = Number.isInteger(Number(ordem)) && ordem.trim() !== '' ? Number(ordem) : null;
+  const posicao = useMemo(
+    () => posicaoNoCaminho(trilhasOrdem, { id: trilha?.id, ordem: ordemNum ?? 0, titulo }),
+    [trilhasOrdem, trilha?.id, ordemNum, titulo]
+  );
+  const publicada = trilhasOrdem.find((t) => t.id === trilha?.id)?.status === 'aprovada';
+  const avisoOrdem = useMemo(
+    () => (ordemNum === null ? null : avisoOrdemTrilha(trilhasOrdem, { id: trilha?.id, ordem: ordemNum })),
+    [ordemNum, trilhasOrdem, trilha?.id]
+  );
+  // módulos como estão na tela AGORA (nomes digitados, ainda não salvos) para a prévia ao vivo
+  const modulosRascunho = useMemo(
+    () => (trilha ? trilha.modulos.map((m) => ({ ...m, titulo: (nomesModulo[m.id] ?? m.titulo).trim() || 'Sem nome' })) : []),
+    [trilha, nomesModulo]
+  );
+  const previa = (
+    <PreviaTrilhaAoVivo
+      titulo={titulo}
+      modulos={modulosRascunho}
+      numero={posicao.posicao}
+      total={posicao.total}
+      onPressNo={(licaoId) => navigation.navigate('LicaoPreview', { licaoId, origem })}
+    />
+  );
 
   function CaixaExclusao({ alvo }: { alvo: Exclusao }) {
     if (!excluindo || excluindo.id !== alvo.id) return null;
@@ -195,7 +220,21 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
       ) : !criando && !trilha ? (
         <EstadoErro mensagem={erro ?? 'Trilha não encontrada.'} onTentar={() => { setCarregando(true); carregar(); }} />
       ) : (
-        <>
+        <View style={lado ? styles.linhaLarga : styles.coluna}>
+          <View style={lado ? styles.colEditor : styles.coluna}>
+            {!lado && (
+              <View style={styles.chips} accessibilityRole="tablist">
+                {([['editar', 'Editar trilha'], ['previa', 'Prévia ao vivo']] as const).map(([id, rotulo]) => (
+                  <Pressable key={id} onPress={() => setAba(id)} accessibilityRole="tab" accessibilityState={{ selected: aba === id }} style={[styles.chip, aba === id && styles.chipOn]}>
+                    <AppText style={[styles.chipTexto, aba === id && { color: colors.white }]}>{rotulo}</AppText>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            {!lado && aba === 'previa' && previa}
+            {(lado || aba === 'editar') && (
+              <>
+          <BotaoComoCriar passo={criando ? 0 : 1} />
           <IntroSecao
             chave="editar_trilha"
             titulo="Criar e editar trilhas"
@@ -231,9 +270,7 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
                 <LabeledInput label={`XP bônus ao concluir (vazio = ${XP_BONUS_PADRAO_TRILHA})`} value={xpBonus} onChangeText={(t) => setXpBonus(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={4} />
               </View>
             </View>
-            <AppText style={styles.suave}>
-              {visivel ? `Hoje o app mostra aos adolescentes uma trilha por vez: "${visivel.titulo}" (ordem ${visivel.ordem}), a publicada de menor ordem.` : 'Hoje nenhuma trilha está publicada para os adolescentes. O app mostra a publicada de menor ordem.'}
-            </AppText>
+            <AppText style={styles.suave}>{textoPosicaoNoCaminho(posicao, publicada)}</AppText>
             {!!avisoOrdem && <AppText style={styles.alerta}>{avisoOrdem}</AppText>}
             {!criando && <AppText style={styles.suave}>Mudar título, descrição, tema, ordem ou XP bônus de uma trilha já enviada ou publicada conta como edição: o Administrador a devolve para rascunho (ela sai do ar até a nutricionista aprovar de novo); a nutricionista mantém o status e a versão sobe.</AppText>}
             {!criando && trilha && (
@@ -321,13 +358,26 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
               {!!msg && <AppText style={styles.ok}>{msg}</AppText>}
             </CartaoSecao>
           )}
-        </>
+              </>
+            )}
+          </View>
+
+          {lado && (
+            <View style={styles.colPrevia}>
+              <View style={Platform.OS === 'web' ? ({ position: 'sticky', top: 16 } as any) : undefined}>{previa}</View>
+            </View>
+          )}
+        </View>
       )}
     </PainelLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  coluna: { gap: 16 },
+  linhaLarga: { flexDirection: 'row', gap: 24 },
+  colEditor: { flex: 1, minWidth: 0, gap: 16 },
+  colPrevia: { width: 420 },
   rotulo: { fontFamily: typography.regular, fontSize: 14, color: colors.primaryDark },
   suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
   alerta: { fontFamily: typography.semiBold, fontSize: 12, color: colors.warningShadow, backgroundColor: colors.warningSoft, borderRadius: 10, padding: 10, lineHeight: 17 },

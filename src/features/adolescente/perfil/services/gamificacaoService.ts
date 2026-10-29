@@ -41,7 +41,7 @@ export async function buscarInsignias(userId: string): Promise<Insignia[]> {
   await supabase.rpc('avaliar_minhas_insignias');
 
   const [{ data: catalogo, error: e1 }, { data: ganhas, error: e2 }] = await Promise.all([
-    supabase.from('insignias').select('id, codigo, categoria, criterio, nome, descricao, icone').order('ordem'),
+    supabase.from('insignias').select('id, codigo, categoria, criterio, nome, descricao, icone, ativa').eq('ativa', true).order('ordem'),
     supabase.from('insignias_usuario').select('insignia_id, vista').eq('usuario_id', userId),
   ]);
   if (e1) throw e1;

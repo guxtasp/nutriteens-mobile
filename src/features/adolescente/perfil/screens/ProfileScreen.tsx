@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   secaoTitulo: { fontSize: 14, fontFamily: typography.bold, color: colors.primaryDark },
   secaoLado: { fontSize: 12, fontFamily: typography.semiBold, color: colors.placeholder },
   insigniasLinha: { gap: 12, paddingRight: 8, paddingBottom: 10 },
-  grade: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14, columnGap: 6, justifyContent: 'flex-start' },
+  grade: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14, columnGap: 2, justifyContent: 'space-between', width: '100%',},
   detalheInsignia: { marginTop: 12, backgroundColor: '#fff', borderRadius: 14, padding: 14 },
   detalheTitulo: { fontSize: 14, fontFamily: typography.bold, color: colors.primaryDark },
   detalheTexto: { fontSize: 12, color: colors.trilhaChipTexto, marginTop: 2 },

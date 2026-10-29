@@ -97,3 +97,39 @@ describe('calcularMisturaNova', () => {
     expect(m).toMatchObject({ ultra: 0, natural: 6, estado: 'mais_natural' });
   });
 });
+
+describe('calcularMisturaNova: o que entrou em cada parte', () => {
+  const ref2 = (id: string, data: string, itens: { id: string; nome: string; n: ClassificacaoNova | null }[]) => ({
+    id, data, tipo: 'ALMOCO',
+    alimentos: itens.map((i) => ({ alimentoId: i.id, nome: i.nome, grupos: [], classificacaoNova: i.n })),
+  });
+
+  it('lista alimentos distintos por parte, mais frequentes primeiro', () => {
+    const m = calcularMisturaNova(dadosVazios({
+      refeicoes: [
+        ref2('r1', '2026-10-12', [{ id: 'a', nome: 'Arroz', n: 'IN_NATURA' }, { id: 'b', nome: 'Banana', n: 'IN_NATURA' }, { id: 'u', nome: 'Refri', n: 'ULTRAPROCESSADO' }]),
+        ref2('r2', '2026-10-13', [{ id: 'b', nome: 'Banana', n: 'IN_NATURA' }, { id: 'a', nome: 'Arroz', n: 'IN_NATURA' }, { id: 'b', nome: 'Banana', n: 'IN_NATURA' }]),
+        ref2('r3', '2026-10-14', [{ id: 'q', nome: 'Queijo', n: 'PROCESSADO' }, { id: 'a', nome: 'Arroz', n: 'IN_NATURA' }]),
+      ],
+    }), janela);
+    expect(m.alimentos.natural).toEqual([{ nome: 'Arroz', vezes: 3 }, { nome: 'Banana', vezes: 3 }]);
+    expect(m.alimentos.processado).toEqual([{ nome: 'Queijo', vezes: 1 }]);
+    expect(m.alimentos.ultra).toEqual([{ nome: 'Refri', vezes: 1 }]);
+  });
+
+  it('desempata por nome e deixa de fora o que não tem classificação', () => {
+    const m = calcularMisturaNova(dadosVazios({
+      refeicoes: [ref2('r1', '2026-10-12', [{ id: 'z', nome: 'Zebu', n: 'IN_NATURA' }, { id: 'c', nome: 'Caju', n: 'IN_NATURA' }, { id: 'x', nome: 'Sem NOVA', n: null }])],
+    }), janela);
+    expect(m.alimentos.natural.map((a) => a.nome)).toEqual(['Caju', 'Zebu']);
+    expect(m.alimentos.processado).toEqual([]);
+    expect(JSON.stringify(m.alimentos)).not.toMatch(/Sem NOVA/);
+  });
+
+  it('refeições fora da janela não aparecem na lista', () => {
+    const m = calcularMisturaNova(dadosVazios({
+      refeicoes: [ref2('r0', '2026-10-08', [{ id: 'u', nome: 'Antigo', n: 'ULTRAPROCESSADO' }])],
+    }), janela);
+    expect(m.alimentos.ultra).toEqual([]);
+  });
+});

@@ -15,5 +15,6 @@ export const NUTRICIONISTA_PAINEL: ConfigPainel = {
     { rota: 'NutriTrilhas', label: 'Trilhas', icone: 'map-outline', rotasFilhas: ['EditarTrilha', 'TrilhaPreview'] },
     { rota: 'NutriDesafios', label: 'Desafios', icone: 'trophy-outline' },
     { rota: 'NutriAnalytics', label: 'Analytics', icone: 'stats-chart-outline' },
+    { rota: 'GuiaCriacao', label: 'Como criar', icone: 'school-outline' },
   ],
 };

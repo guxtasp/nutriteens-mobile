@@ -18,6 +18,7 @@ export const ADMIN_PAINEL: ConfigPainel = {
     { rota: 'AdminDesafios', label: 'Desafios', icone: 'trophy-outline' },
     { rota: 'AdminModeracao', label: 'Moderação', icone: 'shield-checkmark-outline' },
     { rota: 'Metricas', label: 'Analytics', icone: 'stats-chart-outline' },
+    { rota: 'GuiaCriacao', label: 'Como criar', icone: 'school-outline' },
     { rota: 'AdminAuditoria', label: 'Auditoria', icone: 'receipt-outline' },
     { rota: 'AdminConfiguracoes', label: 'Configurações', icone: 'settings-outline' },
   ],

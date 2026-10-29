@@ -4,6 +4,7 @@ import { concederXp } from '../../../../shared/services/xpService';
 import type { NoTrilha } from '../components/TrilhaPath';
 import { dataInicioJanela } from '../utils/janelaHabito';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { ordenarLicoesDoCaminho, ordenarTrilhas, statusDasLicoes } from '../utils/sequenciaTrilhas';
 
 // O valor do XP (lição, bônus de módulo e de trilha — incluindo os fallbacks quando
 // `xp_bonus` é nulo) é decidido pelo banco em `conceder_xp` (migration_xp_servidor.sql).
@@ -32,142 +33,130 @@ export type LicaoDaTrilha = {
 
 export type ModuloDaTrilha = {
   id: string;
+  trilhaId: string;
   ordem: number;
   titulo: string;
   subtitulo: string;
 };
 
-export type TrilhaComProgresso = {
-  trilha: Trilha;
+export type TrilhasComProgresso = {
+  // todas as trilhas aprovadas que têm módulo, na ordem do caminho (cada uma é uma "unidade")
+  trilhas: Trilha[];
   modulos: ModuloDaTrilha[];
   nos: NoTrilha[];
   // mesma ordem dos nós — pra quem precisar do detalhe (título, tipo, xp) além do status
   licoes: LicaoDaTrilha[];
 };
 
-// Rótulo de módulo gerado por padrão fixo, não cadastrado no banco (decisão:
-// modulos_trilha não tem coluna de título — ver referência "A1 Abertura",
-// "A2 Aprofundamento", "A3 Consolidação"). A letra acompanha a ordem da
-// TRILHA (só existe uma trilha ativa por vez hoje, então sempre "A"; se um
-// dia houver mais de uma trilha simultânea, a 2ª vira "B" e por aí vai) e o
-// número é a ordem do módulo dentro dela. A partir do 4º módulo, que a
-// referência não cobre, cai num rótulo genérico "Módulo N".
+// Rótulo de módulo gerado por padrão fixo, usado só quando o módulo não tem
+// título no banco (registros antigos): "A1 Abertura", "A2 Aprofundamento",
+// "A3 Consolidação". A letra é a POSIÇÃO da trilha no caminho (1ª = A, 2ª = B…)
+// e o número é a posição do módulo dentro dela. Do 4º módulo em diante cai no
+// rótulo genérico "Módulo N".
 const ETAPAS_MODULO = ['Abertura', 'Aprofundamento', 'Consolidação'];
 
-function gerarTituloModulo(ordemTrilha: number, ordemModulo: number): string {
-  // A ordem padrão do banco é 0. Para a primeira trilha, 0 e 1 representam
-  // a letra A — assim nunca renderizamos "@1" na interface.
-  const numeroDaTrilha = Math.max(1, ordemTrilha || 1);
-  const letra = String.fromCharCode(64 + numeroDaTrilha); // 1 -> 'A', 2 -> 'B', ...
+function gerarTituloModulo(posicaoTrilha: number, ordemModulo: number): string {
+  const letra = String.fromCharCode(64 + Math.max(1, posicaoTrilha)); // 1 -> 'A', 2 -> 'B', ...
   const etapa = ETAPAS_MODULO[ordemModulo - 1];
   return etapa ? `${letra}${ordemModulo} ${etapa}` : `${letra}${ordemModulo} Módulo ${ordemModulo}`;
 }
 
 /**
- * Busca a trilha aprovada de menor `ordem` (por enquanto só existe uma trilha ativa
- * por vez — se um dia liberar mais de uma ao mesmo tempo, passar `trilhaId` explícito)
- * e monta a sequência de nós já cruzando com o progresso do usuário.
+ * Busca TODAS as trilhas aprovadas e monta um caminho contínuo, estilo Duolingo:
+ * cada trilha é uma unidade; as unidades vêm na ordem (`ordem`, empate = a mais
+ * antiga) e o bloqueio atravessa todas — a trilha seguinte só libera quando a
+ * anterior termina. Já cruza com o progresso do usuário.
  */
-export async function buscarTrilhaComProgresso(
-  usuarioId: string,
-  trilhaId?: string
-): Promise<TrilhaComProgresso | null> {
-  // 1. trilha aprovada
-  let query = supabase
+export async function buscarTrilhasComProgresso(usuarioId: string): Promise<TrilhasComProgresso> {
+  // 1. trilhas aprovadas
+  const { data: trilhasData, error: erroTrilhas } = await supabase
     .from('trilhas')
-    .select('id, titulo, descricao, tema, ordem, xp_bonus')
+    .select('id, titulo, descricao, tema, ordem, xp_bonus, criado_em')
     .eq('status', 'aprovada');
+  if (erroTrilhas) throw erroTrilhas;
 
-  // empate de `ordem`: a trilha mais antiga (resultado estável, igual a trilhaVisivelAoAdolescente do painel)
-  query = trilhaId ? query.eq('id', trilhaId) : query.order('ordem').order('criado_em').limit(1);
+  const trilhasOrdenadas = ordenarTrilhas(
+    (trilhasData ?? []).map((t) => ({ ...t, ordem: t.ordem ?? 0, criadoEm: t.criado_em as string | null }))
+  );
+  if (trilhasOrdenadas.length === 0) return { trilhas: [], modulos: [], nos: [], licoes: [] };
 
-  const { data: trilhasData, error: erroTrilha } = await query;
-  if (erroTrilha) throw erroTrilha;
-  const trilhaRow = trilhasData?.[0];
-  if (!trilhaRow) return null;
-  const trilha: Trilha = {
-    id: trilhaRow.id,
-    titulo: trilhaRow.titulo,
-    descricao: trilhaRow.descricao,
-    tema: trilhaRow.tema,
-    ordem: trilhaRow.ordem,
-    xpBonus: trilhaRow.xp_bonus ?? null,
-  };
-
-  // 2. módulos, na ordem
-  const { data: modulos, error: erroModulos } = await supabase
+  // 2. módulos de todas as trilhas
+  const { data: modulosData, error: erroModulos } = await supabase
     .from('modulos_trilha')
-    .select('id, titulo, ordem')
-    .eq('trilha_id', trilha.id)
+    .select('id, titulo, ordem, trilha_id')
+    .in('trilha_id', trilhasOrdenadas.map((t) => t.id))
     .order('ordem');
   if (erroModulos) throw erroModulos;
-  if (!modulos || modulos.length === 0) {
-    return { trilha, modulos: [], nos: [], licoes: [] };
-  }
 
-  const modulosComTitulo: ModuloDaTrilha[] = modulos.map((m, i) => ({
-    id: m.id,
-    ordem: m.ordem,
-    // O banco é a fonte de verdade para o título. O fallback mantém o app
-    // compatível com registros antigos que ainda não tenham esse campo.
-    titulo: m.titulo || gerarTituloModulo(trilha.ordem, i + 1),
-    subtitulo: `Trilha: ${trilha.titulo}`,
+  // só entram no caminho as trilhas que têm módulo (trilha vazia não vira "unidade" sem nada dentro)
+  const trilhasComModulo = trilhasOrdenadas.filter((t) => (modulosData ?? []).some((m) => m.trilha_id === t.id));
+  const trilhas: Trilha[] = trilhasComModulo.map((t) => ({
+    id: t.id,
+    titulo: t.titulo,
+    descricao: t.descricao,
+    tema: t.tema,
+    ordem: t.ordem,
+    xpBonus: t.xp_bonus ?? null,
   }));
+  if (trilhas.length === 0) return { trilhas: [], modulos: [], nos: [], licoes: [] };
+
+  const modulosOrdenados = [...(modulosData ?? [])]
+    .filter((m) => trilhas.some((t) => t.id === m.trilha_id))
+    .sort(
+      (a, b) =>
+        trilhas.findIndex((t) => t.id === a.trilha_id) - trilhas.findIndex((t) => t.id === b.trilha_id) ||
+        a.ordem - b.ordem
+    );
+
+  const modulos: ModuloDaTrilha[] = modulosOrdenados.map((m) => {
+    const posicaoTrilha = trilhas.findIndex((t) => t.id === m.trilha_id);
+    const doMesmaTrilha = modulosOrdenados.filter((x) => x.trilha_id === m.trilha_id);
+    return {
+      id: m.id,
+      trilhaId: m.trilha_id,
+      ordem: m.ordem,
+      // O banco é a fonte de verdade para o título; o fallback cobre registros antigos.
+      titulo: m.titulo || gerarTituloModulo(posicaoTrilha + 1, doMesmaTrilha.findIndex((x) => x.id === m.id) + 1),
+      subtitulo: `Trilha: ${trilhas[posicaoTrilha].titulo}`,
+    };
+  });
 
   // 3. lições de todos os módulos
-  const moduloIds = modulos.map((m) => m.id);
   const { data: licoesData, error: erroLicoes } = await supabase
     .from('licoes')
     .select('id, modulo_id, titulo, ordem, tipo, icone, xp_recompensa')
-    .in('modulo_id', moduloIds);
+    .in('modulo_id', modulos.map((m) => m.id));
   if (erroLicoes) throw erroLicoes;
 
-  // reordena: primeiro pela ordem do módulo, depois pela ordem da lição dentro dele
-  // (o `.order('ordem')` do Supabase não sabe encadear os dois níveis, então faz na mão)
-  const ordemModulo = new Map(modulos.map((m, i) => [m.id, i]));
-  const licoesOrdenadas = [...(licoesData ?? [])].sort((a, b) => {
-    const modA = ordemModulo.get(a.modulo_id) ?? 0;
-    const modB = ordemModulo.get(b.modulo_id) ?? 0;
-    if (modA !== modB) return modA - modB;
-    return a.ordem - b.ordem;
-  });
-
-  if (licoesOrdenadas.length === 0) {
-    return { trilha, modulos: modulosComTitulo, nos: [], licoes: [] };
-  }
+  const licoesOrdenadas = ordenarLicoesDoCaminho(
+    trilhas,
+    modulos,
+    (licoesData ?? []).map((l) => ({ ...l, moduloId: l.modulo_id as string }))
+  );
+  if (licoesOrdenadas.length === 0) return { trilhas, modulos, nos: [], licoes: [] };
 
   // 4. progresso do usuário nessas lições
-  const licaoIds = licoesOrdenadas.map((l) => l.id);
   const { data: progresso, error: erroProgresso } = await supabase
     .from('progresso_licao')
     .select('licao_id')
     .eq('usuario_id', usuarioId)
-    .in('licao_id', licaoIds);
+    .in('licao_id', licoesOrdenadas.map((l) => l.id));
   if (erroProgresso) throw erroProgresso;
 
-  const concluidas = new Set((progresso ?? []).map((p) => p.licao_id));
-
-  // 5. Status de cada nó: somente uma sequência CONTÍGUA de lições pode ficar
-  // concluída. Isso evita que um registro antigo/inconsistente em uma lição à
-  // frente "fure" o cadeado visual: depois da primeira pendência, todo o
-  // restante continua bloqueado até que o usuário avance passo a passo.
-  // `tipo` viaja junto no nó (não só na lista `licoes`) pra quem desenha o
-  // caminho (TrilhaPath) resolver sozinho o estado visual de "prática real
-  // pendente" — que é só a combinação status==='atual' + tipo==='atividade_rastreavel'
-  // (ver seção 5 do modelo-pedagogico-trilha.md).
-  let encontrouPrimeiraPendente = false;
-  const nos: NoTrilha[] = licoesOrdenadas.map((licao) => {
-    let status: NoTrilha['status'];
-    if (!encontrouPrimeiraPendente && concluidas.has(licao.id)) {
-      status = 'concluida';
-    } else if (!encontrouPrimeiraPendente) {
-      status = 'atual';
-      encontrouPrimeiraPendente = true;
-    } else {
-      status = 'bloqueada';
-    }
-    return { id: licao.id, moduloId: licao.modulo_id, status, tipo: licao.tipo, icone: licao.icone ?? null };
-  });
+  // 5. status de cada nó, na ordem do caminho INTEIRO (todas as trilhas). `tipo`
+  // viaja junto no nó pra TrilhaPath resolver sozinho o estado de "prática real
+  // pendente" (status 'atual' + tipo 'atividade_rastreavel').
+  const status = statusDasLicoes(
+    licoesOrdenadas.map((l) => l.id),
+    new Set((progresso ?? []).map((p) => p.licao_id))
+  );
+  const nos: NoTrilha[] = licoesOrdenadas.map((l, i) => ({
+    id: l.id,
+    moduloId: l.modulo_id,
+    status: status[i],
+    tipo: l.tipo,
+    icone: l.icone ?? null,
+  }));
 
   const licoes: LicaoDaTrilha[] = licoesOrdenadas.map((l) => ({
     id: l.id,
@@ -179,7 +168,7 @@ export async function buscarTrilhaComProgresso(
     xpRecompensa: l.xp_recompensa,
   }));
 
-  return { trilha, modulos: modulosComTitulo, nos, licoes };
+  return { trilhas, modulos, nos, licoes };
 }
 
 // ============================================================
@@ -407,21 +396,12 @@ export async function concluirLicaoComProgresso(
 ): Promise<ResultadoConclusao> {
   // Não confia apenas no estado da tela: uma rota pode ser aberta
   // programaticamente ou ficar desatualizada entre duas telas. A mesma regra
-  // usada para pintar o caminho é revalidada antes de gravar o progresso.
-  const { data: licaoParaValidacao, error: erroValidacao } = await supabase
-    .from('licoes')
-    .select('id, modulos_trilha ( trilha_id )')
-    .eq('id', licaoId)
-    .single();
-  if (erroValidacao) throw erroValidacao;
-
-  const trilhaIdParaValidacao: string | undefined = (licaoParaValidacao.modulos_trilha as any)?.trilha_id;
-  if (trilhaIdParaValidacao) {
-    const progressoDaTrilha = await buscarTrilhaComProgresso(usuarioId, trilhaIdParaValidacao);
-    const noDaLicao = progressoDaTrilha?.nos.find((no) => no.id === licaoId);
-    if (!noDaLicao || noDaLicao.status === 'bloqueada') {
-      throw new Error('Esta lição ainda está bloqueada. Conclua a etapa atual para liberá-la.');
-    }
+  // usada para pintar o caminho (inclusive o bloqueio entre trilhas) é
+  // revalidada antes de gravar o progresso.
+  const caminho = await buscarTrilhasComProgresso(usuarioId);
+  const noDaLicao = caminho.nos.find((no) => no.id === licaoId);
+  if (!noDaLicao || noDaLicao.status === 'bloqueada') {
+    throw new Error('Esta lição ainda está bloqueada. Conclua a etapa atual para liberá-la.');
   }
 
   // 1. já tinha progresso antes desta chamada?

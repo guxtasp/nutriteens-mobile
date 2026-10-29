@@ -5,6 +5,7 @@
 import type { ReceitaRecebida } from '../../social/utils/receitaCompartilhada';
 import type { ChamaDupla } from '../../social/utils/chamaDupla';
 import { HORA_LEMBRETE, mensagemAviso, textoLembreteFimDeDia } from '../../social/utils/chamaDupla';
+import { analisarAniversario } from '../../home/utils/aniversario';
 
 export type DestinoNotificacao = 'Social' | 'Missoes' | 'Home' | 'Receita';
 
@@ -16,7 +17,8 @@ export type TipoNotificacaoApp =
   | 'lembrete_chama'
   | 'missao_diaria'
   | 'missao_semanal'
-  | 'missao_mensal';
+  | 'missao_mensal'
+  | 'aniversario';
 
 export type NotificacaoApp = {
   id: string;
@@ -45,6 +47,8 @@ export type EntradaNotificacoes = {
     semanais: (MissaoPendente & { concluida: boolean })[];
     mensais: (MissaoPendente & { concluida: boolean })[];
   } | null;
+  /** `profiles.data_nascimento` (AAAA-MM-DD); null/ausente = sem item de aniversário */
+  dataNascimento?: string | null;
   agora: Date;
 };
 
@@ -81,10 +85,24 @@ function missoesPeriodicas(
   };
 }
 
-/** Ordem: o que depende de outra pessoa primeiro, depois lembretes e missões. */
-export function montarNotificacoesApp({ chamas, pedidosRecebidos, receitasRecebidas = [], missoes, agora }: EntradaNotificacoes): NotificacaoApp[] {
+/** Ordem: aniversário, depois o que depende de outra pessoa, depois lembretes e missões. */
+export function montarNotificacoesApp({ chamas, pedidosRecebidos, receitasRecebidas = [], missoes, dataNascimento, agora }: EntradaNotificacoes): NotificacaoApp[] {
   const lista: NotificacaoApp[] = [];
   const dia = chaveDia(agora);
+
+  // Aniversário (no dia ou até 3 dias depois): vem primeiro, é a única notificação "só de carinho".
+  // O id inclui o ano, então uma vez lida fica lida e volta como nova só no aniversário seguinte.
+  const aniversario = analisarAniversario(dataNascimento, dia);
+  if (aniversario.celebrar) {
+    lista.push({
+      id: `aniversario-${aniversario.ano}`,
+      tipo: 'aniversario',
+      icone: 'gift',
+      titulo: aniversario.diasDeAtraso > 0 ? 'Feliz aniversário atrasado!' : 'Feliz aniversário!',
+      texto: 'O Bróxis tem uma mensagem pra você.',
+      destino: 'Home',
+    });
+  }
 
   for (const p of pedidosRecebidos) {
     lista.push({

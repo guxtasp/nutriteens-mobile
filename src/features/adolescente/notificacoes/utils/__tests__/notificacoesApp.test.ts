@@ -72,3 +72,30 @@ describe('montarNotificacoesApp', () => {
     expect(l[0].titulo).toBe('Lia te mandou uma receita');
   });
 });
+
+describe('item de aniversário na Central', () => {
+  const base = { chamas: [], pedidosRecebidos: [], missoes: null };
+
+  it('aparece no dia do aniversário, em primeiro lugar, indo para a Home', () => {
+    const l = montarNotificacoesApp({
+      ...base,
+      dataNascimento: '2010-10-07',
+      pedidosRecebidos: [{ amizadeId: 'a1', apelido: 'Lia' }],
+      agora: dia,
+    });
+    expect(l[0]).toMatchObject({ id: 'aniversario-2026', tipo: 'aniversario', icone: 'gift', titulo: 'Feliz aniversário!', destino: 'Home' });
+    expect(l).toHaveLength(2);
+  });
+
+  it('até 3 dias depois vira "atrasado" e mantém o mesmo id (não volta como nova)', () => {
+    const l = montarNotificacoesApp({ ...base, dataNascimento: '2010-10-05', agora: dia });
+    expect(l[0]).toMatchObject({ id: 'aniversario-2026', titulo: 'Feliz aniversário atrasado!' });
+  });
+
+  it('não aparece fora da janela, sem data ou com data inválida', () => {
+    expect(montarNotificacoesApp({ ...base, dataNascimento: '2010-10-01', agora: dia })).toEqual([]);
+    expect(montarNotificacoesApp({ ...base, dataNascimento: null, agora: dia })).toEqual([]);
+    expect(montarNotificacoesApp({ ...base, agora: dia })).toEqual([]);
+    expect(montarNotificacoesApp({ ...base, dataNascimento: 'x', agora: dia })).toEqual([]);
+  });
+});

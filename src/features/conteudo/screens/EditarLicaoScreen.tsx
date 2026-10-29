@@ -5,7 +5,7 @@
 // antes e grava lição, passos e alternativas numa única transação. Só grava se algo mudou,
 // para não subir a versão do conteúdo à toa.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
@@ -19,12 +19,15 @@ import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { buscarLicaoEditavel, salvarLicaoCompleta, type LicaoEditavel } from '../services/edicaoService';
 import { obterPapelAtual } from '../services/conteudoService';
-import { ROTULO_FORMATO } from '../utils/descreverQuestao';
 import type { Papel } from '../utils/regrasAprovacao';
 import { AvisoEdicao, BarraSalvar, campoMultilinha } from '../components/CamposEdicao';
 import PassoEditor from '../components/PassoEditor';
+import BlocoPasso from '../components/BlocoPasso';
+import PaletaBlocos from '../components/PaletaBlocos';
+import PreviaAoVivo from '../components/preview/PreviaAoVivo';
+import { BotaoComoCriar } from '../components/GuiaCriacao';
+import { posicaoDeInsercao, selecaoAposMover, selecaoAposRemover } from '../utils/blocos';
 import {
-  FORMATOS_PASSO,
   HABITOS,
   ICONES_SUGERIDOS,
   LIMITES,
@@ -33,6 +36,7 @@ import {
   assinaturaLicao,
   deQuestao,
   mover,
+  novaChave,
   paraPayloadLicao,
   passoVazio,
   validarLicaoEdicao,
@@ -79,6 +83,12 @@ export default function EditarLicaoScreen({ config, route }: Props) {
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // editor em blocos: bloco aberto (e de onde a prévia ao vivo começa) + aba no layout estreito
+  const [selecionado, setSelecionado] = useState<number | null>(null);
+  const [aba, setAba] = useState<'editar' | 'previa'>('editar');
+  const { width: larguraJanela } = useWindowDimensions();
+  // com sidebar (248px) só sobra espaço para editor + celular lado a lado a partir de ~1280px
+  const lado = larguraJanela >= 1280;
 
   useEffect(() => { obterPapelAtual().then(setPapel); }, []);
 
@@ -112,6 +122,7 @@ export default function EditarLicaoScreen({ config, route }: Props) {
       setHabito(inicial.habito);
       setJanela(String(inicial.janelaHoras));
       setPassos(inicial.passos);
+      setSelecionado(null);
       setAssinaturaInicial(assinaturaLicao(inicial));
       setMostrarErros(false);
       setErro(null);
@@ -129,8 +140,30 @@ export default function EditarLicaoScreen({ config, route }: Props) {
   const errosPorPasso = useMemo(() => (mostrarErros ? passos.map(validarPasso) : passos.map(() => [])), [mostrarErros, passos]);
   const errosGerais = errosLicao.filter((e) => !/^Passo \d+:/.test(e));
 
+  const incompletos = useMemo(() => passos.map((p) => validarPasso(p).length > 0), [passos]);
+
   function adicionarPasso(f: FormatoPasso) {
-    setPassos((a) => [...a, passoVazio(f)]);
+    if (passos.length >= LIMITES.passosMax) return;
+    const pos = posicaoDeInsercao(passos.length, selecionado);
+    setPassos((a) => [...a.slice(0, pos), passoVazio(f), ...a.slice(pos)]);
+    setSelecionado(pos); // abre o bloco novo e a prévia já começa nele
+  }
+
+  function moverBloco(i: number, dir: -1 | 1) {
+    setPassos((a) => mover(a, i, dir));
+    setSelecionado((sel) => selecaoAposMover(sel, i, dir));
+  }
+
+  function duplicarBloco(i: number) {
+    if (passos.length >= LIMITES.passosMax) return;
+    const copia: PassoEdicao = { ...JSON.parse(JSON.stringify(passos[i])), chave: novaChave() };
+    setPassos((a) => [...a.slice(0, i + 1), copia, ...a.slice(i + 1)]);
+    setSelecionado(i + 1);
+  }
+
+  function removerBloco(i: number) {
+    setPassos((a) => a.filter((_, k) => k !== i));
+    setSelecionado((sel) => selecaoAposRemover(sel, i, passos.length - 1));
   }
 
   async function salvar() {
@@ -187,14 +220,25 @@ export default function EditarLicaoScreen({ config, route }: Props) {
       ) : !criando && !licao ? (
         <EstadoErro mensagem={erro ?? 'Lição não encontrada.'} onTentar={() => { setCarregando(true); carregar(); }} />
       ) : (
-        <>
+        <View style={lado ? styles.linhaLarga : styles.coluna}>
+          <View style={lado ? styles.colEditor : styles.coluna}>
+            {!lado && (
+              <View style={styles.abas} accessibilityRole="tablist">
+                <Chip texto="Editar blocos" ligado={aba === 'editar'} onPress={() => setAba('editar')} />
+                <Chip texto="Prévia ao vivo" ligado={aba === 'previa'} onPress={() => setAba('previa')} />
+              </View>
+            )}
+            {!lado && aba === 'previa' && <PreviaAoVivo estado={estado} selecionado={selecionado} />}
+            {(lado || aba === 'editar') && (
+              <>
           <AvisoEdicao papel={papel} />
+          <BotaoComoCriar passo={3} />
 
           {criando && (
             <CartaoSecao titulo="Tipo de lição" ajuda="Leitura: texto e passos. Quiz: só passos. Prática real: o adolescente registra um hábito (água, atividade física ou alimentação) e a lição conclui sozinha.">
               <View style={styles.chips}>
                 {TIPOS.map((t) => (
-                  <Chip key={t} texto={ROTULO_TIPO_LICAO[t]} ligado={tipo === t} onPress={() => { setTipo(t); if (t === 'atividade_rastreavel') setPassos([]); }} />
+                  <Chip key={t} texto={ROTULO_TIPO_LICAO[t]} ligado={tipo === t} onPress={() => { setTipo(t); if (t === 'atividade_rastreavel') { setPassos([]); setSelecionado(null); } }} />
                 ))}
               </View>
             </CartaoSecao>
@@ -246,37 +290,52 @@ export default function EditarLicaoScreen({ config, route }: Props) {
 
           {!habitoTipo && (
             <>
+              <PaletaBlocos
+                total={passos.length}
+                max={LIMITES.passosMax}
+                aposDoBloco={selecionado !== null && selecionado < passos.length ? selecionado + 1 : null}
+                onAdicionar={adicionarPasso}
+              />
               {passos.length === 0 && (
                 <AppText style={styles.suave}>
-                  {tipo === 'quiz' ? 'Um quiz precisa de pelo menos 1 passo.' : 'Esta lição ainda não tem passos. Adicione abaixo, ou use só o texto de leitura.'}
+                  {tipo === 'quiz' ? 'Um quiz precisa de pelo menos 1 bloco. Toque em um da paleta acima.' : 'Esta lição ainda não tem blocos. Adicione da paleta acima, ou use só o texto de leitura.'}
                 </AppText>
               )}
-              {passos.map((p, i) => (
-                <PassoEditor
-                  key={p.chave}
-                  passo={p}
-                  indice={i}
-                  total={passos.length}
-                  erros={errosPorPasso[i] ?? []}
-                  onChange={(novo) => setPassos((a) => a.map((x, k) => (k === i ? novo : x)))}
-                  onMover={(dir) => setPassos((a) => mover(a, i, dir))}
-                  onRemover={() => setPassos((a) => a.filter((_, k) => k !== i))}
-                />
-              ))}
-              <CartaoSecao titulo="Adicionar passo" subtitulo={`${passos.length} de ${LIMITES.passosMax} passos`} ajuda="Escolha o formato do próximo passo. Todos os formatos funcionam em lições de leitura e de quiz.">
-                <View style={styles.chips}>
-                  {FORMATOS_PASSO.map((f) => (
-                    <Chip key={f} texto={ROTULO_FORMATO[f] ?? f} ligado={false} onPress={() => adicionarPasso(f)} />
-                  ))}
-                </View>
-              </CartaoSecao>
+              <View style={styles.pilha}>
+                {passos.map((p, i) => (
+                  <BlocoPasso
+                    key={p.chave}
+                    passo={p}
+                    indice={i}
+                    total={passos.length}
+                    selecionado={selecionado === i}
+                    incompleto={incompletos[i] ?? false}
+                    erros={errosPorPasso[i] ?? []}
+                    onSelecionar={() => setSelecionado(i)}
+                    onMover={(dir) => moverBloco(i, dir)}
+                    onDuplicar={() => duplicarBloco(i)}
+                    onRemover={() => removerBloco(i)}
+                  >
+                    <PassoEditor
+                      embutido
+                      passo={p}
+                      indice={i}
+                      total={passos.length}
+                      erros={errosPorPasso[i] ?? []}
+                      onChange={(novo) => setPassos((a) => a.map((x, k) => (k === i ? novo : x)))}
+                      onMover={() => {}}
+                      onRemover={() => {}}
+                    />
+                  </BlocoPasso>
+                ))}
+              </View>
             </>
           )}
 
           {!criando && licao && (
             <View style={{ flexDirection: 'row' }}>
               <AppButton
-                label="PRÉ-VISUALIZAR LIÇÃO"
+                label="ABRIR REVISÃO (VERSÃO SALVA)"
                 fullWidth={false}
                 size="compact"
                 outlineColor={colors.primaryDark}
@@ -286,16 +345,33 @@ export default function EditarLicaoScreen({ config, route }: Props) {
               />
             </View>
           )}
-          {!criando && alterada && <AppText style={styles.suave}>Há alterações não salvas. A prévia mostra o que está salvo.</AppText>}
+          {!criando && alterada && <AppText style={styles.suave}>Há alterações não salvas. A prévia ao vivo já mostra tudo; a tela de revisão abre a versão salva.</AppText>}
 
-          <BarraSalvar rotulo={criando ? 'CRIAR LIÇÃO' : 'SALVAR LIÇÃO'} ocupado={ocupado} onSalvar={salvar} onCancelar={() => navigation.goBack()} erro={erro} mensagem={msg} />
-        </>
+              </>
+            )}
+            <BarraSalvar rotulo={criando ? 'CRIAR LIÇÃO' : 'SALVAR LIÇÃO'} ocupado={ocupado} onSalvar={salvar} onCancelar={() => navigation.goBack()} erro={erro} mensagem={msg} />
+          </View>
+
+          {lado && (
+            <View style={styles.colPrevia}>
+              <View style={Platform.OS === 'web' ? ({ position: 'sticky', top: 16 } as any) : undefined}>
+                <PreviaAoVivo estado={estado} selecionado={selecionado} />
+              </View>
+            </View>
+          )}
+        </View>
       )}
     </PainelLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  coluna: { gap: 16 },
+  linhaLarga: { flexDirection: 'row', gap: 24 },
+  colEditor: { flex: 1, minWidth: 0, gap: 16 },
+  colPrevia: { width: 420 },
+  abas: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pilha: { gap: 10, paddingTop: 6 },
   suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
   rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

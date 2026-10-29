@@ -24,7 +24,7 @@ export function LogoutButton() {
   return (
     <Pressable style={styles.botao} onPress={handleSair} disabled={saindo}>
       {saindo ? (
-        <ActivityIndicator color="#D14343" />
+        <ActivityIndicator color="#ffff" />
       ) : (
         <AppText style={styles.texto}>Sair</AppText>
       )}
@@ -38,12 +38,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D14343',
+    borderColor: '#ffff',
+    backgroundColor: '#D14343',
     marginHorizontal: 20,
     marginTop: 24,
   },
   texto: {
-    color: '#D14343',
-    fontWeight: '600',
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });

@@ -47,7 +47,7 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
     if (!receitaId) return;
     let ativo = true;
     // falha ao carregar ingredientes não impede de ver a receita: a seção só não aparece
-    buscarIngredientesDaReceita(receitaId).then((l) => { if (ativo) setIngredientes(l); }).catch(() => {});
+    buscarIngredientesDaReceita(receitaId, receita?.alimento_resultante?.id).then((l) => { if (ativo) setIngredientes(l); }).catch(() => {});
     guiaAbertaRef.current = false;
     concluidaRef.current = false;
     if (!previa) registrarEvento('receita_visualizada', { receita_id: receitaId });
@@ -151,7 +151,7 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
                   <AppText style={styles.secaoTitulo}>Ingredientes</AppText>
                   {ingredientes.map((i, k) => (
                     <AppText key={k} style={styles.ingrediente}>
-                      • {i.quantidade} de {i.nome.toLowerCase()}
+                      • {i.quantidade ? `${i.quantidade} de ${i.nome.toLowerCase()}` : i.nome}
                     </AppText>
                   ))}
                 </View>

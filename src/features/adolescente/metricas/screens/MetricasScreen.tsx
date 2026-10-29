@@ -2,7 +2,7 @@
 //
 // Tela de rota: liga o hook à apresentação e resolve os destinos dos "próximos passos".
 import React, { useCallback } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { useMetricas } from '../hooks/useMetricas';
@@ -10,9 +10,11 @@ import type { ProximoPasso } from '../utils/feedbackBroxis';
 import { MetricasView } from './MetricasView';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;
+type Rota = RouteProp<AdolescenteStackParamList, 'Metricas'>;
 
 export default function MetricasScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { params } = useRoute<Rota>();
   const { estado, periodo, setPeriodo, tentarNovamente, gruposInfo, apoio, semente } = useMetricas();
 
   const irParaPasso = useCallback((passo: ProximoPasso) => {
@@ -36,6 +38,7 @@ export default function MetricasScreen() {
       gruposInfo={gruposInfo}
       apoio={apoio}
       semente={semente}
+      abaInicial={(params?.aba as any)}
     />
   );
 }

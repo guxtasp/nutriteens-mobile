@@ -12,6 +12,7 @@ import { listarChamasDupla } from '../../social/services/chamaDuplaService';
 import { listarReceitasRecebidas } from '../../social/services/receitaCompartilhadaService';
 import type { ReceitaRecebida } from '../../social/utils/receitaCompartilhada';
 import type { ChamaDupla } from '../../social/utils/chamaDupla';
+import { buscarDataNascimento } from '../../home/services/aniversarioService';
 import { carregarLidas, salvarLidas } from '../services/lidasStorage';
 import { aplicarLeitura, contarNaoLidas, montarNotificacoesApp, type PedidoRecebido } from '../utils/notificacoesApp';
 
@@ -21,6 +22,7 @@ export function useNotificacoesApp() {
   const [chamas, setChamas] = useState<ChamaDupla[]>([]);
   const [pedidos, setPedidos] = useState<PedidoRecebido[]>([]);
   const [receitas, setReceitas] = useState<ReceitaRecebida[]>([]);
+  const [dataNascimento, setDataNascimento] = useState<string | null>(null);
   const [lidas, setLidas] = useState<ReadonlySet<string>>(new Set());
   const [carregandoSocial, setCarregandoSocial] = useState(true);
 
@@ -29,11 +31,12 @@ export function useNotificacoesApp() {
       if (!userId) return;
       let ativo = true;
       (async () => {
-        const [c, p, l, r] = await Promise.allSettled([
+        const [c, p, l, r, n] = await Promise.allSettled([
           listarChamasDupla(),
           listarSolicitacoes(),
           carregarLidas(userId),
           listarReceitasRecebidas(),
+          buscarDataNascimento(userId),
         ]);
         if (!ativo) return;
         setChamas(c.status === 'fulfilled' ? c.value : []);
@@ -43,6 +46,7 @@ export function useNotificacoesApp() {
             : []
         );
         setReceitas(r.status === 'fulfilled' ? r.value : []);
+        setDataNascimento(n.status === 'fulfilled' ? n.value : null);
         if (l.status === 'fulfilled') setLidas(l.value);
         setCarregandoSocial(false);
       })();
@@ -58,6 +62,7 @@ export function useNotificacoesApp() {
         chamas,
         pedidosRecebidos: pedidos,
         receitasRecebidas: receitas,
+        dataNascimento,
         missoes: {
           diaria: missoes.hoje.dados
             ? { titulo: missoes.hoje.dados.missao.titulo, concluida: missoes.hoje.dados.progresso.concluida }
@@ -67,7 +72,7 @@ export function useNotificacoesApp() {
         },
         agora: new Date(),
       }),
-    [chamas, pedidos, receitas, missoes.hoje.dados, missoes.semana.dados, missoes.mes.dados]
+    [chamas, pedidos, receitas, dataNascimento, missoes.hoje.dados, missoes.semana.dados, missoes.mes.dados]
   );
 
   const notificacoes = useMemo(() => aplicarLeitura(todas, lidas), [todas, lidas]);

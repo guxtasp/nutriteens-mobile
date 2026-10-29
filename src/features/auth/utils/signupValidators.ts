@@ -63,9 +63,5 @@ export function validatePassword(value: string): string | null {
   if (value.length < PASSWORD_MIN_LENGTH) {
     return `A senha precisa ter pelo menos ${PASSWORD_MIN_LENGTH} caracteres`;
   }
-  if (!/[a-z]/.test(value)) return 'A senha precisa ter pelo menos uma letra minúscula';
-  if (!/[A-Z]/.test(value)) return 'A senha precisa ter pelo menos uma letra maiúscula';
-  if (!/[0-9]/.test(value)) return 'A senha precisa ter pelo menos um número';
-  if (!/[^A-Za-z0-9]/.test(value)) return 'A senha precisa ter pelo menos um caractere especial (ex: !@#$%)';
   return null;
 }

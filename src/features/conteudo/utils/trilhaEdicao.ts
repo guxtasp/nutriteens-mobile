@@ -55,26 +55,57 @@ export function proximaOrdemTrilha(ordens: number[]): number {
 
 export type TrilhaOrdem = { id: string; titulo: string; ordem: number; status: string; criadoEm?: string | null };
 
+const porOrdem = (a: TrilhaOrdem, b: TrilhaOrdem) =>
+  a.ordem - b.ordem || String(a.criadoEm ?? '').localeCompare(String(b.criadoEm ?? ''));
+
 /**
- * A trilha que o app do adolescente mostra HOJE: entre as publicadas (status 'aprovada'), a de menor
- * `ordem`; empate = a mais antiga. Espelha buscarTrilhaComProgresso (trilhaService.ts).
+ * As trilhas que o adolescente vê HOJE, na ordem do caminho: todas as publicadas (status 'aprovada'),
+ * por `ordem`; empate = a mais antiga. Uma depois da outra: a seguinte só abre quando a anterior
+ * termina. Espelha buscarTrilhasComProgresso (trilhaService.ts).
  */
-export function trilhaVisivelAoAdolescente(trilhas: TrilhaOrdem[]): TrilhaOrdem | null {
-  const publicadas = trilhas.filter((t) => t.status === 'aprovada');
-  if (publicadas.length === 0) return null;
-  return [...publicadas].sort((a, b) => a.ordem - b.ordem || String(a.criadoEm ?? '').localeCompare(String(b.criadoEm ?? '')))[0];
+export function trilhasVisiveisAoAdolescente(trilhas: TrilhaOrdem[]): TrilhaOrdem[] {
+  return trilhas.filter((t) => t.status === 'aprovada').sort(porOrdem);
 }
 
-/** Aviso para o formulário: o que acontece com a ordem escolhida. */
+export type PosicaoNoCaminho = { posicao: number; total: number; antes: TrilhaOrdem | null; depois: TrilhaOrdem | null };
+
+/**
+ * Em que lugar do caminho a trilha fica (ou ficaria, quando publicada) com a `ordem` dada.
+ * Trilha nova (sem id) que empata em ordem fica depois das que já existem.
+ */
+export function posicaoNoCaminho(
+  trilhas: TrilhaOrdem[],
+  atual: { id?: string; ordem: number; titulo?: string; criadoEm?: string | null }
+): PosicaoNoCaminho {
+  const outras = trilhasVisiveisAoAdolescente(trilhas.filter((t) => t.id !== atual.id));
+  const eu: TrilhaOrdem = {
+    id: atual.id ?? '__nova__',
+    titulo: atual.titulo ?? '',
+    ordem: atual.ordem,
+    status: 'aprovada',
+    criadoEm: atual.criadoEm ?? trilhas.find((t) => t.id === atual.id)?.criadoEm ?? '9999-12-31',
+  };
+  const fila = [...outras, eu].sort(porOrdem);
+  const i = fila.findIndex((t) => t.id === eu.id);
+  return { posicao: i + 1, total: fila.length, antes: fila[i - 1] ?? null, depois: fila[i + 1] ?? null };
+}
+
+/** Aviso para o formulário: a ordem escolhida coloca a trilha ANTES de outra já publicada. */
 export function avisoOrdemTrilha(trilhas: TrilhaOrdem[], atual: { id?: string; ordem: number }): string | null {
-  const outras = trilhas.filter((t) => t.id !== atual.id);
-  const publicadas = outras.filter((t) => t.status === 'aprovada');
-  if (publicadas.length === 0) return null;
-  const quemGanha = [...publicadas].sort((a, b) => a.ordem - b.ordem)[0];
-  if (atual.ordem < quemGanha.ordem) {
-    return `Atenção: com esta ordem, quando for publicada ela passa na frente de "${quemGanha.titulo}" (ordem ${quemGanha.ordem}) e é a trilha que os adolescentes passam a ver.`;
-  }
-  return null;
+  const nova = posicaoNoCaminho(trilhas, atual);
+  if (!nova.depois) return null;
+  // trilha já publicada que continua com o mesmo vizinho de trás: nada mudou, não avisa
+  const linha = atual.id ? trilhas.find((t) => t.id === atual.id) : undefined;
+  if (linha?.status === 'aprovada' && posicaoNoCaminho(trilhas, { id: linha.id, ordem: linha.ordem }).depois?.id === nova.depois.id) return null;
+  return `Atenção: com esta ordem ela entra como Trilha ${nova.posicao} de ${nova.total}, antes de "${nova.depois.titulo}". Quem já avançou em "${nova.depois.titulo}" precisa concluir esta antes de continuar.`;
+}
+
+/** Frase única sobre o lugar da trilha no caminho (para o formulário e para a prévia). */
+export function textoPosicaoNoCaminho(pos: PosicaoNoCaminho, publicada: boolean): string {
+  const quando = publicada ? 'No app ela é' : 'Quando for publicada, será';
+  const depoisDe = pos.antes ? ` Vem depois de "${pos.antes.titulo}".` : '';
+  const antesDe = pos.depois ? ` Vem antes de "${pos.depois.titulo}".` : '';
+  return `${quando} a Trilha ${pos.posicao} de ${pos.total} no caminho dos adolescentes (as trilhas aparecem em sequência; a seguinte só abre quando a anterior termina).${depoisDe}${antesDe}`;
 }
 
 /** Lista de ids depois de mover o item `i` (dir -1 sobe, +1 desce). Sem mudar se estiver na borda. */

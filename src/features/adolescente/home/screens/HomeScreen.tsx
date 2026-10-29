@@ -18,6 +18,7 @@ import PerdaSequenciaOverlay from '../components/PerdaSequenciaOverlay';
 import AniversarioModal from '../components/AniversarioModal';
 import { useHomeData } from '../hooks/useHomeData';
 import { useAniversario } from '../hooks/useAniversario';
+import { useRetrospectivaAno } from '../hooks/useRetrospectivaAno';
 import { colors } from '../../../../shared/theme/colors';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { useAguaHoje } from '../../agua/hooks/useAguaHoje';
@@ -181,6 +182,9 @@ export default function HomeScreen() {
       dadosCarregados && perdaVerificada && !celebracaoVisivel && !verificandoCelebracao && !perdaVisivel,
   });
 
+  // retrospectiva do ano: só consulta quando a mensagem de aniversário está na tela
+  const retrospectivaAno = useRetrospectivaAno(userId, hojeISO, aniversario.visivel);
+
   useEffect(() => {
     if (aniversario.pendente) pausarRecompensas('aniversario');
     else retomarRecompensas('aniversario');
@@ -229,7 +233,12 @@ export default function HomeScreen() {
         onFinalizado={() => setPerdaVisivel(false)}
       />
 
-      <AniversarioModal visivel={aniversario.visivel} mensagem={aniversario.mensagem} onFechar={aniversario.fechar} />
+      <AniversarioModal
+        visivel={aniversario.visivel}
+        mensagem={aniversario.mensagem}
+        retrospectiva={retrospectivaAno}
+        onFechar={aniversario.fechar}
+      />
     </SafeAreaView>
   );
 }

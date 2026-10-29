@@ -7,5 +7,5 @@
 // Lembre de voltar para `null` antes de commitar.
 import type { CenarioDemo } from './dadosDemo';
 
-export const CENARIO_DEMO: CenarioDemo | null = 'mistura';
+export const CENARIO_DEMO: CenarioDemo | null = null;
 

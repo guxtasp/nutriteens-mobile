@@ -115,7 +115,7 @@ export function montarDadosBrutos(l: LinhasBrutas, dia: (ts: string) => DataISO 
   const totalPorTrilha = new Map<string, Set<string>>();
   for (const t of l.trilhas) {
     const ids = new Set<string>();
-    for (const m of lista(t.modulos_trilha as any[])) for (const li of lista(m.licoes as any[])) ids.add(li.id);
+    for (const m of lista(t.modulos_trilha as any[]) as any[]) for (const li of lista(m.licoes as any[]) as any[]) ids.add(li.id);
     totalPorTrilha.set(t.id, ids);
     ids.forEach((id) => trilhaDaLicao.set(id, t.id));
   }

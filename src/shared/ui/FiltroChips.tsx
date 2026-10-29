@@ -18,7 +18,7 @@ type Props = {
 
 export function FiltroChips({ opcoes, valor, onChange, rotuloTodos = 'Todos' }: Props) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.linha} keyboardShouldPersistTaps="handled">
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll} contentContainerStyle={styles.linha} keyboardShouldPersistTaps="handled">
       <Chip label={rotuloTodos} ativo={valor === null} onPress={() => onChange(null)} />
       {opcoes.map((o) => (
         <Chip key={o.chave} label={o.label} ativo={valor === o.chave} onPress={() => onChange(valor === o.chave ? null : o.chave)} />
@@ -41,6 +41,9 @@ function Chip({ label, ativo, onPress }: { label: string; ativo: boolean; onPres
 }
 
 const styles = StyleSheet.create({
+  // ScrollView horizontal nasce com flexGrow:1 e, dentro de uma coluna com lista embaixo,
+  // "come" a altura da tela (filtros gigantes, lista espremida). Trava na altura do conteúdo.
+  scroll: { flexGrow: 0, flexShrink: 0 },
   linha: { gap: 8, paddingVertical: 4, paddingRight: 8 },
   chip: { borderWidth: 1.5, borderColor: '#D9E2E8', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: '#fff' },
   chipAtivo: { backgroundColor: colors.primary, borderColor: colors.primary },

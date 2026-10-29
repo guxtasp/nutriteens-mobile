@@ -16,7 +16,7 @@ import type { LicaoEditavel } from '../../services/edicaoService';
 import { paraQuestoesDoApp, usaSessaoDePassos } from '../../utils/previa';
 import { QuadroCelular } from './QuadroCelular';
 
-export default function LicaoUsoPreview({ licao }: { licao: LicaoEditavel }) {
+export default function LicaoUsoPreview({ licao, aviso, altura }: { licao: LicaoEditavel; aviso?: string; altura?: number }) {
   const questoes = useMemo(() => paraQuestoesDoApp(licao.questoes) as unknown as QuestaoQuiz[], [licao]);
   const [rodada, setRodada] = useState(0);
   const [fim, setFim] = useState<{ acertos: number; total: number } | null>(null);
@@ -30,7 +30,7 @@ export default function LicaoUsoPreview({ licao }: { licao: LicaoEditavel }) {
   }
 
   return (
-    <QuadroCelular>
+    <QuadroCelular aviso={aviso} altura={altura}>
       {sessao && !fim && <ExercicioQuizContainer key={rodada} questoes={questoes} onConcluirTodas={(acertos, total) => setFim({ acertos, total })} />}
 
       {sessao && !!fim && (

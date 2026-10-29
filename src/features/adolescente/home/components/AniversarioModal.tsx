@@ -23,16 +23,21 @@ import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { feedbackAniversario } from '../../../../shared/audio/feedback';
 import type { MensagemAniversario } from '../utils/aniversario';
+import type { RetrospectivaAno } from '../../metricas/utils/retrospectivaSlides';
+import RetrospectivaSlides from './RetrospectivaSlides';
 
 type Props = {
   visivel: boolean;
   mensagem: MensagemAniversario | null;
+  /** "Seu ano com o Bróxis"; null = sem dados (o modal só mostra a mensagem e fecha) */
+  retrospectiva?: RetrospectivaAno | null;
   onFechar: () => void;
 };
 
-export default function AniversarioModal({ visivel, mensagem, onFechar }: Props) {
+export default function AniversarioModal({ visivel, mensagem, retrospectiva = null, onFechar }: Props) {
   const { width, height } = useWindowDimensions();
   const [reduzirMovimento, setReduzirMovimento] = useState(false);
+  const [etapa, setEtapa] = useState<'mensagem' | 'retrospectiva'>('mensagem');
 
   const mascoteScale = useRef(new Animated.Value(0.6)).current;
   const mascoteOpacity = useRef(new Animated.Value(0)).current;
@@ -50,6 +55,7 @@ export default function AniversarioModal({ visivel, mensagem, onFechar }: Props)
   useEffect(() => {
     if (!visivel) return;
 
+    setEtapa('mensagem');
     mascoteScale.setValue(0.6);
     mascoteOpacity.setValue(0);
     textoOpacity.setValue(0);
@@ -103,6 +109,7 @@ export default function AniversarioModal({ visivel, mensagem, onFechar }: Props)
           />
         </View>
 
+        {etapa === 'mensagem' || !retrospectiva ? (
         <View style={styles.conteudo}>
           <Animated.View
             style={[styles.mascoteArea, { opacity: mascoteOpacity, transform: [{ scale: mascoteScale }] }]}
@@ -129,10 +136,20 @@ export default function AniversarioModal({ visivel, mensagem, onFechar }: Props)
             <AppText style={styles.corpo}>{mensagem.corpo}</AppText>
           </Animated.View>
         </View>
+        ) : (
+          // etapa 2: "Seu ano com o Bróxis", em slides (tem os próprios botões)
+          <RetrospectivaSlides retrospectiva={retrospectiva} reduzirMovimento={reduzirMovimento} onFechar={onFechar} />
+        )}
 
-        <Animated.View style={[styles.botaoContainer, { opacity: botaoOpacity }]}>
-          <AppButton label="Valeu, Bróxis!" onPress={onFechar} />
-        </Animated.View>
+        {(etapa === 'mensagem' || !retrospectiva) && (
+          <Animated.View style={[styles.botaoContainer, { opacity: botaoOpacity }]}>
+            {retrospectiva ? (
+              <AppButton label="Ver meu ano com o Bróxis" onPress={() => setEtapa('retrospectiva')} />
+            ) : (
+              <AppButton label="Valeu, Bróxis!" onPress={onFechar} />
+            )}
+          </Animated.View>
+        )}
 
         {!reduzirMovimento && (
           <ConfettiCannon

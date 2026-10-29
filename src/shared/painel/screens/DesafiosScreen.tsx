@@ -16,12 +16,15 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { painel } from '../painelTheme';
 import type { ConfigPainel } from '../types';
+import { Ionicons } from '@expo/vector-icons';
+import { FormConquista, FormDesafioPeriodico } from '../components/FormulariosDesafio';
 import {
+  CRITERIO_LABEL, InsigniaPainel, definirInsigniaAtiva, listarInsignias,
   DesafioDiario, DesafioPeriodico, METRICA_LABEL, definirDesafioAtivo, listarDesafios,
 } from '../../../features/nutricionista/services/desafiosService';
 
 function CartaoDesafio(p: {
-  titulo: string; descricao: string; selos: string[]; ativa: boolean; uso: string; ocupado: boolean; erro?: string | null; onAlternar: () => void;
+  titulo: string; descricao: string; selos: string[]; ativa: boolean; uso: string; ocupado: boolean; erro?: string | null; onAlternar: () => void; onEditar?: () => void;
 }) {
   return (
     <View style={[styles.card, !p.ativa && styles.cardInativo]}>
@@ -33,7 +36,10 @@ function CartaoDesafio(p: {
       <AppText style={styles.descricao}>{p.descricao}</AppText>
       <AppText style={styles.uso}>{p.uso}</AppText>
       {!!p.erro && <AppText style={styles.erro}>{p.erro}</AppText>}
-      <View style={{ flexDirection: 'row' }}>
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+        {!!p.onEditar && (
+          <AppButton label="EDITAR" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} style={{ paddingHorizontal: 16, minHeight: 44 }} onPress={p.onEditar} />
+        )}
         <AppButton
           label={p.ativa ? 'DESATIVAR' : 'ATIVAR'}
           fullWidth={false}
@@ -56,12 +62,18 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [erroItem, setErroItem] = useState<{ ref: string; msg: string } | null>(null);
+  const [insignias, setInsignias] = useState<InsigniaPainel[]>([]);
+  // formulário aberto: null = nenhum; 'novo' = criar; objeto = editar
+  const [formDesafio, setFormDesafio] = useState<DesafioPeriodico | 'novo' | null>(null);
+  const [formConquista, setFormConquista] = useState<InsigniaPainel | 'novo' | null>(null);
 
   const carregar = useCallback(async () => {
     try {
       const r = await listarDesafios();
       setDiarios(r.diarios);
       setPeriodicos(r.periodicos);
+      // falha aqui (migration ainda não rodou) não derruba a tela dos desafios
+      setInsignias(await listarInsignias().catch(() => []));
       setErro(null);
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível carregar os desafios.');
@@ -90,14 +102,36 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
     }
   }
 
+  async function alternarInsignia(i: InsigniaPainel) {
+    setOcupado(i.id);
+    setErroItem(null);
+    try {
+      await definirInsigniaAtiva(i.id, !i.ativa);
+      await carregar();
+    } catch (e: any) {
+      setErroItem({ ref: i.id, msg: e?.message ?? 'Não foi possível alterar.' });
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  function salvou() {
+    setFormDesafio(null);
+    setFormConquista(null);
+    carregar();
+  }
+
+  const ROTULO_CAT: Record<string, string> = { conquista: 'Conquista', marco: 'Marco', insignia: 'Insígnia' };
+
   return (
-    <PainelLayout config={config} titulo="Desafios" subtitulo="Missões que os adolescentes recebem">
+    <PainelLayout config={config} titulo="Desafios e conquistas" subtitulo="Missões e reconhecimentos que os adolescentes recebem">
       <IntroSecao
         chave="painel_desafios"
         titulo="Como funcionam os desafios"
         linhas={[
           'Desafios diários: cada dia o adolescente recebe missões (ex.: beber água, registrar refeição). Ao concluir, ganha pontos.',
           'Desafios semanais e mensais: metas maiores, que somam vários dias de hábito.',
+          'Os desafios diários têm regras próprias no app, então aqui só dá para ativar ou desativar. Semanais, mensais, conquistas e marcos você cria e edita pelos botões.',
           'Desativar um desafio o tira dos próximos sorteios e metas; o histórico de quem já concluiu permanece.',
         ]}
       />
@@ -129,7 +163,14 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
             )}
           </CartaoSecao>
 
-          <CartaoSecao titulo={`Desafios semanais e mensais (${periodicos.length})`} ajuda="Metas acumuladas. 'Resgatado' = quantas vezes um adolescente completou a meta e recebeu os pontos.">
+          <CartaoSecao
+            titulo={`Desafios semanais e mensais (${periodicos.length})`}
+            ajuda="Metas acumuladas. 'Resgatado' = quantas vezes um adolescente completou a meta e recebeu os pontos. Aqui você cria e edita sem mexer em código."
+            direita={formDesafio ? undefined : <AppButton label="+ NOVO DESAFIO" fullWidth={false} size="compact" style={{ paddingHorizontal: 14, minHeight: 40 }} onPress={() => setFormDesafio('novo')} />}
+          >
+            {formDesafio && (
+              <FormDesafioPeriodico inicial={formDesafio === 'novo' ? null : formDesafio} onSalvo={salvou} onCancelar={() => setFormDesafio(null)} />
+            )}
             {periodicos.length === 0 ? (
               <VazioPainel titulo="Nenhum desafio periódico" texto="O catálogo de desafios semanais e mensais está vazio." />
             ) : (
@@ -145,7 +186,39 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
                     ocupado={ocupado === d.ref}
                     erro={erroItem?.ref === d.ref ? erroItem.msg : null}
                     onAlternar={() => alternar('PERIODICO', d.ref, d.ativa)}
+                    onEditar={() => setFormDesafio(d)}
                   />
+                ))}
+              </GridResponsiva>
+            )}
+          </CartaoSecao>
+
+          <CartaoSecao
+            titulo={`Conquistas, marcos e insígnias (${insignias.length})`}
+            ajuda="Reconhecimentos que o adolescente ganha sozinho ao atingir a meta. Conquistas e marcos podem ser criados aqui. Insígnias têm arte exclusiva e só entram pelo código do app; aqui dá para editar o texto e a meta delas."
+            direita={formConquista ? undefined : <AppButton label="+ NOVA" fullWidth={false} size="compact" style={{ paddingHorizontal: 14, minHeight: 40 }} onPress={() => setFormConquista('novo')} />}
+          >
+            {formConquista && (
+              <FormConquista inicial={formConquista === 'novo' ? null : formConquista} onSalvo={salvou} onCancelar={() => setFormConquista(null)} />
+            )}
+            {insignias.length === 0 && !formConquista ? (
+              <VazioPainel titulo="Nada por aqui ainda" texto="Se você acabou de atualizar o app, rode a migration migration_painel_mvp_final.sql no Supabase." />
+            ) : (
+              <GridResponsiva minItem={300} gap={12} maxColunas={3}>
+                {insignias.map((i) => (
+                  <View key={i.id}>
+                    <CartaoDesafio
+                      titulo={i.nome}
+                      descricao={i.descricao ?? ''}
+                      selos={[ROTULO_CAT[i.categoria] ?? i.categoria]}
+                      ativa={i.ativa}
+                      uso={`Ganha com ${i.min ?? '?'} ${CRITERIO_LABEL[i.tipo ?? ''] ?? i.tipo ?? ''} · Conquistada ${i.ganhas}x`}
+                      ocupado={ocupado === i.id}
+                      erro={erroItem?.ref === i.id ? erroItem.msg : null}
+                      onAlternar={() => alternarInsignia(i)}
+                      onEditar={() => setFormConquista(i)}
+                    />
+                  </View>
                 ))}
               </GridResponsiva>
             )}
