@@ -14,16 +14,10 @@ import { supabase } from '../../../lib/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
+import { mensagemErroLogin } from '../utils/loginErros';
+import { acessoProfissionalDisponivel } from '../utils/acessoProfissional';
 
 const LARGURA_DESKTOP = 760;
-
-const MENSAGEM_LOGIN_INVALIDO = 'Email ou senha incorretos';
-const MENSAGEM_FALHA_CONEXAO = 'Não conseguimos conectar agora. Verifique sua internet e tente de novo';
-
-function mensagemErroLogin(error: { name?: string; status?: number }): string {
-  const semConexao = error.name === 'AuthRetryableFetchError' || error.status === 0 || (error.status ?? 0) >= 500;
-  return semConexao ? MENSAGEM_FALHA_CONEXAO : MENSAGEM_LOGIN_INVALIDO;
-}
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -41,7 +35,7 @@ export default function LoginScreen({ navigation }: any) {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
 
     if (error) {
@@ -68,6 +62,13 @@ export default function LoginScreen({ navigation }: any) {
           crie uma conta aqui
         </AppText>
       </AppText>
+
+      {/* só no computador (ver acessoProfissional.ts) */}
+      {acessoProfissionalDisponivel(Platform.OS, width) && (
+        <Pressable onPress={() => navigation.navigate('LoginProfissional')} accessibilityRole="link" style={styles.linkProfissional}>
+          <AppText style={styles.link}>Sou nutricionista ou administrador</AppText>
+        </Pressable>
+      )}
 
       <LabeledInput
         label="Email"
@@ -163,6 +164,13 @@ const styles = StyleSheet.create({
   link: { 
     fontFamily: typography.bold, 
     textDecorationLine: 'underline' 
+  },
+  linkProfissional: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
+    marginTop: -16,
+    marginBottom: 8,
   },
   forgotPassword: { 
     fontFamily: typography.regular, 

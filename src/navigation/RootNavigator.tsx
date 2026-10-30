@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import OnboardingScreen from '../features/auth/screens/OnboardingScreen';
 import AppPresentationScreen from '../features/auth/presentation/AppPresentationScreen';
 import LoginScreen from '../features/auth/screens/LoginScreen';
+import LoginProfissionalScreen from '../features/auth/screens/LoginProfissionalScreen';
 import SignupScreen from '../features/auth/screens/SignupScreen';
 import EsqueciSenhaScreen from '../features/auth/screens/EsqueciSenhaScreen';
 import RedefinirSenhaScreen from '../features/auth/screens/RedefinirSenhaScreen';
@@ -24,6 +25,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   AppPresentation: undefined;
   Login: undefined;
+  LoginProfissional: undefined;
   Signup: undefined;
   EsqueciSenha: undefined;
   RedefinirSenha: undefined;
@@ -233,6 +235,7 @@ if (error?.code === 'PGRST116') {
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="AppPresentation" component={AppPresentationScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="LoginProfissional" component={LoginProfissionalScreen} />
           <Stack.Screen name="Signup" component={SignupScreen} />
           <Stack.Screen name="EsqueciSenha" component={EsqueciSenhaScreen} />
           <Stack.Screen
