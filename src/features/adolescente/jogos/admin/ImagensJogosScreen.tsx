@@ -1,21 +1,23 @@
 // Painel admin: enviar/trocar/remover a imagem de cada alimento dos jogos (Supabase Storage).
 // Imagem é só ilustração; não passa pelo fluxo de aprovação de conteúdo.
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { PainelLayout } from '../../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../../shared/painel/components/CartaoSecao';
 import { AppText } from '../../../../shared/ui/AppText';
-import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import { painel } from '../../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../../shared/painel/types';
 import { ALIMENTOS_NOVA, AlimentoNova } from '../data/alimentosNova';
 import { PARES_NUTRIENTE, ParNutriente } from '../data/paresNutriente';
 import ImagemAlimento from '../components/ImagemAlimento';
 import { listarParesNutriente, listarAlimentosJogo, listarImagensJogo, enviarImagemJogo, removerImagemJogo, MapaImagens } from '../services/imagensJogoService';
+import type { TemaPainel } from '../../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../../shared/painel/tema/TemaPainelContext';
 
 export default function ImagensJogosScreen({ config }: { config: ConfigPainel }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [imagens, setImagens] = useState<MapaImagens>({});
   const [alimentos, setAlimentos] = useState<AlimentoNova[]>(ALIMENTOS_NOVA);
   const [pares, setPares] = useState<ParNutriente[]>(PARES_NUTRIENTE);
@@ -60,7 +62,7 @@ export default function ImagensJogosScreen({ config }: { config: ConfigPainel })
       </Pressable>
       {!!imagens[id] && (
         <Pressable style={[styles.botao, styles.botaoSec]} disabled={ocupado === id} onPress={() => remover(id)} accessibilityRole="button">
-          <AppText style={[styles.botaoTexto, { color: colors.primaryDark }]}>REMOVER</AppText>
+          <AppText style={[styles.botaoTexto, { color: tema.texto }]}>REMOVER</AppText>
         </Pressable>
       )}
     </View>
@@ -80,12 +82,12 @@ export default function ImagensJogosScreen({ config }: { config: ConfigPainel })
   );
 }
 
-const styles = StyleSheet.create({
-  linha: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: painel.linhaSuave, flexWrap: 'wrap' },
-  nome: { flex: 1, minWidth: 120, fontFamily: typography.semiBold, fontSize: 14, color: colors.primaryDark },
-  botao: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: colors.primaryDark, justifyContent: 'center' },
-  botaoSec: { backgroundColor: colors.white, borderWidth: 2, borderColor: colors.primaryDark },
-  botaoTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.white },
-  erro: { fontFamily: typography.regular, fontSize: 13, color: colors.error },
-  ok: { fontFamily: typography.regular, fontSize: 13, color: colors.primaryDark },
-});
+const criarEstilos = (t: TemaPainel) => ({
+  linha: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.linhaSuave, flexWrap: 'wrap' },
+  nome: { flex: 1, minWidth: 120, fontFamily: typography.semiBold, fontSize: 14, color: t.texto },
+  botao: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: t.botaoFundo, justifyContent: 'center' },
+  botaoSec: { backgroundColor: t.card, borderWidth: 2, borderColor: t.texto },
+  botaoTexto: { fontFamily: typography.bold, fontSize: 12, color: t.botaoTexto },
+  erro: { fontFamily: typography.regular, fontSize: 13, color: t.erro },
+  ok: { fontFamily: typography.regular, fontSize: 13, color: t.texto },
+}) as const;

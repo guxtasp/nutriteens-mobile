@@ -4,13 +4,15 @@
 // aberto (selecionado) mostra o formulário do passo. Tocar em qualquer parte do bloco o
 // seleciona — e a prévia ao vivo passa a começar nele.
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { AppText } from '../../../shared/ui/AppText';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { ROTULO_FORMATO } from '../utils/descreverQuestao';
 import { CATEGORIA_DO_FORMATO, COR_CATEGORIA, resumoDoBloco } from '../utils/blocos';
 import type { PassoEdicao } from '../utils/passosEdicao';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos } from '../../../shared/painel/tema/TemaPainelContext';
 
 type Props = {
   passo: PassoEdicao;
@@ -27,6 +29,7 @@ type Props = {
 };
 
 function Botao({ rotulo, acessivel, onPress, desativado }: { rotulo: string; acessivel: string; onPress: () => void; desativado?: boolean }) {
+  const styles = useEstilos(criarEstilos);
   return (
     <Pressable
       onPress={onPress}
@@ -42,6 +45,7 @@ function Botao({ rotulo, acessivel, onPress, desativado }: { rotulo: string; ace
 }
 
 export default function BlocoPasso({ passo, indice, total, selecionado, incompleto, erros, onSelecionar, onMover, onDuplicar, onRemover, children }: Props) {
+  const styles = useEstilos(criarEstilos);
   const cor = COR_CATEGORIA[CATEGORIA_DO_FORMATO[passo.formato]];
 
   return (
@@ -84,7 +88,7 @@ export default function BlocoPasso({ passo, indice, total, selecionado, incomple
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   bloco: { borderWidth: 2, borderRadius: 14, marginTop: 6, minWidth: 0 },
   selecionado: { borderWidth: 3 },
   // o "dente" no topo que dá o jeito de peça encaixável
@@ -92,12 +96,12 @@ const styles = StyleSheet.create({
   cabeca: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderTopLeftRadius: 11, borderTopRightRadius: 11, borderBottomWidth: 2, minHeight: 48 },
   titulos: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36 },
   titulo: { fontFamily: typography.bold, fontSize: 14, color: colors.white, flexShrink: 1 },
-  incompleto: { fontFamily: typography.bold, fontSize: 10, color: '#7A5B00', backgroundColor: '#FFF4CC', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
+  incompleto: { fontFamily: typography.bold, fontSize: 10, color: t.selos.aviso.texto, backgroundColor: t.alertaSuave, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
   botoes: { flexDirection: 'row', gap: 6 },
   botao: { minWidth: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.28)' },
   botaoTexto: { fontFamily: typography.bold, fontSize: 15, color: colors.white },
   corpo: { padding: 14, gap: 12 },
   resumoLinha: { paddingHorizontal: 14, paddingVertical: 12, gap: 4 },
-  resumo: { fontFamily: typography.regular, fontSize: 14, color: colors.textOnLight, lineHeight: 20 },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-});
+  resumo: { fontFamily: typography.regular, fontSize: 14, color: t.textoCorpo, lineHeight: 20 },
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+}) as const;

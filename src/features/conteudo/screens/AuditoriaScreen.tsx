@@ -1,19 +1,19 @@
 // src/features/conteudo/screens/AuditoriaScreen.tsx
 // Histórico imutável: quem fez o quê, quando, em qual versão e por quê.
 import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { AppText } from '../../../shared/ui/AppText';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { listarAuditoria, type RegistroAuditoria } from '../services/fluxoService';
 import { ACAO_LABEL, STATUS_LABEL, TIPO_LABEL, formatarDataHora, type StatusFluxo, type TipoConteudo } from '../utils/fluxo';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos } from '../../../shared/painel/tema/TemaPainelContext';
 
 const FILTROS: { chave: string; label: string; tipo?: TipoConteudo }[] = [
   { chave: 'TODOS', label: 'Tudo' },
@@ -25,6 +25,7 @@ const FILTROS: { chave: string; label: string; tipo?: TipoConteudo }[] = [
 const rotuloStatus = (s: string | null) => (s ? STATUS_LABEL[s as StatusFluxo] ?? s : null);
 
 export default function AuditoriaScreen({ config }: { config: ConfigPainel }) {
+  const styles = useEstilos(criarEstilos);
   const [registros, setRegistros] = useState<RegistroAuditoria[]>([]);
   const [filtro, setFiltro] = useState('TODOS');
   const [carregando, setCarregando] = useState(true);
@@ -104,18 +105,18 @@ export default function AuditoriaScreen({ config }: { config: ConfigPainel }) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   filtros: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: painel.cardBorda, backgroundColor: painel.card, alignItems: 'center', justifyContent: 'center' },
-  chipAtivo: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-  chipTextoAtivo: { color: colors.white },
-  linha: { borderTopWidth: 1, borderTopColor: painel.linhaSuave, paddingTop: 10, gap: 2 },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center' },
+  chipAtivo: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
+  chipTextoAtivo: { color: t.chipAtivoTexto },
+  linha: { borderTopWidth: 1, borderTopColor: t.linhaSuave, paddingTop: 10, gap: 2 },
   linhaTopo: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
-  acao: { fontFamily: typography.bold, fontSize: 13, color: colors.primaryDark },
-  quando: { fontFamily: typography.regular, fontSize: 11, color: painel.textoSuave },
-  titulo: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight },
-  meta: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-  motivo: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-  vazio: { fontFamily: typography.regular, fontSize: 13, color: painel.textoSuave },
-});
+  acao: { fontFamily: typography.bold, fontSize: 13, color: t.texto },
+  quando: { fontFamily: typography.regular, fontSize: 11, color: t.textoSuave },
+  titulo: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo },
+  meta: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+  motivo: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+  vazio: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave },
+}) as const;

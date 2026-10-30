@@ -1,7 +1,7 @@
 // src/shared/painel/screens/AnalyticsScreen.tsx
 // Analytics de utilização (Admin e Nutricionista). Só agregados; sem dados pessoais.
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { PainelLayout } from '../PainelLayout';
 import { IntroSecao } from '../components/IntroSecao';
 import { CartaoKpi } from '../components/CartaoKpi';
@@ -17,8 +17,9 @@ import { taxaAbandono } from '../services/analyticsService';
 import { ultimosDias } from '../periodo';
 import { AppText } from '../../ui/AppText';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
 import type { ConfigPainel } from '../types';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos } from '../tema/TemaPainelContext';
 
 const ROTULO_ABANDONO = { licao: 'Lições', receita: 'Receitas' } as const;
 
@@ -27,6 +28,7 @@ function pct(parte: number, base: number): string {
 }
 
 export default function AnalyticsScreen({ config }: { config: ConfigPainel }) {
+  const styles = useEstilos(criarEstilos);
   const [escolha, setEscolha] = useState<EscolhaPeriodo>({ tipo: 'dias', dias: 30 });
   const intervalo = useMemo(
     () => (escolha.tipo === 'dias' ? ultimosDias(escolha.dias) : escolha.intervalo),
@@ -162,7 +164,7 @@ export default function AnalyticsScreen({ config }: { config: ConfigPainel }) {
   );
 }
 
-const styles = StyleSheet.create({
-  aviso: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda, padding: 14 },
-  avisoTexto: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-});
+const criarEstilos = (t: TemaPainel) => ({
+  aviso: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14 },
+  avisoTexto: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+}) as const;

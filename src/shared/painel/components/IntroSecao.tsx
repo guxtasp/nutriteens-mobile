@@ -2,13 +2,13 @@
 // Mensagem introdutória de uma seção ("o que é, o que dá pra fazer, quem pode o quê").
 // Aparece no primeiro acesso; "Entendi" esconde e lembra a escolha neste aparelho.
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppText } from '../../ui/AppText';
-import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 
 type Props = {
   /** identifica a seção para lembrar que já foi lida */
@@ -21,6 +21,8 @@ type Props = {
 const PREFIXO = 'painel_intro_v1_';
 
 export function IntroSecao({ chave, titulo, linhas }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [visivel, setVisivel] = useState(false);
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function IntroSecao({ chave, titulo, linhas }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.topo}>
-        <Ionicons name="bulb-outline" size={20} color={colors.primaryDark} />
+        <Ionicons name="bulb-outline" size={20} color={tema.destaque} />
         <AppText style={styles.titulo}>{titulo}</AppText>
       </View>
       {linhas.map((l, i) => (
@@ -57,19 +59,11 @@ export function IntroSecao({ chave, titulo, linhas }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#F3F9EC',
-    borderRadius: painel.cardRaio,
-    borderWidth: 2,
-    borderColor: '#CFE6B8',
-    padding: 14,
-    gap: 6,
-    marginBottom: 12,
-  },
-  topo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  titulo: { flex: 1, fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
-  linha: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight, lineHeight: 19 },
-  botao: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center', paddingHorizontal: 6 },
-  botaoTexto: { fontFamily: typography.bold, fontSize: 13, color: colors.info },
+const criarEstilos = (t: TemaPainel) => ({
+  card: { backgroundColor: t.dicaFundo, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.dicaBorda, padding: 14, gap: 6, marginBottom: 12 } as const,
+  topo: { flexDirection: 'row', alignItems: 'center', gap: 8 } as const,
+  titulo: { flex: 1, fontFamily: typography.bold, fontSize: 14, color: t.texto } as const,
+  linha: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo, lineHeight: 19 } as const,
+  botao: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center', paddingHorizontal: 6 } as const,
+  botaoTexto: { fontFamily: typography.bold, fontSize: 13, color: t.info } as const,
 });

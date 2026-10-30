@@ -2,7 +2,7 @@
 // Lista do fluxo de aprovação (Conteúdos, Trilhas, Receitas e fila de Aprovações).
 // Cards em grade responsiva: no celular empilham, no desktop viram colunas.
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { GridResponsiva } from '../../../shared/painel/components/GridResponsiva';
@@ -11,12 +11,13 @@ import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
 import { AjudaInfo } from '../../../shared/painel/components/AjudaInfo';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { listarFluxo, transicionar, type ItemFluxo } from '../services/fluxoService';
 import { obterPapelAtual } from '../services/conteudoService';
+import { useCoresTom } from '../hooks/useCoresTom';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import {
   ACOES_DECISAO,
   STATUS_AJUDA,
@@ -53,13 +54,6 @@ const FILTROS: { chave: string; label: string; status?: StatusFluxo[] }[] = [
 ];
 const STATUS_FILA: StatusFluxo[] = ['AGUARDANDO_APROVACAO', 'APROVADO'];
 
-const COR_TOM: Record<TomStatus, { fundo: string; texto: string }> = {
-  neutro: { fundo: '#EEF0EF', texto: '#4B4B4B' },
-  espera: { fundo: colors.warningSoft, texto: colors.warningShadow },
-  ok: { fundo: colors.exercicioAcertoFundo, texto: colors.primaryDark },
-  publicado: { fundo: colors.primaryDark, texto: colors.white },
-  erro: { fundo: colors.exercicioErroSuave, texto: colors.error },
-};
 
 function CartaoConteudo({
   item,
@@ -74,9 +68,12 @@ function CartaoConteudo({
   origem: string;
   aoMudar: () => void;
 }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const tom = COR_TOM[tomDoStatus(item.status)];
+  const coresTom = useCoresTom();
+  const tom = coresTom[tomDoStatus(item.status)];
   // decisões (aprovar, rejeitar, publicar) só depois de abrir e ler o conteúdo
   const acoes = acoesPermitidas(papel, item.status).filter((a) => !ACOES_DECISAO.includes(a));
   const decide = acoesPermitidas(papel, item.status).some((a) => ACOES_DECISAO.includes(a));
@@ -141,8 +138,8 @@ function CartaoConteudo({
           fullWidth={false}
           size="compact"
           {...(decide
-            ? { backgroundColor: colors.primaryDark, textColor: colors.white, shadowColor: '#123024' }
-            : { outlineColor: colors.primaryDark, textColor: colors.primaryDark })}
+            ? { backgroundColor: tema.botaoFundo, textColor: tema.botaoTexto, shadowColor: tema.botaoSombra }
+            : { outlineColor: tema.texto, textColor: tema.texto })}
           disabled={ocupado}
           style={styles.botao}
           onPress={abrir}
@@ -154,8 +151,8 @@ function CartaoConteudo({
             fullWidth={false}
             size="compact"
             {...(a === 'ENVIAR'
-              ? { backgroundColor: colors.primaryDark, textColor: colors.white, shadowColor: '#123024' }
-              : { outlineColor: colors.primaryDark, textColor: colors.primaryDark })}
+              ? { backgroundColor: tema.botaoFundo, textColor: tema.botaoTexto, shadowColor: tema.botaoSombra }
+              : { outlineColor: tema.texto, textColor: tema.texto })}
             disabled={ocupado}
             style={styles.botao}
             onPress={() => aoToque(a)}
@@ -167,6 +164,8 @@ function CartaoConteudo({
 }
 
 export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, fila }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const navigation = useNavigation<any>();
   const origem = useRoute().name;
   const [itens, setItens] = useState<ItemFluxo[]>([]);
@@ -221,9 +220,9 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
                 label="+ NOVA TRILHA"
                 fullWidth={false}
                 size="compact"
-                backgroundColor={colors.primaryDark}
-                textColor={colors.white}
-                shadowColor="#123024"
+                backgroundColor={tema.botaoFundo}
+                textColor={tema.botaoTexto}
+                shadowColor={tema.botaoSombra}
                 style={styles.botao}
                 onPress={() => navigation.navigate('EditarTrilha', { origem })}
               />
@@ -233,9 +232,9 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
                 label="+ NOVA RECEITA"
                 fullWidth={false}
                 size="compact"
-                backgroundColor={colors.primaryDark}
-                textColor={colors.white}
-                shadowColor="#123024"
+                backgroundColor={tema.botaoFundo}
+                textColor={tema.botaoTexto}
+                shadowColor={tema.botaoSombra}
                 style={styles.botao}
                 onPress={() => navigation.navigate('EditarReceita', { origem })}
               />
@@ -307,37 +306,37 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
 }
 
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   filtros: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   chip: {
-    minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: painel.cardBorda,
-    backgroundColor: painel.card, alignItems: 'center', justifyContent: 'center',
+    minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda,
+    backgroundColor: t.card, alignItems: 'center', justifyContent: 'center',
   },
-  chipAtivo: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-  chipTextoAtivo: { color: colors.white },
+  chipAtivo: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
+  chipTextoAtivo: { color: t.chipAtivoTexto },
   card: {
-    backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda,
+    backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda,
     padding: 16, gap: 10, minWidth: 0,
   },
   linhaTopo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  chipTipo: { backgroundColor: '#EAF5DE', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
-  chipTipoTexto: { fontFamily: typography.bold, fontSize: 11, color: colors.primaryDark },
+  chipTipo: { backgroundColor: t.destaqueSuave, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
+  chipTipoTexto: { fontFamily: typography.bold, fontSize: 11, color: t.texto },
   badge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
   badgeTexto: { fontFamily: typography.bold, fontSize: 11 },
-  versao: { fontFamily: typography.regular, fontSize: 11, color: painel.textoSuave, marginLeft: 'auto' },
-  titulo: { fontFamily: typography.bold, fontSize: 15, color: colors.primaryDark },
-  meta: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-  motivo: { backgroundColor: colors.exercicioErroSuave + '55', borderRadius: 12, padding: 10, gap: 2 },
-  motivoTitulo: { fontFamily: typography.bold, fontSize: 12, color: colors.error },
-  motivoTexto: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight },
+  versao: { fontFamily: typography.regular, fontSize: 11, color: t.textoSuave, marginLeft: 'auto' },
+  titulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto },
+  meta: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+  motivo: { backgroundColor: t.selos.erro.fundo + '55', borderRadius: 12, padding: 10, gap: 2 },
+  motivoTitulo: { fontFamily: typography.bold, fontSize: 12, color: t.erro },
+  motivoTexto: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo },
   input: {
-    minHeight: 72, borderWidth: 2, borderColor: painel.cardBorda, borderRadius: 12, padding: 10,
-    fontFamily: typography.regular, fontSize: 14, color: colors.textOnLight, textAlignVertical: 'top',
+    minHeight: 72, borderWidth: 2, borderColor: t.cardBorda, borderRadius: 12, padding: 10,
+    fontFamily: typography.regular, fontSize: 14, color: t.textoCorpo, textAlignVertical: 'top',
   },
   acoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   botao: { paddingHorizontal: 14, minHeight: 44 },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-  vazio: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda, padding: 32, alignItems: 'center' },
-  vazioTexto: { fontFamily: typography.regular, fontSize: 13, color: painel.textoSuave },
-});
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+  vazio: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 32, alignItems: 'center' },
+  vazioTexto: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave },
+}) as const;

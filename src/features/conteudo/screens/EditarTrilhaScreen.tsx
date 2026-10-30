@@ -4,7 +4,7 @@
 // Reordenar e excluir são atômicos no banco (migration_trilha_estrutura.sql); excluir é bloqueado
 // se adolescentes já concluíram a lição. O status (rascunho/revisão/publicado) NÃO muda aqui.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
@@ -13,9 +13,7 @@ import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import {
   TrilhaEditavel, TrilhaOrdemLinha, buscarTrilhaEditavel, criarModulo, criarTrilha, excluirItem, listarTemas,
@@ -27,6 +25,8 @@ import { AvisoEdicao, BarraSalvar, campoMultilinha } from '../components/CamposE
 import { MiniBotao } from '../components/MiniBotao';
 import PreviaTrilhaAoVivo from '../components/preview/PreviaTrilhaAoVivo';
 import { BotaoComoCriar } from '../components/GuiaCriacao';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import {
   XP_BONUS_PADRAO_MODULO, XP_BONUS_PADRAO_TRILHA, avisoOrdemTrilha, idsAposMover, lerXpBonus, posicaoNoCaminho, proximaOrdemTrilha,
   textoConfirmaExclusao, textoPosicaoNoCaminho, validarModulo, validarTrilha,
@@ -38,6 +38,8 @@ type Exclusao = { nivel: 'MODULO' | 'LICAO'; id: string; titulo: string; qtdLico
 const txtXp = (v: number | null | undefined) => (v === null || v === undefined ? '' : String(v));
 
 export default function EditarTrilhaScreen({ config, route }: Props) {
+  const { tema: cores } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const trilhaId = route.params?.trilhaId;
   const origem = route.params?.origem;
   const criando = !trilhaId;
@@ -206,8 +208,8 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
       <View style={styles.confirma}>
         <AppText style={styles.confirmaTexto}>{textoConfirmaExclusao(alvo.nivel, alvo.titulo, alvo.qtdLicoes)}</AppText>
         <View style={styles.linhaBotoes}>
-          <AppButton label="EXCLUIR" fullWidth={false} size="compact" backgroundColor={colors.error} textColor={colors.white} shadowColor="#7a1f1f" disabled={ocupado} style={styles.botaoPequeno} onPress={confirmarExclusao} />
-          <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} style={styles.botaoPequeno} onPress={() => setExcluindo(null)} />
+          <AppButton label="EXCLUIR" fullWidth={false} size="compact" backgroundColor={cores.erro} textColor={cores.botaoTexto} shadowColor="#7a1f1f" disabled={ocupado} style={styles.botaoPequeno} onPress={confirmarExclusao} />
+          <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={cores.texto} textColor={cores.texto} style={styles.botaoPequeno} onPress={() => setExcluindo(null)} />
         </View>
       </View>
     );
@@ -226,7 +228,7 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
               <View style={styles.chips} accessibilityRole="tablist">
                 {([['editar', 'Editar trilha'], ['previa', 'Prévia ao vivo']] as const).map(([id, rotulo]) => (
                   <Pressable key={id} onPress={() => setAba(id)} accessibilityRole="tab" accessibilityState={{ selected: aba === id }} style={[styles.chip, aba === id && styles.chipOn]}>
-                    <AppText style={[styles.chipTexto, aba === id && { color: colors.white }]}>{rotulo}</AppText>
+                    <AppText style={[styles.chipTexto, aba === id && { color: cores.botaoTexto }]}>{rotulo}</AppText>
                   </Pressable>
                 ))}
               </View>
@@ -256,7 +258,7 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
                 <View style={styles.chips}>
                   {temas.map((t) => (
                     <Pressable key={t} onPress={() => setTema(t)} accessibilityRole="button" style={[styles.chip, tema === t && styles.chipOn]}>
-                      <AppText style={[styles.chipTexto, tema === t && { color: colors.white }]}>{t.replace(/_/g, ' ').toLowerCase()}</AppText>
+                      <AppText style={[styles.chipTexto, tema === t && { color: cores.botaoTexto }]}>{t.replace(/_/g, ' ').toLowerCase()}</AppText>
                     </Pressable>
                   ))}
                 </View>
@@ -275,7 +277,7 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
             {!criando && <AppText style={styles.suave}>Mudar título, descrição, tema, ordem ou XP bônus de uma trilha já enviada ou publicada conta como edição: o Administrador a devolve para rascunho (ela sai do ar até a nutricionista aprovar de novo); a nutricionista mantém o status e a versão sobe.</AppText>}
             {!criando && trilha && (
               <View style={{ flexDirection: 'row' }}>
-                <AppButton label="PRÉ-VISUALIZAR TRILHA" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} style={styles.botaoPequeno} onPress={() => navigation.navigate('TrilhaPreview', { trilhaId: trilha.id, origem })} />
+                <AppButton label="PRÉ-VISUALIZAR TRILHA" fullWidth={false} size="compact" outlineColor={cores.texto} textColor={cores.texto} style={styles.botaoPequeno} onPress={() => navigation.navigate('TrilhaPreview', { trilhaId: trilha.id, origem })} />
               </View>
             )}
             <BarraSalvar
@@ -308,7 +310,7 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
                     </View>
                     <View style={styles.linhaBotoes}>
                       {sujo && (
-                        <AppButton label="SALVAR MÓDULO" fullWidth={false} size="compact" backgroundColor={colors.primaryDark} textColor={colors.white} shadowColor="#123024" disabled={ocupado} style={styles.botaoPequeno} onPress={() => salvarDadosModulo(m.id)} />
+                        <AppButton label="SALVAR MÓDULO" fullWidth={false} size="compact" backgroundColor={cores.botaoFundo} textColor={cores.botaoTexto} shadowColor={cores.botaoSombra} disabled={ocupado} style={styles.botaoPequeno} onPress={() => salvarDadosModulo(m.id)} />
                       )}
                       <MiniBotao label="↑" acessibilidade="Mover módulo para cima" desativado={ocupado || mi === 0} onPress={() => moverItem('MODULO', trilha.id, idsModulos, mi, -1)} />
                       <MiniBotao label="↓" acessibilidade="Mover módulo para baixo" desativado={ocupado || mi === trilha.modulos.length - 1} onPress={() => moverItem('MODULO', trilha.id, idsModulos, mi, 1)} />
@@ -340,8 +342,8 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
                           label={rotulo}
                           fullWidth={false}
                           size="compact"
-                          outlineColor={colors.primaryDark}
-                          textColor={colors.primaryDark}
+                          outlineColor={cores.texto}
+                          textColor={cores.texto}
                           style={styles.botaoPequeno}
                           onPress={() => navigation.navigate('EditarLicao', { moduloId: m.id, origem, tipoNovo, proximaOrdem: (m.licoes.reduce((x, l) => Math.max(x, l.ordem), 0) || 0) + 1 })}
                         />
@@ -352,7 +354,7 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
               })}
               <LabeledInput label="Novo módulo" value={novoModulo} onChangeText={setNovoModulo} placeholder="Nome do módulo" maxLength={120} />
               <View style={{ flexDirection: 'row' }}>
-                <AppButton label="ADICIONAR MÓDULO" fullWidth={false} size="compact" backgroundColor={colors.primaryDark} textColor={colors.white} shadowColor="#123024" disabled={ocupado} style={styles.botaoPequeno} onPress={adicionarModulo} />
+                <AppButton label="ADICIONAR MÓDULO" fullWidth={false} size="compact" backgroundColor={cores.botaoFundo} textColor={cores.botaoTexto} shadowColor={cores.botaoSombra} disabled={ocupado} style={styles.botaoPequeno} onPress={adicionarModulo} />
               </View>
               {!!erro && <AppText style={styles.erro}>{erro}</AppText>}
               {!!msg && <AppText style={styles.ok}>{msg}</AppText>}
@@ -373,26 +375,26 @@ export default function EditarTrilhaScreen({ config, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   coluna: { gap: 16 },
   linhaLarga: { flexDirection: 'row', gap: 24 },
   colEditor: { flex: 1, minWidth: 0, gap: 16 },
   colPrevia: { width: 420 },
-  rotulo: { fontFamily: typography.regular, fontSize: 14, color: colors.primaryDark },
-  suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
-  alerta: { fontFamily: typography.semiBold, fontSize: 12, color: colors.warningShadow, backgroundColor: colors.warningSoft, borderRadius: 10, padding: 10, lineHeight: 17 },
+  rotulo: { fontFamily: typography.regular, fontSize: 14, color: t.texto },
+  suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
+  alerta: { fontFamily: typography.semiBold, fontSize: 12, color: t.selos.aviso.texto, backgroundColor: t.alertaSuave, borderRadius: 10, padding: 10, lineHeight: 17 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: painel.cardBorda, justifyContent: 'center', backgroundColor: painel.card },
-  chipOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark, textTransform: 'capitalize' },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
+  chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto, textTransform: 'capitalize' },
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   linhaBotoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  modulo: { borderWidth: 2, borderColor: painel.cardBorda, borderRadius: 14, padding: 12, gap: 8 },
-  licao: { borderTopWidth: 1, borderTopColor: '#EFEFEF', paddingVertical: 4, gap: 6 },
-  licaoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.textOnLight },
-  confirma: { backgroundColor: colors.warningSoft, borderRadius: 12, padding: 12, gap: 8 },
-  confirmaTexto: { fontFamily: typography.semiBold, fontSize: 13, color: colors.warningShadow, lineHeight: 18 },
+  modulo: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 8 },
+  licao: { borderTopWidth: 1, borderTopColor: t.linhaSuave, paddingVertical: 4, gap: 6 },
+  licaoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.textoCorpo },
+  confirma: { backgroundColor: t.alertaSuave, borderRadius: 12, padding: 12, gap: 8 },
+  confirmaTexto: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.aviso.texto, lineHeight: 18 },
   botaoPequeno: { paddingHorizontal: 14, minHeight: 44 },
-  erro: { fontFamily: typography.regular, fontSize: 13, color: colors.error },
-  ok: { fontFamily: typography.semiBold, fontSize: 13, color: '#2F6B12', backgroundColor: '#E2F3D3', borderRadius: 10, padding: 10 },
-});
+  erro: { fontFamily: typography.regular, fontSize: 13, color: t.erro },
+  ok: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto, backgroundColor: t.destaqueSuave, borderRadius: 10, padding: 10 },
+}) as const;

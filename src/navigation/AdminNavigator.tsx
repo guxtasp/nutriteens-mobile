@@ -26,7 +26,8 @@ import EditarTrocaScreen from '../features/conteudo/screens/EditarTrocaScreen';
 import ConteudoDetalheScreen from '../features/conteudo/screens/ConteudoDetalheScreen';
 import SolicitacoesScannerScreen from '../features/adolescente/scanner/screens/SolicitacoesScannerScreen';
 import LicaoPreviewScreen from '../features/conteudo/screens/LicaoPreviewScreen';
-import GuiaCriacaoScreen from '../features/conteudo/screens/GuiaCriacaoScreen';
+import ExportarDadosScreen from '../shared/painel/screens/ExportarDadosScreen';
+import ReceitasListaScreen from '../features/conteudo/screens/ReceitasListaScreen';
 
 export type AdminStackParamList = {
   AdminDashboard: undefined;
@@ -43,6 +44,7 @@ export type AdminStackParamList = {
   AdminDesafios: undefined;
   AdminModeracao: undefined;
   Metricas: undefined;
+  AdminExportar: undefined;
   AdminAuditoria: undefined;
   AdminConfiguracoes: undefined;
   ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string; origem?: string };
@@ -54,7 +56,6 @@ export type AdminStackParamList = {
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
   EditarReceita: { receitaId?: string; origem?: string } | undefined;
   EditarTroca: { trocaId: string; origem?: string };
-  GuiaCriacao: { passo?: number } | undefined;
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -77,13 +78,14 @@ const AlimentoFormNoPainel = comPainel(AlimentoFormScreen, 'Alimento', { voltar:
 const MetricasNoPainel = () => <AnalyticsScreen config={ADMIN_PAINEL} />;
 const DetalheNoPainel = (props: any) => <ConteudoDetalheScreen config={ADMIN_PAINEL} route={props.route} />;
 const LicaoPreviewNoPainel = comPainel(LicaoPreviewScreen, 'Lição', { voltar: true });
-const Receitas = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Receitas" subtitulo="Consulte, organize e envie receitas para revisão" tipo="RECEITA" />;
+const Receitas = () => <ReceitasListaScreen config={ADMIN_PAINEL} />;
 const Conteudos = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Conteúdos" subtitulo="Consulte tudo que passa pela aprovação da nutricionista" />;
 const Trilhas = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Trilhas" subtitulo="Organize e envie trilhas para aprovação" tipo="TRILHA" />;
 const Trocas = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Alternativas" subtitulo="Consulte as justificativas e envie para revisão" tipo="TROCA" />;
 const ProdutosScanner = () => <SolicitacoesScannerScreen config={ADMIN_PAINEL} />;
 const Auditoria = () => <AuditoriaScreen config={ADMIN_PAINEL} />;
 const Desafios = () => <DesafiosScreen config={ADMIN_PAINEL} />;
+const Exportar = () => <ExportarDadosScreen config={ADMIN_PAINEL} />;
 const EditarTrilha = (props: any) => <EditarTrilhaScreen config={ADMIN_PAINEL} route={props.route} />;
 const EditarLicao = (props: any) => <EditarLicaoScreen config={ADMIN_PAINEL} route={props.route} />;
 const EditarReceita = (props: any) => <EditarReceitaScreen config={ADMIN_PAINEL} route={props.route} />;
@@ -91,7 +93,6 @@ const TrilhaPreview = (props: any) => <TrilhaPreviewScreen config={ADMIN_PAINEL}
 const ReceitaPreview = (props: any) => <ReceitaPreviewScreen config={ADMIN_PAINEL} route={props.route} />;
 const ImagensJogos = () => <ImagensJogosScreen config={ADMIN_PAINEL} />;
 const EditarTroca = (props: any) => <EditarTrocaScreen config={ADMIN_PAINEL} route={props.route} />;
-const GuiaCriacao = (props: any) => <GuiaCriacaoScreen config={ADMIN_PAINEL} route={props.route} />;
 
 export default function AdminNavigator() {
   return (
@@ -112,6 +113,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminDesafios" component={Desafios} />
       <Stack.Screen name="AdminModeracao" component={ModeracaoScreen} />
       <Stack.Screen name="Metricas" component={MetricasNoPainel} />
+      <Stack.Screen name="AdminExportar" component={Exportar} />
       <Stack.Screen name="AdminAuditoria" component={Auditoria} />
       <Stack.Screen name="AdminConfiguracoes" component={ConfiguracoesScreen} />
       <Stack.Screen name="ConteudoDetalhe" component={DetalheNoPainel} />
@@ -122,7 +124,6 @@ export default function AdminNavigator() {
       <Stack.Screen name="TrilhaPreview" component={TrilhaPreview} />
       <Stack.Screen name="ReceitaPreview" component={ReceitaPreview} />
       <Stack.Screen name="EditarTroca" component={EditarTroca} />
-      <Stack.Screen name="GuiaCriacao" component={GuiaCriacao} />
     </Stack.Navigator>
   );
 }

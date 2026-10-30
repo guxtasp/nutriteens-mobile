@@ -3,12 +3,13 @@
 // Gráfico de evolução temporal em SVG puro (react-native-svg, já no projeto).
 // Largura vem do container (onLayout) — sem largura fixa.
 import React, { useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { LayoutChangeEvent, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import { AppText } from '../../ui/AppText';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
 import { diaCurto } from '../formatadores';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 
 export type SerieLinha = { nome: string; cor?: string; valores: number[] };
 type Props = {
@@ -21,6 +22,8 @@ type Props = {
 const M = { t: 10, r: 10, b: 24, l: 34 };
 
 export function GraficoLinha({ dias, series, altura = 190 }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [largura, setLargura] = useState(0);
   const n = dias.length;
   const max = Math.max(1, ...series.flatMap((s) => s.valores));
@@ -45,7 +48,7 @@ export function GraficoLinha({ dias, series, altura = 190 }: Props) {
         <View style={styles.legenda}>
           {series.map((s, i) => (
             <View key={s.nome} style={styles.legendaItem}>
-              <View style={[styles.legendaPonto, { backgroundColor: s.cor ?? painel.serie[i % painel.serie.length] }]} />
+              <View style={[styles.legendaPonto, { backgroundColor: s.cor ?? tema.serie[i % tema.serie.length] }]} />
               <AppText style={styles.legendaTexto}>{s.nome}</AppText>
             </View>
           ))}
@@ -56,8 +59,8 @@ export function GraficoLinha({ dias, series, altura = 190 }: Props) {
           <Svg width={largura} height={altura}>
             {ticks.map((t) => (
               <React.Fragment key={t}>
-                <Line x1={M.l} x2={M.l + w} y1={y(t)} y2={y(t)} stroke={painel.linhaSuave} strokeWidth={1} />
-                <SvgText x={M.l - 6} y={y(t) + 4} fontSize={10} fill={painel.textoSuave} textAnchor="end" fontFamily={typography.regular}>
+                <Line x1={M.l} x2={M.l + w} y1={y(t)} y2={y(t)} stroke={tema.linhaSuave} strokeWidth={1} />
+                <SvgText x={M.l - 6} y={y(t) + 4} fontSize={10} fill={tema.textoSuave} textAnchor="end" fontFamily={typography.regular}>
                   {t}
                 </SvgText>
               </React.Fragment>
@@ -68,7 +71,7 @@ export function GraficoLinha({ dias, series, altura = 190 }: Props) {
                 x={x(i)}
                 y={altura - 6}
                 fontSize={10}
-                fill={painel.textoSuave}
+                fill={tema.textoSuave}
                 textAnchor={k === 0 && rotulosX.length > 1 ? 'start' : i === n - 1 && rotulosX.length > 1 ? 'end' : 'middle'}
                 fontFamily={typography.regular}
               >
@@ -76,7 +79,7 @@ export function GraficoLinha({ dias, series, altura = 190 }: Props) {
               </SvgText>
             ))}
             {series.map((s, si) => {
-              const cor = s.cor ?? painel.serie[si % painel.serie.length];
+              const cor = s.cor ?? tema.serie[si % tema.serie.length];
               const d = s.valores.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
               return (
                 <React.Fragment key={s.nome}>
@@ -92,9 +95,9 @@ export function GraficoLinha({ dias, series, altura = 190 }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  legenda: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 6 },
-  legendaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendaPonto: { width: 10, height: 10, borderRadius: 5 },
-  legendaTexto: { fontFamily: typography.medium, fontSize: 12, color: painel.textoSuave },
+const criarEstilos = (t: TemaPainel) => ({
+  legenda: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 6 } as const,
+  legendaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 } as const,
+  legendaPonto: { width: 10, height: 10, borderRadius: 5 } as const,
+  legendaTexto: { fontFamily: typography.medium, fontSize: 12, color: t.textoSuave } as const,
 });

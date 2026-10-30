@@ -6,6 +6,8 @@ import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import GuiaCriacao from '../components/GuiaCriacao';
 import { passoValido } from '../utils/guiaCriacao';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos } from '../../../shared/painel/tema/TemaPainelContext';
 
 type Props = { config: ConfigPainel; route: { params?: { passo?: number } } };
 

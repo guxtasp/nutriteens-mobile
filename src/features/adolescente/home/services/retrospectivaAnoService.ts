@@ -20,7 +20,7 @@ export async function buscarRetrospectivaAno(userId: string, hojeISO: string): P
   try {
     const { data: perfil, error: erroPerfil } = await supabase
       .from('profiles')
-      .select('created_at, maior_sequencia')
+      .select('created_at, maior_sequencia, avatar_social')
       .eq('id', userId)
       .maybeSingle();
     if (erroPerfil) throw new Error(erroPerfil.message);
@@ -74,7 +74,7 @@ export async function buscarRetrospectivaAno(userId: string, hojeISO: string): P
     ]);
     if (dias.error) throw new Error(dias.error.message);
 
-    return montarSlidesAno(
+    const retrospectiva = montarSlidesAno(
       {
         janela,
         totais: { refeicoes, licoes, atividades, insignias },
@@ -84,6 +84,7 @@ export async function buscarRetrospectivaAno(userId: string, hojeISO: string): P
       },
       LINK_DIVULGACAO,
     );
+    return retrospectiva ? { ...retrospectiva, avatar: perfil?.avatar_social ?? null } : null;
   } catch (erro) {
     console.warn('Erro ao montar retrospectiva do ano:', erro);
     return null;

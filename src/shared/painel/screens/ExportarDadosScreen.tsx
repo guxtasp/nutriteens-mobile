@@ -2,7 +2,7 @@
 // Exportação de dados em CSV para pesquisa (Admin e Nutricionista).
 // Os dados saem do banco já anonimizados: só o código do participante.
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { PainelLayout } from '../PainelLayout';
@@ -11,9 +11,7 @@ import { CartaoSecao } from '../components/CartaoSecao';
 import { ChipsFiltro, Selo, VazioPainel } from '../components/ControlesLista';
 import { AppText } from '../../ui/AppText';
 import { AppButton } from '../../ui/AppButton';
-import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
 import type { ConfigPainel } from '../types';
 import { dataCurta } from '../formatadores';
 import { mascaraDataBR, paraISO, parseDataBR, ultimosDias, type Intervalo } from '../periodo';
@@ -23,6 +21,8 @@ import {
 } from '../services/exportacaoService';
 import type { Separador } from '../utils/csv';
 import { baixarTexto } from '../utils/baixarArquivo';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 
 type ModoPeriodo = 'tudo' | '7' | '30' | '90' | 'personalizado';
 type Estado = { fase: 'fazendo' | 'ok' | 'erro'; texto: string };
@@ -50,6 +50,8 @@ function validarPersonalizado(ini: string | null, fim: string | null): string | 
 }
 
 export default function ExportarDadosScreen({ config }: { config: ConfigPainel }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [modo, setModo] = useState<ModoPeriodo>('tudo');
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
@@ -142,9 +144,9 @@ export default function ExportarDadosScreen({ config }: { config: ConfigPainel }
         <ChipsFiltro opcoes={OPCOES_PERIODO} valor={modo} onChange={trocarModo} />
         {modo === 'personalizado' && (
           <View style={styles.linha}>
-            <TextInput value={de} onChangeText={(t) => setDe(mascaraDataBR(t))} placeholder="De DD/MM/AAAA" placeholderTextColor={colors.placeholder}
+            <TextInput value={de} onChangeText={(t) => setDe(mascaraDataBR(t))} placeholder="De DD/MM/AAAA" placeholderTextColor={tema.placeholder}
               keyboardType="number-pad" maxLength={10} style={styles.input} accessibilityLabel="Data inicial" />
-            <TextInput value={ate} onChangeText={(t) => setAte(mascaraDataBR(t))} placeholder="Até DD/MM/AAAA" placeholderTextColor={colors.placeholder}
+            <TextInput value={ate} onChangeText={(t) => setAte(mascaraDataBR(t))} placeholder="Até DD/MM/AAAA" placeholderTextColor={tema.placeholder}
               keyboardType="number-pad" maxLength={10} style={styles.input} accessibilityLabel="Data final" />
           </View>
         )}
@@ -154,7 +156,7 @@ export default function ExportarDadosScreen({ config }: { config: ConfigPainel }
       <CartaoSecao titulo="Formato" subtitulo="Como o CSV é montado">
         <ChipsFiltro opcoes={OPCOES_SEPARADOR} valor={sep} onChange={(c) => setSep(c as Separador)} />
         <Pressable onPress={() => setDicionario((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: dicionario }} style={styles.linhaCheck}>
-          <Ionicons name={dicionario ? 'checkbox' : 'square-outline'} size={22} color={colors.primaryDark} />
+          <Ionicons name={dicionario ? 'checkbox' : 'square-outline'} size={22} color={tema.texto} />
           <AppText style={styles.checkTexto}>Incluir o dicionário de dados (um arquivo explicando cada coluna)</AppText>
         </Pressable>
       </CartaoSecao>
@@ -173,7 +175,7 @@ export default function ExportarDadosScreen({ config }: { config: ConfigPainel }
           const est = estados[c.chave];
           return (
             <Pressable key={c.chave} onPress={() => !exportando && alternar(c.chave)} accessibilityRole="checkbox" accessibilityState={{ checked: marcado, disabled: exportando }} style={styles.conjunto}>
-              <Ionicons name={marcado ? 'checkbox' : 'square-outline'} size={22} color={colors.primaryDark} style={{ marginTop: 1 }} />
+              <Ionicons name={marcado ? 'checkbox' : 'square-outline'} size={22} color={tema.texto} style={{ marginTop: 1 }} />
               <View style={styles.conjuntoCorpo}>
                 <AppText style={styles.conjuntoTitulo}>{c.titulo}</AppText>
                 <AppText style={styles.conjuntoDescricao}>{c.descricao}</AppText>
@@ -181,7 +183,7 @@ export default function ExportarDadosScreen({ config }: { config: ConfigPainel }
                 {!!est && (
                   <View style={styles.estado}>
                     <Selo texto={est.fase === 'ok' ? 'Baixado' : est.fase === 'erro' ? 'Erro' : 'Em andamento'} tom={est.fase === 'ok' ? 'ok' : est.fase === 'erro' ? 'erro' : 'info'} />
-                    <AppText style={[styles.conjuntoPeriodo, est.fase === 'erro' && { color: colors.error }]}>{est.texto}</AppText>
+                    <AppText style={[styles.conjuntoPeriodo, est.fase === 'erro' && { color: tema.erro }]}>{est.texto}</AppText>
                   </View>
                 )}
               </View>
@@ -222,21 +224,21 @@ export default function ExportarDadosScreen({ config }: { config: ConfigPainel }
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   linha: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   input: {
-    minWidth: 150, flexGrow: 1, borderWidth: 1.5, borderColor: painel.cardBorda, borderRadius: 12,
-    paddingHorizontal: 12, paddingVertical: 10, fontFamily: typography.regular, fontSize: 14, color: '#222',
+    minWidth: 150, flexGrow: 1, borderWidth: 1.5, borderColor: t.cardBorda, borderRadius: 12,
+    paddingHorizontal: 12, paddingVertical: 10, fontFamily: typography.regular, fontSize: 14, color: t.textoCorpo,
   },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
   linhaCheck: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
-  checkTexto: { flex: 1, fontFamily: typography.regular, fontSize: 13, color: colors.primaryDark },
-  link: { fontFamily: typography.bold, fontSize: 13, color: colors.primaryDark },
-  conjunto: { flexDirection: 'row', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: painel.linhaSuave },
+  checkTexto: { flex: 1, fontFamily: typography.regular, fontSize: 13, color: t.texto },
+  link: { fontFamily: typography.bold, fontSize: 13, color: t.texto },
+  conjunto: { flexDirection: 'row', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.linhaSuave },
   conjuntoCorpo: { flex: 1, minWidth: 0, gap: 2 },
-  conjuntoTitulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
-  conjuntoDescricao: { fontFamily: typography.regular, fontSize: 13, color: '#374151' },
-  conjuntoPeriodo: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
+  conjuntoTitulo: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
+  conjuntoDescricao: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo },
+  conjuntoPeriodo: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
   estado: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 },
-  recente: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: painel.linhaSuave, gap: 2 },
-});
+  recente: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: t.linhaSuave, gap: 2 },
+}) as const;

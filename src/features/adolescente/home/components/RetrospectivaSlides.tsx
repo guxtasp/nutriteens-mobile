@@ -21,6 +21,7 @@ import { ACENTOS } from '../../metricas/ui/tokens';
 import type { IconeMomento, RetrospectivaAno, SlideAno } from '../../metricas/utils/retrospectivaSlides';
 import { compartilharRetrospectiva } from '../services/compartilharRetrospectiva';
 import CartaoStory from './CartaoStory';
+import CartaoFesta from './CartaoFesta';
 
 type Props = {
   retrospectiva: RetrospectivaAno;
@@ -102,6 +103,7 @@ export default function RetrospectivaSlides({ retrospectiva, reduzirMovimento, o
   const { width, height } = useWindowDimensions();
   const [indice, setIndice] = useState(0);
   const [compartilhando, setCompartilhando] = useState(false);
+  const [modelo, setModelo] = useState<'resumo' | 'festa'>('resumo');
   const cartaoRef = useRef<View>(null);
 
   const slide = slides[indice];
@@ -142,18 +144,56 @@ export default function RetrospectivaSlides({ retrospectiva, reduzirMovimento, o
     return (
       <View style={StyleSheet.absoluteFill}>
         <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={transicao} style={StyleSheet.absoluteFill}>
-          <CartaoStory
-            ref={cartaoRef}
-            largura={width}
-            altura={height}
-            titulo={slide.titulo}
-            mensagem={slide.mensagem}
-            resumo={slide.resumo}
-          />
+          {modelo === 'resumo' ? (
+            <CartaoStory
+              ref={cartaoRef}
+              largura={width}
+              altura={height}
+              titulo={slide.titulo}
+              mensagem={slide.mensagem}
+              resumo={slide.resumo}
+            />
+          ) : (
+            <CartaoFesta
+              ref={cartaoRef}
+              largura={width}
+              altura={height}
+              titulo={slide.titulo}
+              mensagem={slide.mensagem}
+              avatar={retrospectiva.avatar}
+            />
+          )}
         </MotiView>
 
         <View style={[styles.sobreposto, { top: TOPO, left: LATERAL, right: LATERAL }]}>
           <Progresso total={slides.length} indice={indice} onFechar={onFechar} />
+        </View>
+
+        {/* escolha do modelo da imagem a compartilhar (fica fora da imagem) */}
+        <View style={[styles.sobreposto, styles.seletor, { top: TOPO + 40, left: LATERAL, right: LATERAL }]}>
+          {(['resumo', 'festa'] as const).map((m) => (
+            <TouchableOpacity
+              key={m}
+              onPress={() => {
+                if (m !== modelo) feedbackSelecao();
+                setModelo(m);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: modelo === m }}
+              accessibilityLabel={m === 'resumo' ? 'Modelo resumo, com os números' : 'Modelo festa, com o avatar'}
+              style={[styles.pilula, modelo === m && styles.pilulaAtiva]}
+              hitSlop={6}
+            >
+              <Ionicons
+                name={m === 'resumo' ? 'stats-chart' : 'balloon'}
+                size={14}
+                color={modelo === m ? '#1B4332' : colors.white}
+              />
+              <AppText style={[styles.pilulaTexto, modelo === m && styles.pilulaTextoAtivo]}>
+                {m === 'resumo' ? 'Resumo' : 'Festa'}
+              </AppText>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <View style={[styles.sobreposto, { bottom: BASE, left: LATERAL, right: LATERAL, gap: 10 }]}>
@@ -254,6 +294,14 @@ export default function RetrospectivaSlides({ retrospectiva, reduzirMovimento, o
 const styles = StyleSheet.create({
   raiz: { flex: 1, width: '100%' },
   sobreposto: { position: 'absolute' },
+  seletor: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
+  pilula: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 7, paddingHorizontal: 14,
+    borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.28)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)',
+  },
+  pilulaAtiva: { backgroundColor: '#FFF3C4', borderColor: '#FFF3C4' },
+  pilulaTexto: { fontFamily: typography.bold, fontSize: 13, color: colors.white },
+  pilulaTextoAtivo: { color: '#1B4332' },
   topo: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   progresso: { flex: 1, flexDirection: 'row', gap: 4 },
   segmento: { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.25)' },

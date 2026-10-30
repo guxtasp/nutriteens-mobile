@@ -3,10 +3,12 @@
 // "encaixe" no topo, cabeçalho colorido com botões e corpo. Com `recolhivel`, só o bloco
 // selecionado mostra o corpo; os outros mostram o resumo de uma linha. Tocar o seleciona.
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { AppText } from '../../../shared/ui/AppText';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos } from '../../../shared/painel/tema/TemaPainelContext';
 
 export type BotaoDoBloco = { rotulo: string; acessivel: string; onPress: () => void; desativado?: boolean };
 
@@ -24,6 +26,7 @@ type Props = {
 };
 
 export default function BlocoBase({ cor, titulo, resumo, recolhivel = false, selecionado = true, incompleto, erros = [], botoes, onSelecionar, children }: Props) {
+  const styles = useEstilos(criarEstilos);
   const aberto = !recolhivel || selecionado;
   return (
     <View
@@ -61,19 +64,19 @@ export default function BlocoBase({ cor, titulo, resumo, recolhivel = false, sel
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   bloco: { borderWidth: 2, borderRadius: 14, marginTop: 6, minWidth: 0 },
   selecionado: { borderWidth: 3 },
   encaixe: { position: 'absolute', top: -9, left: 22, width: 34, height: 9, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderWidth: 2, borderBottomWidth: 0 },
   cabeca: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderTopLeftRadius: 11, borderTopRightRadius: 11, borderBottomWidth: 2, minHeight: 48 },
   titulos: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36 },
   titulo: { fontFamily: typography.bold, fontSize: 14, color: colors.white, flexShrink: 1 },
-  incompleto: { fontFamily: typography.bold, fontSize: 10, color: '#7A5B00', backgroundColor: '#FFF4CC', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
+  incompleto: { fontFamily: typography.bold, fontSize: 10, color: t.selos.aviso.texto, backgroundColor: t.alertaSuave, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, overflow: 'hidden' },
   botoes: { flexDirection: 'row', gap: 6 },
   botao: { minWidth: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.28)' },
   botaoTexto: { fontFamily: typography.bold, fontSize: 15, color: colors.white },
   corpo: { padding: 14, gap: 12 },
   resumoLinha: { paddingHorizontal: 14, paddingVertical: 12, gap: 4 },
-  resumo: { fontFamily: typography.regular, fontSize: 14, color: colors.textOnLight, lineHeight: 20 },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-});
+  resumo: { fontFamily: typography.regular, fontSize: 14, color: t.textoCorpo, lineHeight: 20 },
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+}) as const;

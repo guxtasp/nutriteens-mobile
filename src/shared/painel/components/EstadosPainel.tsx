@@ -1,25 +1,29 @@
 // src/shared/painel/components/EstadosPainel.tsx
 import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../ui/AppText';
 import { AppButton } from '../../ui/AppButton';
-import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 
 export function EstadoCarregando() {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={styles.centro}>
-      <ActivityIndicator color={colors.primaryDark} />
+      <ActivityIndicator color={tema.destaque} />
     </View>
   );
 }
 
 export function EstadoErro({ mensagem, onTentar }: { mensagem: string; onTentar?: () => void }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={[styles.centro, styles.caixaErro]}>
-      <Ionicons name="alert-circle-outline" size={28} color={colors.warning} />
+      <Ionicons name="alert-circle-outline" size={28} color={tema.alerta} />
       <AppText style={styles.erroTitulo}>Não foi possível carregar</AppText>
       <AppText style={styles.erroTexto}>{mensagem}</AppText>
       {!!onTentar && (
@@ -27,9 +31,9 @@ export function EstadoErro({ mensagem, onTentar }: { mensagem: string; onTentar?
           label="TENTAR DE NOVO"
           fullWidth={false}
           size="compact"
-          backgroundColor={colors.primaryDark}
-          textColor={colors.white}
-          shadowColor="#123024"
+          backgroundColor={tema.botaoFundo}
+          textColor={tema.botaoTexto}
+          shadowColor={tema.botaoSombra}
           style={{ paddingHorizontal: 20 }}
           onPress={onTentar}
         />
@@ -38,15 +42,9 @@ export function EstadoErro({ mensagem, onTentar }: { mensagem: string; onTentar?
   );
 }
 
-const styles = StyleSheet.create({
-  centro: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 8 },
-  caixaErro: {
-    backgroundColor: colors.white,
-    borderRadius: painel.cardRaio,
-    borderWidth: 2,
-    borderColor: colors.warning,
-    paddingHorizontal: 20,
-  },
-  erroTitulo: { fontFamily: typography.bold, fontSize: 15, color: colors.primaryDark },
-  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, textAlign: 'center' },
+const criarEstilos = (t: TemaPainel) => ({
+  centro: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 8 } as const,
+  caixaErro: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.alerta, paddingHorizontal: 20 } as const,
+  erroTitulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto } as const,
+  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, textAlign: 'center' } as const,
 });

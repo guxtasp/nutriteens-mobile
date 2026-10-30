@@ -1,9 +1,10 @@
 // src/shared/painel/components/FiltroPeriodo.tsx
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { AppText } from '../../ui/AppText';
-import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos } from '../tema/TemaPainelContext';
 
 export const PERIODOS = [7, 30, 90] as const;
 export type PeriodoDias = (typeof PERIODOS)[number];
@@ -11,6 +12,7 @@ export type PeriodoDias = (typeof PERIODOS)[number];
 type Props = { valor: number; onChange: (dias: PeriodoDias) => void };
 
 export function FiltroPeriodo({ valor, onChange }: Props) {
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={styles.linha}>
       {PERIODOS.map((d) => {
@@ -31,19 +33,19 @@ export function FiltroPeriodo({ valor, onChange }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  linha: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+const criarEstilos = (t: TemaPainel) => ({
+  linha: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' } as const,
   chip: {
     minHeight: 40,
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#D9D9D9',
-    backgroundColor: colors.white,
+    borderColor: t.chipBorda,
+    backgroundColor: t.chipFundo,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  chipOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  texto: { fontFamily: typography.medium, fontSize: 12, color: '#6B7280' },
-  textoOn: { color: colors.white },
+  } as const,
+  chipOn: { backgroundColor: t.chipAtivoFundo, borderColor: t.chipAtivoFundo } as const,
+  texto: { fontFamily: typography.medium, fontSize: 12, color: t.chipTexto } as const,
+  textoOn: { color: t.chipAtivoTexto } as const,
 });

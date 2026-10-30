@@ -53,6 +53,8 @@ export interface Alimento {
   // sem abrir cada item um por um.
   nutrientes_fonte?: FonteNutrientes;
   vezes_usado?: number;
+  // true se existe uma receita que produz este prato (tabela receitas)
+  tem_receita?: boolean;
 }
 
 // alimento criado por um adolescente (criado_por preenchido) cujo nutriente
@@ -67,10 +69,13 @@ export async function listarAlimentos(): Promise<Alimento[]> {
     .from('alimentos')
     .select('*, alimento_nutrientes(fonte), refeicao_alimentos(count)')
     .order('nome');
-  if (error) {
-    console.error('Erro ao listar alimentos:', error.message);
-    return [];
-  }
+  if (error) throw error;
+
+  // quais alimentos são o resultado de uma receita. Consulta separada de propósito:
+  // se falhar, a lista continua funcionando, só sem o selo "tem receita".
+  const comReceita = new Set<string>();
+  const { data: receitas } = await supabase.from('receitas').select('alimento_resultante_id');
+  for (const r of (receitas ?? []) as any[]) if (r.alimento_resultante_id) comReceita.add(r.alimento_resultante_id);
 
   const lista: Alimento[] = (data ?? []).map((linha: any) => {
     const item = linha as any;
@@ -86,6 +91,7 @@ export async function listarAlimentos(): Promise<Alimento[]> {
         ? nutrienteJoin[0]?.fonte ?? null
         : nutrienteJoin?.fonte ?? null,
       vezes_usado: item.refeicao_alimentos?.[0]?.count ?? 0,
+      tem_receita: comReceita.has(item.id),
     };
   });
 

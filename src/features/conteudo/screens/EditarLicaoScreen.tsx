@@ -5,7 +5,7 @@
 // antes e grava lição, passos e alternativas numa única transação. Só grava se algo mudou,
 // para não subir a versão do conteúdo à toa.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
@@ -13,9 +13,7 @@ import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { buscarLicaoEditavel, salvarLicaoCompleta, type LicaoEditavel } from '../services/edicaoService';
 import { obterPapelAtual } from '../services/conteudoService';
@@ -27,6 +25,8 @@ import PaletaBlocos from '../components/PaletaBlocos';
 import PreviaAoVivo from '../components/preview/PreviaAoVivo';
 import { BotaoComoCriar } from '../components/GuiaCriacao';
 import { posicaoDeInsercao, selecaoAposMover, selecaoAposRemover } from '../utils/blocos';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import {
   HABITOS,
   ICONES_SUGERIDOS,
@@ -55,14 +55,18 @@ type Props = {
 const TIPOS: TipoLicaoEdicao[] = ['conteudo', 'quiz', 'atividade_rastreavel'];
 
 function Chip({ texto, ligado, onPress }: { texto: string; ligado: boolean; onPress: () => void }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={[styles.chip, ligado && styles.chipOn]}>
-      <AppText style={[styles.chipTexto, ligado && { color: colors.white }]}>{texto}</AppText>
+      <AppText style={[styles.chipTexto, ligado && { color: tema.botaoTexto }]}>{texto}</AppText>
     </Pressable>
   );
 }
 
 export default function EditarLicaoScreen({ config, route }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const { licaoId, moduloId, proximaOrdem, origem, tipoNovo } = route.params ?? {};
   const criando = !licaoId;
   const navigation = useNavigation<any>();
@@ -338,8 +342,8 @@ export default function EditarLicaoScreen({ config, route }: Props) {
                 label="ABRIR REVISÃO (VERSÃO SALVA)"
                 fullWidth={false}
                 size="compact"
-                outlineColor={colors.primaryDark}
-                textColor={colors.primaryDark}
+                outlineColor={tema.texto}
+                textColor={tema.texto}
                 style={{ paddingHorizontal: 14, minHeight: 44 }}
                 onPress={() => navigation.navigate('LicaoPreview', { licaoId: licao.id, origem })}
               />
@@ -365,19 +369,19 @@ export default function EditarLicaoScreen({ config, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   coluna: { gap: 16 },
   linhaLarga: { flexDirection: 'row', gap: 24 },
   colEditor: { flex: 1, minWidth: 0, gap: 16 },
   colPrevia: { width: 420 },
   abas: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pilha: { gap: 10, paddingTop: 6 },
-  suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
-  rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark },
+  suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
+  rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: painel.cardBorda, justifyContent: 'center', backgroundColor: painel.card },
-  chipOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-  erros: { backgroundColor: colors.exercicioErroSuave + '55', borderRadius: 12, padding: 10, gap: 2 },
-  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-});
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
+  chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
+  erros: { backgroundColor: t.selos.erro.fundo + '55', borderRadius: 12, padding: 10, gap: 2 },
+  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+}) as const;

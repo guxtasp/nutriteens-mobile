@@ -2,7 +2,7 @@
 // Abre um conteúdo (trilha ou receita) COMPLETO, em qualquer status, antes de qualquer ação.
 // VER ≠ EDITAR ≠ APROVAR: Admin e Nutricionista leem tudo; só a nutricionista decide.
 import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
@@ -14,7 +14,6 @@ import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import {
   buscarDetalhe,
@@ -26,6 +25,9 @@ import {
 } from '../services/fluxoService';
 import { buscarIngredientesDaReceita, obterPapelAtual } from '../services/conteudoService';
 import { CONTEXTO_CATEGORIA, type CategoriaTroca } from '../../adolescente/trocas/utils/trocas';
+import { useCoresTom } from '../hooks/useCoresTom';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import {
   ACAO_LABEL,
   ACOES_DECISAO,
@@ -46,13 +48,6 @@ import {
 
 type Props = { config: ConfigPainel; route: { params: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string; origem?: string } } };
 
-const COR_TOM: Record<TomStatus, { fundo: string; texto: string }> = {
-  neutro: { fundo: '#EEF0EF', texto: '#4B4B4B' },
-  espera: { fundo: colors.warningSoft, texto: colors.warningShadow },
-  ok: { fundo: colors.exercicioAcertoFundo, texto: colors.primaryDark },
-  publicado: { fundo: colors.primaryDark, texto: colors.white },
-  erro: { fundo: colors.exercicioErroSuave, texto: colors.error },
-};
 const ROTULO_LICAO: Record<string, string> = { conteudo: 'Conteúdo', quiz: 'Quiz', atividade_rastreavel: 'Hábito' };
 const ROTULO_DIFICULDADE: Record<string, string> = { FACIL: 'Fácil', MEDIO: 'Médio', DIFICIL: 'Difícil' };
 
@@ -65,6 +60,8 @@ const CONFIRMACAO: Partial<Record<AcaoFluxo, string>> = {
 };
 
 function CorpoTrilhaView({ corpo, navigation, origem }: { corpo: CorpoTrilha; navigation: any; origem?: string }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const totalLicoes = corpo.modulos.reduce((s, m) => s + m.licoes.length, 0);
   return (
     <View style={{ gap: 10 }}>
@@ -102,6 +99,7 @@ function CorpoTrilhaView({ corpo, navigation, origem }: { corpo: CorpoTrilha; na
 }
 
 function CorpoReceitaView({ corpo, ingredientesReceita }: { corpo: CorpoReceita; ingredientesReceita: { nome: string; quantidade: string }[] | null }) {
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={{ gap: 10 }}>
       <AppText style={styles.meta}>
@@ -157,6 +155,7 @@ function CorpoReceitaView({ corpo, ingredientesReceita }: { corpo: CorpoReceita;
 }
 
 function CorpoTrocaView({ corpo }: { corpo: CorpoTroca }) {
+  const styles = useEstilos(criarEstilos);
   const contexto = CONTEXTO_CATEGORIA[corpo.categoria as CategoriaTroca];
   return (
     <View style={{ gap: 10 }}>
@@ -297,8 +296,11 @@ function Detalhe(p: {
   cancelar: () => void;
   confirmar: (a: AcaoFluxo) => void;
 }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const { dados, papel, pendente } = p;
-  const tom = COR_TOM[tomDoStatus(dados.status)];
+  const coresTom = useCoresTom();
+  const tom = coresTom[tomDoStatus(dados.status)];
   const perm = permissoes(papel);
   const acoes = acoesPermitidas(papel, dados.status);
   const aviso = avisoEdicao(papel, dados.status);
@@ -358,8 +360,8 @@ function Detalhe(p: {
                   label="PRÉ-VISUALIZAR"
                   fullWidth={false}
                   size="compact"
-                  outlineColor={colors.primaryDark}
-                  textColor={colors.primaryDark}
+                  outlineColor={tema.texto}
+                  textColor={tema.texto}
                   style={styles.botao}
                   onPress={() =>
                     dados.tipo === 'TRILHA'
@@ -373,8 +375,8 @@ function Detalhe(p: {
                   label="EDITAR"
                   fullWidth={false}
                   size="compact"
-                  outlineColor={colors.primaryDark}
-                  textColor={colors.primaryDark}
+                  outlineColor={tema.texto}
+                  textColor={tema.texto}
                   style={styles.botao}
                   onPress={() =>
                     dados.tipo === 'TRILHA'
@@ -446,7 +448,7 @@ function Detalhe(p: {
           <View style={styles.acoes}>
             {acoes.map((a) => {
               const principal = ACOES_DECISAO.includes(a) && a !== 'REJEITAR' ? true : a === 'ENVIAR';
-              const cor = a === 'REJEITAR' ? colors.error : colors.primaryDark;
+              const cor = a === 'REJEITAR' ? tema.erro : tema.texto;
               return (
                 <AppButton
                   key={a}
@@ -454,7 +456,7 @@ function Detalhe(p: {
                   fullWidth={false}
                   size="compact"
                   {...(principal
-                    ? { backgroundColor: colors.primaryDark, textColor: colors.white, shadowColor: '#123024' }
+                    ? { backgroundColor: tema.botaoFundo, textColor: tema.botaoTexto, shadowColor: tema.botaoSombra }
                     : { outlineColor: cor, textColor: cor })}
                   disabled={p.ocupado}
                   style={styles.botao}
@@ -476,7 +478,7 @@ function Detalhe(p: {
                 value={p.motivo}
                 onChangeText={p.setMotivo}
                 placeholder="Explique o que precisa ser corrigido"
-                placeholderTextColor={colors.placeholder}
+                placeholderTextColor={tema.placeholder}
                 multiline
                 maxLength={2000}
                 style={styles.input}
@@ -488,8 +490,8 @@ function Detalhe(p: {
                 fullWidth={false}
                 size="compact"
                 {...(pendente === 'REJEITAR'
-                  ? { backgroundColor: colors.error, textColor: colors.white, shadowColor: '#7A2018' }
-                  : { backgroundColor: colors.primaryDark, textColor: colors.white, shadowColor: '#123024' })}
+                  ? { backgroundColor: tema.erro, textColor: tema.nome === 'escuro' ? '#2B0B08' : colors.white, shadowColor: '#7A2018' }
+                  : { backgroundColor: tema.botaoFundo, textColor: tema.botaoTexto, shadowColor: tema.botaoSombra })}
                 disabled={p.ocupado}
                 style={styles.botao}
                 onPress={() => p.confirmar(pendente)}
@@ -498,8 +500,8 @@ function Detalhe(p: {
                 label="CANCELAR"
                 fullWidth={false}
                 size="compact"
-                outlineColor={colors.primaryDark}
-                textColor={colors.primaryDark}
+                outlineColor={tema.texto}
+                textColor={tema.texto}
                 disabled={p.ocupado}
                 style={styles.botao}
                 onPress={p.cancelar}
@@ -513,42 +515,44 @@ function Detalhe(p: {
 }
 
 function Linha({ ok, texto }: { ok: boolean; texto: string }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
-    <AppText style={[styles.texto, !ok && { color: painel.textoSuave }]}>
+    <AppText style={[styles.texto, !ok && { color: tema.textoSuave }]}>
       {ok ? '✓' : '✗'} {texto}
     </AppText>
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   card: {
-    backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda,
+    backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda,
     padding: 16, gap: 6, minWidth: 0,
   },
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  chipTipo: { backgroundColor: '#EAF5DE', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
-  chipTipoTexto: { fontFamily: typography.bold, fontSize: 11, color: colors.primaryDark },
+  chipTipo: { backgroundColor: t.destaqueSuave, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
+  chipTipoTexto: { fontFamily: typography.bold, fontSize: 11, color: t.texto },
   badge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
   badgeTexto: { fontFamily: typography.bold, fontSize: 11 },
-  versao: { fontFamily: typography.regular, fontSize: 11, color: painel.textoSuave, marginLeft: 'auto' },
-  meta: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-  texto: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight, lineHeight: 19 },
-  dica: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
-  motivo: { backgroundColor: colors.exercicioErroSuave + '55', borderRadius: 12, padding: 10, gap: 2, marginTop: 6 },
-  motivoTitulo: { fontFamily: typography.bold, fontSize: 12, color: colors.error },
-  bloco: { borderWidth: 2, borderColor: painel.cardBorda, borderRadius: 14, padding: 12, gap: 2 },
-  blocoTitulo: { fontFamily: typography.bold, fontSize: 13, color: colors.primaryDark, marginBottom: 4 },
-  licao: { minHeight: 44, justifyContent: 'center', paddingVertical: 6, borderTopWidth: 1, borderTopColor: '#EFEFEF' },
-  licaoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.textOnLight },
-  hist: { borderLeftWidth: 3, borderLeftColor: painel.cardBorda, paddingLeft: 10, gap: 1 },
-  histTopo: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
+  versao: { fontFamily: typography.regular, fontSize: 11, color: t.textoSuave, marginLeft: 'auto' },
+  meta: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+  texto: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo, lineHeight: 19 },
+  dica: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
+  motivo: { backgroundColor: t.selos.erro.fundo + '55', borderRadius: 12, padding: 10, gap: 2, marginTop: 6 },
+  motivoTitulo: { fontFamily: typography.bold, fontSize: 12, color: t.erro },
+  bloco: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 2 },
+  blocoTitulo: { fontFamily: typography.bold, fontSize: 13, color: t.texto, marginBottom: 4 },
+  licao: { minHeight: 44, justifyContent: 'center', paddingVertical: 6, borderTopWidth: 1, borderTopColor: t.linhaSuave },
+  licaoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.textoCorpo },
+  hist: { borderLeftWidth: 3, borderLeftColor: t.cardBorda, paddingLeft: 10, gap: 1 },
+  histTopo: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
   acoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   botao: { paddingHorizontal: 14, minHeight: 44 },
-  confirma: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark },
+  confirma: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
   input: {
-    minHeight: 84, borderWidth: 2, borderColor: painel.cardBorda, borderRadius: 12, padding: 10,
-    fontFamily: typography.regular, fontSize: 14, color: colors.textOnLight, textAlignVertical: 'top',
+    minHeight: 84, borderWidth: 2, borderColor: t.cardBorda, borderRadius: 12, padding: 10,
+    fontFamily: typography.regular, fontSize: 14, color: t.textoCorpo, textAlignVertical: 'top',
   },
-  ok: { fontFamily: typography.semiBold, fontSize: 13, color: '#2F6B12', backgroundColor: '#E2F3D3', borderRadius: 10, padding: 10 },
-  erro: { fontFamily: typography.regular, fontSize: 13, color: colors.error },
-});
+  ok: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto, backgroundColor: t.destaqueSuave, borderRadius: 10, padding: 10 },
+  erro: { fontFamily: typography.regular, fontSize: 13, color: t.erro },
+}) as const;

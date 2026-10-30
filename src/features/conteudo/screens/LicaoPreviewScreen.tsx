@@ -5,17 +5,20 @@
 //  - "Revisão (com gabarito)": visão editorial, com as respostas certas e alertas de problemas
 //    objetivos (ex.: quiz sem resposta correta).
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, ScrollView, ActivityIndicator } from 'react-native';
 import { AppText } from '../../../shared/ui/AppText';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { buscarLicaoParaRevisao, type LicaoParaRevisao } from '../services/conteudoService';
 import { buscarLicaoEditavel, type LicaoEditavel } from '../services/edicaoService';
 import { AbasPrevia, type AbaPrevia } from '../components/preview/AbasPrevia';
 import LicaoUsoPreview from '../components/preview/LicaoUsoPreview';
 import { descreverQuestao, problemasDaQuestao } from '../utils/descreverQuestao';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 
 export default function LicaoPreviewScreen({ route }: any) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const licaoId: string = route.params.licaoId;
   const [licao, setLicao] = useState<LicaoParaRevisao | null>(null);
   const [uso, setUso] = useState<LicaoEditavel | null>(null);
@@ -33,7 +36,7 @@ export default function LicaoPreviewScreen({ route }: any) {
   }, [licaoId]);
 
   if (erro) return <AppText style={styles.erro}>{erro}</AppText>;
-  if (!licao) return <ActivityIndicator color={colors.primaryDark} style={{ marginTop: 60 }} />;
+  if (!licao) return <ActivityIndicator color={tema.texto} style={{ marginTop: 60 }} />;
 
   const totalProblemas = licao.questoes.reduce((s, q) => s + problemasDaQuestao(q).length, 0);
 
@@ -48,7 +51,7 @@ export default function LicaoPreviewScreen({ route }: any) {
         <AbasPrevia aba={aba} onTrocar={setAba} />
       </View>
 
-      {aba === 'uso' && (uso ? <LicaoUsoPreview licao={uso} /> : <ActivityIndicator color={colors.primaryDark} style={{ marginTop: 40 }} />)}
+      {aba === 'uso' && (uso ? <LicaoUsoPreview licao={uso} /> : <ActivityIndicator color={tema.texto} style={{ marginTop: 40 }} />)}
 
       {aba === 'revisao' && (
         <>
@@ -98,17 +101,17 @@ export default function LicaoPreviewScreen({ route }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.white },
+const criarEstilos = (t: TemaPainel) => ({
+  root: { flex: 1, backgroundColor: t.card },
   conteudo: { padding: 24, paddingBottom: 60 },
-  titulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark },
-  meta: { fontFamily: typography.regular, fontSize: 12, color: '#8A8A8A', marginTop: 4 },
-  erro: { fontFamily: typography.regular, fontSize: 13, color: colors.error, margin: 24 },
-  alerta: { fontFamily: typography.semiBold, fontSize: 13, color: '#B3261E', backgroundColor: '#FDE3E1', borderRadius: 10, padding: 10, marginTop: 14 },
-  bloco: { borderWidth: 1, borderColor: '#D9D9D9', borderRadius: 12, padding: 12, marginTop: 12 },
-  blocoProblema: { borderColor: '#B3261E' },
-  rotulo: { fontFamily: typography.bold, fontSize: 10, color: '#8A8A8A', textTransform: 'uppercase', marginBottom: 4 },
-  enunciado: { fontFamily: typography.semiBold, fontSize: 14, color: colors.primaryDark, marginBottom: 6 },
-  texto: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight, marginTop: 2 },
-  problema: { fontFamily: typography.semiBold, fontSize: 12, color: '#B3261E', marginTop: 6 },
-});
+  titulo: { fontFamily: typography.bold, fontSize: 18, color: t.texto },
+  meta: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, marginTop: 4 },
+  erro: { fontFamily: typography.regular, fontSize: 13, color: t.erro, margin: 24 },
+  alerta: { fontFamily: typography.semiBold, fontSize: 13, color: t.erro, backgroundColor: t.selos.erro.fundo, borderRadius: 10, padding: 10, marginTop: 14 },
+  bloco: { borderWidth: 1, borderColor: t.chipBorda, borderRadius: 12, padding: 12, marginTop: 12 },
+  blocoProblema: { borderColor: t.erro },
+  rotulo: { fontFamily: typography.bold, fontSize: 10, color: t.textoSuave, textTransform: 'uppercase', marginBottom: 4 },
+  enunciado: { fontFamily: typography.semiBold, fontSize: 14, color: t.texto, marginBottom: 6 },
+  texto: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo, marginTop: 2 },
+  problema: { fontFamily: typography.semiBold, fontSize: 12, color: t.erro, marginTop: 6 },
+}) as const;

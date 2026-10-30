@@ -1,17 +1,20 @@
 // src/shared/painel/components/FiltroPeriodoPersonalizado.tsx
 // 7 / 30 / 90 dias ou período personalizado (DD/MM/AAAA). Sem larguras fixas.
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { AppText } from '../../ui/AppText';
-import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { mascaraDataBR, parseDataBR, validarIntervalo, type Intervalo } from '../periodo';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 
 export type EscolhaPeriodo = { tipo: 'dias'; dias: number } | { tipo: 'personalizado'; intervalo: Intervalo };
 
 type Props = { valor: EscolhaPeriodo; onChange: (v: EscolhaPeriodo) => void };
 
 export function FiltroPeriodoPersonalizado({ valor, onChange }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [aberto, setAberto] = useState(valor.tipo === 'personalizado');
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
@@ -48,9 +51,9 @@ export function FiltroPeriodoPersonalizado({ valor, onChange }: Props) {
       {aberto && (
         <View style={styles.linha}>
           <TextInput value={de} onChangeText={(t) => setDe(mascaraDataBR(t))} placeholder="De DD/MM/AAAA"
-            placeholderTextColor={colors.placeholder} keyboardType="number-pad" maxLength={10} style={styles.input} />
+            placeholderTextColor={tema.placeholder} keyboardType="number-pad" maxLength={10} style={styles.input} />
           <TextInput value={ate} onChangeText={(t) => setAte(mascaraDataBR(t))} placeholder="Até DD/MM/AAAA"
-            placeholderTextColor={colors.placeholder} keyboardType="number-pad" maxLength={10} style={styles.input} />
+            placeholderTextColor={tema.placeholder} keyboardType="number-pad" maxLength={10} style={styles.input} />
           <Pressable accessibilityRole="button" onPress={aplicar} style={[styles.chip, styles.chipOn]}>
             <AppText style={[styles.texto, styles.textoOn]}>Aplicar</AppText>
           </Pressable>
@@ -61,13 +64,13 @@ export function FiltroPeriodoPersonalizado({ valor, onChange }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   coluna: { gap: 8, alignItems: 'flex-start' },
   linha: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: '#D9D9D9', backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
-  chipOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  texto: { fontFamily: typography.medium, fontSize: 12, color: '#6B7280' },
-  textoOn: { color: colors.white },
-  input: { minHeight: 40, minWidth: 130, flexGrow: 1, maxWidth: 180, borderWidth: 1.5, borderColor: '#D9D9D9', borderRadius: 12, paddingHorizontal: 12, backgroundColor: colors.white, fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-});
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, borderColor: t.chipBorda, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center' },
+  chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  texto: { fontFamily: typography.medium, fontSize: 12, color: t.textoSuave },
+  textoOn: { color: t.botaoTexto },
+  input: { minHeight: 40, minWidth: 130, flexGrow: 1, maxWidth: 180, borderWidth: 1.5, borderColor: t.chipBorda, borderRadius: 12, paddingHorizontal: 12, backgroundColor: t.card, fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo },
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+}) as const;

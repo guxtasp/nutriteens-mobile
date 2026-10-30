@@ -1,7 +1,7 @@
 // src/features/admin/screens/NutricionistasScreen.tsx
 // Contas de nutricionistas e o trabalho de cada uma no fluxo de conteúdo.
 import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
@@ -11,13 +11,14 @@ import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/
 import { VazioPainel } from '../../../shared/painel/components/ControlesLista';
 import { dataCurta, ultimoAcessoTexto } from '../../../shared/painel/formatadores';
 import { AppText } from '../../../shared/ui/AppText';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { ADMIN_PAINEL } from '../navigation/adminMenu';
 import { NutricionistaResumo, listarNutricionistas } from '../services/gestaoAdminService';
 
 function Numero({ valor, rotulo, ajuda }: { valor: number; rotulo: string; ajuda: string }) {
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={styles.numero}>
       <AppText style={styles.numeroValor}>{valor}</AppText>
@@ -30,6 +31,7 @@ function Numero({ valor, rotulo, ajuda }: { valor: number; rotulo: string; ajuda
 }
 
 export default function NutricionistasScreen() {
+  const styles = useEstilos(criarEstilos);
   const navigation = useNavigation<any>();
   const [itens, setItens] = useState<NutricionistaResumo[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -89,13 +91,13 @@ export default function NutricionistasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda, padding: 16, gap: 8, minWidth: 0 },
-  nome: { fontFamily: typography.bold, fontSize: 16, color: colors.primaryDark },
-  meta: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
+const criarEstilos = (t: TemaPainel) => ({
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 8, minWidth: 0 },
+  nome: { fontFamily: typography.bold, fontSize: 16, color: t.texto },
+  meta: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
   numeros: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 6 },
   numero: { minWidth: 80 },
-  numeroValor: { fontFamily: typography.bold, fontSize: 22, color: colors.primaryDark },
+  numeroValor: { fontFamily: typography.bold, fontSize: 22, color: t.texto },
   numeroRotuloLinha: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  numeroRotulo: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-});
+  numeroRotulo: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+}) as const;

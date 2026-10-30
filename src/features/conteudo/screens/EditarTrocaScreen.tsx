@@ -2,28 +2,30 @@
 // Editar a justificativa de uma troca: o que o adolescente ganha (frase) e a dica prática.
 // A categoria, o alimento de destino e o texto "o que muda" não são editados aqui.
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { AppText } from '../../../shared/ui/AppText';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { buscarTrocaEditavel, salvarTroca, type TrocaEditavel } from '../services/edicaoService';
 import { obterPapelAtual } from '../services/conteudoService';
 import type { Papel } from '../utils/regrasAprovacao';
 import { AvisoEdicao, BarraSalvar, campoMultilinha } from '../components/CamposEdicao';
 import { CONTEXTO_CATEGORIA, ROTULO_CATEGORIA, type CategoriaTroca } from '../../adolescente/trocas/utils/trocas';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 
 type Props = { config: ConfigPainel; route: { params: { trocaId: string; origem?: string } } };
 const MAX_FRASE = 240;
 const MAX_DICA = 220;
 
 export default function EditarTrocaScreen({ config, route }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const { trocaId } = route.params;
   const navigation = useNavigation<any>();
   const [papel, setPapel] = useState<Papel | null>(null);
@@ -103,7 +105,7 @@ export default function EditarTrocaScreen({ config, route }: Props) {
               <View style={styles.linha}>
                 {[{ v: true, l: 'Sim' }, { v: false, l: 'Não' }].map((o) => (
                   <Pressable key={o.l} onPress={() => setRapida(o.v)} accessibilityRole="button" style={[styles.chip, rapida === o.v && styles.chipOn]}>
-                    <AppText style={[styles.chipTexto, rapida === o.v && { color: colors.white }]}>{o.l}</AppText>
+                    <AppText style={[styles.chipTexto, rapida === o.v && { color: tema.botaoTexto }]}>{o.l}</AppText>
                   </Pressable>
                 ))}
               </View>
@@ -117,14 +119,14 @@ export default function EditarTrocaScreen({ config, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  rotulo: { fontFamily: typography.regular, fontSize: 14, color: colors.primaryDark },
-  contador: { fontFamily: typography.regular, fontSize: 11, color: painel.textoSuave, textAlign: 'right', marginTop: -2 },
-  contexto: { backgroundColor: '#F4F8F5', borderRadius: 12, padding: 12, gap: 2 },
-  contextoTitulo: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-  contextoTexto: { fontFamily: typography.regular, fontSize: 13, lineHeight: 19, color: colors.textOnLight },
+const criarEstilos = (t: TemaPainel) => ({
+  rotulo: { fontFamily: typography.regular, fontSize: 14, color: t.texto },
+  contador: { fontFamily: typography.regular, fontSize: 11, color: t.textoSuave, textAlign: 'right', marginTop: -2 },
+  contexto: { backgroundColor: t.superficieSuave, borderRadius: 12, padding: 12, gap: 2 },
+  contextoTitulo: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
+  contextoTexto: { fontFamily: typography.regular, fontSize: 13, lineHeight: 19, color: t.textoCorpo },
   linha: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 44, paddingHorizontal: 16, borderRadius: 20, borderWidth: 2, borderColor: painel.cardBorda, justifyContent: 'center', backgroundColor: painel.card },
-  chipOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-});
+  chip: { minHeight: 44, paddingHorizontal: 16, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
+  chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
+}) as const;

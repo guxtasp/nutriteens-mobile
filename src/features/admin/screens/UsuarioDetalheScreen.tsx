@@ -3,7 +3,7 @@
 // EBIA ou alimentação. Papel e código do participante não são editáveis pelo aplicativo
 // (trigger do banco), por isso aqui não há ação de alterá-los.
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
@@ -15,11 +15,13 @@ import { LinhaInfo, Selo } from '../../../shared/painel/components/ControlesList
 import { dataCurta, ultimoAcessoTexto } from '../../../shared/painel/formatadores';
 import { AppText } from '../../../shared/ui/AppText';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { ADMIN_PAINEL } from '../navigation/adminMenu';
 import { DetalheUsuarioAdmin, buscarUsuario, labelPapel } from '../services/usuariosAdminService';
 
 export default function UsuarioDetalheScreen({ route }: { route: { params: { id: string } } }) {
+  const styles = useEstilos(criarEstilos);
   const id = route.params?.id;
   const [u, setU] = useState<DetalheUsuarioAdmin | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -106,8 +108,8 @@ export default function UsuarioDetalheScreen({ route }: { route: { params: { id:
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   selos: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  texto: { fontFamily: typography.regular, fontSize: 13, color: painel.textoSuave, lineHeight: 19 },
-  alerta: { fontFamily: typography.semiBold, fontSize: 13, color: '#9A5B00' },
-});
+  texto: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, lineHeight: 19 },
+  alerta: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.aviso.texto },
+}) as const;

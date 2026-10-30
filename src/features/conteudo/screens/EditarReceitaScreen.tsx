@@ -4,7 +4,7 @@
 // A gravação é atômica (conteudo_salvar_receita): valida tudo e grava receita + ingredientes +
 // passos numa única transação. Só grava se algo mudou (para não subir a versão à toa).
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
@@ -12,18 +12,17 @@ import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { buscarReceitaEditavel, listarAlimentosBusca, listarPratos, salvarReceitaCompleta, type ReceitaEditavel } from '../services/edicaoService';
 import { obterPapelAtual } from '../services/conteudoService';
 import type { Papel } from '../utils/regrasAprovacao';
 import { AvisoEdicao, BarraSalvar, campoMultilinha } from '../components/CamposEdicao';
-import BlocoBase from '../components/BlocoBase';
+import { MiniBotao } from '../components/MiniBotao';
+import { CampoImagem } from '../components/CampoImagem';
 import PreviaReceitaAoVivo from '../components/preview/PreviaReceitaAoVivo';
-import { COR_RECEITA, ingredienteIncompleto, passoIncompleto, resumoDoPasso } from '../utils/blocosReceita';
-import { posicaoDeInsercao, selecaoAposMover, selecaoAposRemover } from '../utils/blocos';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import {
   DIFICULDADES, LIMITES_RECEITA, assinaturaReceita, moverPasso, paraPayloadReceita, urlValida, validarReceita,
   type IngredienteEdicao, type PassoReceitaEdicao, type ReceitaEmEdicao,
@@ -33,15 +32,18 @@ type Props = { config: ConfigPainel; route: { params?: { receitaId?: string; ori
 type Item = { id: string; nome: string };
 
 function Chip({ texto, ligado, onPress }: { texto: string; ligado: boolean; onPress: () => void }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={[styles.chip, ligado && styles.chipOn]}>
-      <AppText style={[styles.chipTexto, ligado && { color: colors.white }]}>{texto}</AppText>
+      <AppText style={[styles.chipTexto, ligado && { color: tema.botaoTexto }]}>{texto}</AppText>
     </Pressable>
   );
 }
 
 /** Busca no catálogo e devolve o item escolhido. `somentePratos` limita a pratos compostos. */
 function BuscaAlimento({ rotulo, somentePratos, onEscolher }: { rotulo: string; somentePratos?: boolean; onEscolher: (i: Item) => void }) {
+  const styles = useEstilos(criarEstilos);
   const [busca, setBusca] = useState('');
   const [lista, setLista] = useState<Item[]>([]);
   const [erro, setErro] = useState<string | null>(null);
@@ -69,10 +71,16 @@ function BuscaAlimento({ rotulo, somentePratos, onEscolher }: { rotulo: string; 
 }
 
 export default function EditarReceitaScreen({ config, route }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const receitaId = route.params?.receitaId;
   const origem = route.params?.origem;
   const criando = !receitaId;
   const navigation = useNavigation<any>();
+  // prévia ao vivo: ao lado do editor em telas largas; numa aba nas estreitas (igual à trilha)
+  const { width: larguraJanela } = useWindowDimensions();
+  const lado = larguraJanela >= 1280;
+  const [aba, setAba] = useState<'editar' | 'previa'>('editar');
   const [papel, setPapel] = useState<Papel | null>(null);
   const [receita, setReceita] = useState<ReceitaEditavel | null>(null);
   const [prato, setPrato] = useState<Item | null>(null);
@@ -90,12 +98,6 @@ export default function EditarReceitaScreen({ config, route }: Props) {
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  // editor em blocos: passo aberto (a prévia ao vivo abre o passo a passo nele) + aba no layout estreito
-  const [selecionado, setSelecionado] = useState<number | null>(null);
-  const [aba, setAba] = useState<'editar' | 'previa'>('editar');
-  const { width: larguraJanela } = useWindowDimensions();
-  // com sidebar (248px) só sobra espaço para editor + celular lado a lado a partir de ~1280px
-  const lado = larguraJanela >= 1280;
 
   useEffect(() => { obterPapelAtual().then(setPapel); }, []);
 
@@ -123,7 +125,6 @@ export default function EditarReceitaScreen({ config, route }: Props) {
       setDificuldade(inicial.dificuldade); setFotoUrl(inicial.fotoUrl); setIngredientes(inicial.ingredientes); setPassos(inicial.passos);
       setAssinaturaInicial(assinaturaReceita(inicial));
       setMostrarErros(false);
-      setSelecionado(null);
       setErro(null);
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível abrir a receita.');
@@ -164,28 +165,7 @@ export default function EditarReceitaScreen({ config, route }: Props) {
   const trocar = <T,>(lista: T[], i: number, patch: Partial<T>): T[] => lista.map((x, k) => (k === i ? { ...x, ...patch } : x));
   const tirar = <T,>(lista: T[], i: number): T[] => lista.filter((_, k) => k !== i);
   const mostrar = mostrarErros ? problemas : [];
-
-  function adicionarPasso() {
-    if (passos.length >= LIMITES_RECEITA.passos) return;
-    const pos = posicaoDeInsercao(passos.length, selecionado);
-    setPassos((a) => [...a.slice(0, pos), { titulo: '', descricao: '', fotoUrl: '' }, ...a.slice(pos)]);
-    setSelecionado(pos); // abre o bloco novo e a prévia já mostra o passo
-  }
-  function moverBloco(i: number, dir: -1 | 1) {
-    setPassos((a) => moverPasso(a, i, dir));
-    setSelecionado((sel) => selecaoAposMover(sel, i, dir));
-  }
-  function duplicarBloco(i: number) {
-    if (passos.length >= LIMITES_RECEITA.passos) return;
-    setPassos((a) => [...a.slice(0, i + 1), { ...a[i] }, ...a.slice(i + 1)]);
-    setSelecionado(i + 1);
-  }
-  function removerBloco(i: number) {
-    setPassos((a) => tirar(a, i));
-    setSelecionado((sel) => selecaoAposRemover(sel, i, passos.length - 1));
-  }
-
-  const previa = <PreviaReceitaAoVivo estado={estado} passoSelecionado={selecionado} />;
+  const previa = <PreviaReceitaAoVivo receita={estado} />;
 
   return (
     <PainelLayout config={config} titulo={criando ? 'Nova receita' : 'Editar receita'} subtitulo={receita?.titulo} voltar>
@@ -198,13 +178,16 @@ export default function EditarReceitaScreen({ config, route }: Props) {
           <View style={lado ? styles.colEditor : styles.coluna}>
             {!lado && (
               <View style={styles.chips} accessibilityRole="tablist">
-                <Chip texto="Editar receita" ligado={aba === 'editar'} onPress={() => setAba('editar')} />
-                <Chip texto="Prévia ao vivo" ligado={aba === 'previa'} onPress={() => setAba('previa')} />
+                {([['editar', 'Editar receita'], ['previa', 'Prévia ao vivo']] as const).map(([id, rotulo]) => (
+                  <Pressable key={id} onPress={() => setAba(id)} accessibilityRole="tab" accessibilityState={{ selected: aba === id }} style={[styles.chip, aba === id && styles.chipOn]}>
+                    <AppText style={[styles.chipTexto, aba === id && { color: tema.botaoTexto }]}>{rotulo}</AppText>
+                  </Pressable>
+                ))}
               </View>
             )}
             {!lado && aba === 'previa' && previa}
             {(lado || aba === 'editar') && (
-              <>
+        <>
           <AvisoEdicao papel={papel} />
 
           <CartaoSecao titulo="Prato" ajuda="O prato do catálogo de alimentos que esta receita produz. Não muda depois de criada.">
@@ -234,22 +217,19 @@ export default function EditarReceitaScreen({ config, route }: Props) {
                 {DIFICULDADES.map((d) => <Chip key={d.chave} texto={d.label} ligado={dificuldade === d.chave} onPress={() => setDificuldade(d.chave)} />)}
               </View>
             </View>
-            <LabeledInput label="Foto (link da imagem, opcional)" value={fotoUrl} onChangeText={setFotoUrl} autoCapitalize="none" keyboardType="url" placeholder="https://..." />
-            {urlValida(fotoUrl) && <Image source={{ uri: fotoUrl.trim() }} style={styles.foto} accessibilityLabel="Prévia da foto" />}
+            <CampoImagem rotulo="Foto da receita (opcional)" valor={fotoUrl} onChange={setFotoUrl} />
             <LabeledInput label="Modo de preparo (resumo)" value={modo} onChangeText={setModo} multiline style={campoMultilinha} maxLength={LIMITES_RECEITA.modo.max} />
           </CartaoSecao>
 
           <CartaoSecao titulo="Ingredientes" subtitulo={`${ingredientes.length} ingrediente(s)`} ajuda="Alimento do catálogo + quantidade em texto (ex.: 2 xícaras). Aparecem para o adolescente em ordem alfabética.">
             {ingredientes.map((i, k) => (
-              <BlocoBase
-                key={`${i.alimentoId}-${k}`}
-                cor={COR_RECEITA.ingrediente}
-                titulo={i.nome || 'Alimento'}
-                incompleto={ingredienteIncompleto(i)}
-                botoes={[{ rotulo: '✕', acessivel: 'Remover ingrediente', onPress: () => setIngredientes((a) => tirar(a, k)) }]}
-              >
-                <LabeledInput label="Quantidade" placeholder="ex.: 2 xícaras" value={i.quantidade} maxLength={LIMITES_RECEITA.quantidade} onChangeText={(t) => setIngredientes((a) => trocar(a, k, { quantidade: t }))} />
-              </BlocoBase>
+              <View key={`${i.alimentoId}-${k}`} style={styles.linha}>
+                <AppText style={[styles.rotulo, { flexBasis: 120, flexGrow: 1 }]}>{i.nome || 'Alimento'}</AppText>
+                <View style={{ flex: 1, minWidth: 140 }}>
+                  <LabeledInput label="" placeholder="Quantidade" value={i.quantidade} maxLength={LIMITES_RECEITA.quantidade} onChangeText={(t) => setIngredientes((a) => trocar(a, k, { quantidade: t }))} />
+                </View>
+                <MiniBotao label="✕" perigo acessibilidade="Remover ingrediente" onPress={() => setIngredientes((a) => tirar(a, k))} />
+              </View>
             ))}
             <BuscaAlimento
               rotulo="Adicionar ingrediente"
@@ -257,41 +237,22 @@ export default function EditarReceitaScreen({ config, route }: Props) {
             />
           </CartaoSecao>
 
-          <CartaoSecao titulo="Passo a passo" subtitulo={`${passos.length} passo(s)`} ajuda="Cada passo tem título, descrição e, se quiser, o link de uma foto.">
+          <CartaoSecao titulo="Passo a passo" subtitulo={`${passos.length} passo(s)`} ajuda="Cada passo tem título, descrição e, se quiser, uma foto.">
             {passos.map((p, k) => (
-              <BlocoBase
-                key={k}
-                cor={COR_RECEITA.passo}
-                titulo={`Passo ${k + 1}`}
-                resumo={resumoDoPasso(p)}
-                recolhivel
-                selecionado={selecionado === k}
-                incompleto={passoIncompleto(p)}
-                onSelecionar={() => setSelecionado(k)}
-                botoes={[
-                  { rotulo: '↑', acessivel: 'Subir passo', desativado: k === 0, onPress: () => moverBloco(k, -1) },
-                  { rotulo: '↓', acessivel: 'Descer passo', desativado: k === passos.length - 1, onPress: () => moverBloco(k, 1) },
-                  { rotulo: '⧉', acessivel: 'Duplicar passo', onPress: () => duplicarBloco(k) },
-                  { rotulo: '✕', acessivel: 'Remover passo', onPress: () => removerBloco(k) },
-                ]}
-              >
+              <View key={k} style={styles.passo}>
+                <View style={styles.linha}>
+                  <AppText style={[styles.rotulo, { flex: 1 }]}>Passo {k + 1}</AppText>
+                  <MiniBotao label="↑" acessibilidade="Mover passo para cima" desativado={k === 0} onPress={() => setPassos((a) => moverPasso(a, k, -1))} />
+                  <MiniBotao label="↓" acessibilidade="Mover passo para baixo" desativado={k === passos.length - 1} onPress={() => setPassos((a) => moverPasso(a, k, 1))} />
+                  <MiniBotao label="REMOVER" perigo onPress={() => setPassos((a) => tirar(a, k))} />
+                </View>
                 <LabeledInput label="Título" value={p.titulo} maxLength={LIMITES_RECEITA.passoTitulo} onChangeText={(t) => setPassos((a) => trocar(a, k, { titulo: t }))} />
                 <LabeledInput label="Descrição" value={p.descricao} multiline style={{ minHeight: 70, textAlignVertical: 'top' }} maxLength={LIMITES_RECEITA.passoDescricao} onChangeText={(t) => setPassos((a) => trocar(a, k, { descricao: t }))} />
-                <LabeledInput label="Foto do passo (link, opcional)" value={p.fotoUrl} autoCapitalize="none" keyboardType="url" onChangeText={(t) => setPassos((a) => trocar(a, k, { fotoUrl: t }))} />
-              </BlocoBase>
+                <CampoImagem compacto rotulo="Foto do passo (opcional)" valor={p.fotoUrl} onChange={(u) => setPassos((a) => trocar(a, k, { fotoUrl: u }))} />
+              </View>
             ))}
             <View style={{ flexDirection: 'row' }}>
-              <Pressable
-                disabled={passos.length >= LIMITES_RECEITA.passos}
-                onPress={adicionarPasso}
-                accessibilityRole="button"
-                accessibilityLabel="Adicionar passo"
-                style={({ pressed }) => [styles.peca, pressed && { marginTop: 2, borderBottomWidth: 2 }, passos.length >= LIMITES_RECEITA.passos && { opacity: 0.4 }]}
-              >
-                <AppText style={styles.pecaTexto}>
-                  {selecionado !== null && selecionado < passos.length ? `+ PASSO (depois do ${selecionado + 1})` : '+ PASSO'}
-                </AppText>
-              </Pressable>
+              <AppButton label="+ ADICIONAR PASSO" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botaoPequeno} disabled={passos.length >= LIMITES_RECEITA.passos} onPress={() => setPassos((a) => [...a, { titulo: '', descricao: '', fotoUrl: '' }])} />
             </View>
           </CartaoSecao>
 
@@ -302,14 +263,14 @@ export default function EditarReceitaScreen({ config, route }: Props) {
           )}
           {!criando && receita && (
             <View style={{ flexDirection: 'row' }}>
-              <AppButton label="ABRIR REVISÃO (VERSÃO SALVA)" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} style={styles.botaoPequeno} onPress={() => navigation.navigate('ReceitaPreview', { receitaId: receita.id, origem })} />
+              <AppButton label="PRÉ-VISUALIZAR RECEITA" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botaoPequeno} onPress={() => navigation.navigate('ReceitaPreview', { receitaId: receita.id, origem })} />
             </View>
           )}
-          {!criando && alterada && <AppText style={styles.suave}>Há alterações não salvas. A prévia ao vivo já mostra tudo; a tela de revisão abre a versão salva.</AppText>}
+          {!criando && alterada && <AppText style={styles.suave}>Há alterações não salvas. A prévia mostra o que está salvo.</AppText>}
 
-              </>
+          <BarraSalvar rotulo={criando ? 'CRIAR RECEITA' : 'SALVAR RECEITA'} ocupado={ocupado} onSalvar={salvar} onCancelar={() => navigation.goBack()} erro={erro} mensagem={msg} />
+        </>
             )}
-            <BarraSalvar rotulo={criando ? 'CRIAR RECEITA' : 'SALVAR RECEITA'} ocupado={ocupado} onSalvar={salvar} onCancelar={() => navigation.goBack()} erro={erro} mensagem={msg} />
           </View>
 
           {lado && (
@@ -323,24 +284,22 @@ export default function EditarReceitaScreen({ config, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   coluna: { gap: 16 },
   linhaLarga: { flexDirection: 'row', gap: 24 },
   colEditor: { flex: 1, minWidth: 0, gap: 16 },
   colPrevia: { width: 420 },
-  peca: { minHeight: 44, paddingHorizontal: 16, borderRadius: 12, borderWidth: 2, borderBottomWidth: 5, justifyContent: 'center', backgroundColor: COR_RECEITA.passo.fundo, borderColor: COR_RECEITA.passo.borda },
-  pecaTexto: { fontFamily: typography.bold, fontSize: 13, color: colors.white },
-  rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark },
-  suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
+  rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
+  suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: painel.cardBorda, justifyContent: 'center', backgroundColor: painel.card },
-  chipOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
+  chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  passo: { borderWidth: 2, borderColor: painel.cardBorda, borderRadius: 14, padding: 12, gap: 8 },
-  foto: { width: '100%', maxWidth: 320, height: 180, borderRadius: 12, backgroundColor: '#EFEFEF' },
+  passo: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 8 },
+  foto: { width: '100%', maxWidth: 320, height: 180, borderRadius: 12, backgroundColor: t.superficieSuave },
   botaoPequeno: { paddingHorizontal: 14, minHeight: 44 },
-  erros: { backgroundColor: colors.exercicioErroSuave + '55', borderRadius: 12, padding: 10, gap: 2 },
-  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-});
+  erros: { backgroundColor: t.selos.erro.fundo + '55', borderRadius: 12, padding: 10, gap: 2 },
+  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+}) as const;

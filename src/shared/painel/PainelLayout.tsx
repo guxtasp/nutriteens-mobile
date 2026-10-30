@@ -7,15 +7,19 @@
 // Cada tela renderiza <PainelLayout> por dentro; o navigator usa animation:'none'
 // para a troca de tela não "piscar" o menu.
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../ui/AppText';
 import { useAuth } from '../contexts/AuthContext';
-import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { painel } from './painelTheme';
+import type { TemaPainel } from './tema/paletas';
+import { TEMAS } from './tema/paletas';
+import { TemaPainelFixo, useEstilos, useTemaPainel } from './tema/TemaPainelContext';
+import { rotaTemTema } from './tema/rotasComTema';
+import { SeletorTema } from './components/SeletorTema';
 import { useModoPainel } from './hooks/useModoPainel';
 import type { ConfigPainel, ItemMenu } from './types';
 import { rotaMenuAtiva } from './menuAtivo';
@@ -55,11 +59,13 @@ function Menu({
   function ativo(item: ItemMenu) {
     return item.rota === rotaAtiva;
   }
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={styles.menu}>
       <View style={[styles.marca, compacto && styles.marcaCompacta]}>
         <View style={styles.marcaIcone}>
-          <Ionicons name="leaf" size={20} color={colors.primaryDark} />
+          <Ionicons name="leaf" size={20} color={tema.nome === 'escuro' ? '#10241A' : tema.texto} />
         </View>
         {!compacto && (
           <View style={{ flexShrink: 1 }}>
@@ -80,7 +86,7 @@ function Menu({
               onPress={() => onNavegar(item.rota)}
               style={[styles.item, compacto && styles.itemCompacto, on && styles.itemAtivo]}
             >
-              <Ionicons name={item.icone} size={20} color={on ? colors.primaryDark : colors.textOnDarkMuted} />
+              <Ionicons name={item.icone} size={20} color={on ? tema.menuTextoAtivo : tema.menuTexto} />
               {!compacto && (
                 <AppText numberOfLines={1} style={[styles.itemTexto, on && styles.itemTextoAtivo, { flexShrink: 1 }]}>
                   {item.label}
@@ -96,13 +102,14 @@ function Menu({
         })}
       </ScrollView>
 
+      <SeletorTema variante="menu" compacto={compacto} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Sair"
         onPress={onSair}
         style={[styles.item, compacto && styles.itemCompacto, styles.sair]}
       >
-        <Ionicons name="log-out-outline" size={20} color={colors.textOnDarkMuted} />
+        <Ionicons name="log-out-outline" size={20} color={tema.menuTexto} />
         {!compacto && <AppText style={styles.itemTexto}>Sair</AppText>}
       </Pressable>
     </View>
@@ -115,8 +122,29 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
   const { signOut } = useAuth();
   const { modo } = useModoPainel();
   const insets = useSafeAreaInsets();
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [gavetaAberta, setGavetaAberta] = useState(false);
   const pendentesScanner = usePendentesScanner(config.itens.some((i) => i.selo === 'SCANNER_PENDENTES'));
+
+  // No tema escuro, telas que ainda usam cores fixas aparecem dentro de uma "ilha" clara
+  // (texto escuro sobre fundo claro), para continuarem legíveis até serem migradas.
+  const legado = tema.nome === 'escuro' && !rotaTemTema(route.name);
+  const conteudo = legado ? (
+    <TemaPainelFixo nome="claro">
+      <View style={[styles.ilhaLegado, !rolagem && { flex: 1 }]}>{children}</View>
+    </TemaPainelFixo>
+  ) : (
+    children
+  );
+  const acaoFinal =
+    acao && legado ? (
+      <TemaPainelFixo nome="claro">
+        <View style={styles.acaoLegado}>{acao}</View>
+      </TemaPainelFixo>
+    ) : (
+      acao
+    );
 
   function navegar(rota: string) {
     setGavetaAberta(false);
@@ -136,14 +164,14 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
       <View style={{ flex: 1, minWidth: 200 }}>
         {voltar && (
           <Pressable onPress={aoVoltar} style={styles.voltar} accessibilityRole="button" accessibilityLabel="Voltar">
-            <Ionicons name="chevron-back" size={18} color={colors.primaryDark} />
+            <Ionicons name="chevron-back" size={18} color={tema.texto} />
             <AppText style={styles.voltarTexto}>Voltar</AppText>
           </Pressable>
         )}
         <AppText style={styles.titulo}>{titulo}</AppText>
         {!!subtitulo && <AppText style={styles.subtitulo}>{subtitulo}</AppText>}
       </View>
-      {!!acao && <View style={styles.acao}>{acao}</View>}
+      {!!acaoFinal && <View style={styles.acao}>{acaoFinal}</View>}
     </View>
   );
 
@@ -155,7 +183,7 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
     >
       <View style={styles.coluna}>
         {cabecalho}
-        <LimiteErro chaveReset={route.name}>{children}</LimiteErro>
+        <LimiteErro chaveReset={route.name}>{conteudo}</LimiteErro>
       </View>
     </ScrollView>
   ) : (
@@ -163,11 +191,13 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
       <View style={[styles.coluna, { flex: 1 }]}>
         {cabecalho}
         <View style={[{ flex: 1 }, moldura && styles.moldura]}>
-          <LimiteErro chaveReset={route.name}>{children}</LimiteErro>
+          <LimiteErro chaveReset={route.name}>{conteudo}</LimiteErro>
         </View>
       </View>
     </View>
   );
+
+  const rotaAtiva = rotaMenuAtiva(config, route.name, (route.params as any)?.origem) ?? route.name;
 
   return (
     <View style={styles.root}>
@@ -178,7 +208,7 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
             { width: modo === 'desktop' ? painel.larguraSidebar : painel.larguraRail, paddingTop: insets.top },
           ]}
         >
-          <Menu config={config} rotaAtiva={rotaMenuAtiva(config, route.name, (route.params as any)?.origem) ?? route.name} compacto={modo === 'tablet'} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
+          <Menu config={config} rotaAtiva={rotaAtiva} compacto={modo === 'tablet'} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
         </View>
       )}
 
@@ -191,9 +221,11 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
               accessibilityRole="button"
               accessibilityLabel="Abrir menu"
             >
-              <Ionicons name="menu" size={26} color={colors.white} />
+              <Ionicons name="menu" size={26} color={tema.menuMarcaTexto} />
             </Pressable>
             <AppText style={styles.barraTitulo}>NutriTeens · {config.papelLabel}</AppText>
+            <View style={{ flex: 1 }} />
+            <SeletorTema variante="barra" />
           </View>
         )}
         {corpo}
@@ -203,7 +235,7 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
         <Modal visible={gavetaAberta} transparent animationType="fade" onRequestClose={() => setGavetaAberta(false)}>
           <View style={styles.gavetaFundo}>
             <View style={[styles.gaveta, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-              <Menu config={config} rotaAtiva={rotaMenuAtiva(config, route.name, (route.params as any)?.origem) ?? route.name} compacto={false} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
+              <Menu config={config} rotaAtiva={rotaAtiva} compacto={false} onNavegar={navegar} onSair={sair} pendentesScanner={pendentesScanner} />
             </View>
             <Pressable style={{ flex: 1 }} onPress={() => setGavetaAberta(false)} accessibilityLabel="Fechar menu" />
           </View>
@@ -213,59 +245,42 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
   );
 }
 
-const styles = StyleSheet.create({
-  selo: { marginLeft: 'auto', minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  seloCompacto: { position: 'absolute', top: 6, right: 6, minWidth: 10, width: 10, height: 10, paddingHorizontal: 0, borderRadius: 5 },
-  seloTexto: { fontFamily: typography.bold, fontSize: 11, color: colors.primaryDark },
-  root: { flex: 1, flexDirection: 'row', backgroundColor: painel.fundo },
-  sidebar: { backgroundColor: colors.background },
-  menu: { flex: 1, paddingHorizontal: 12, paddingBottom: 12 },
-  marca: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 20, paddingHorizontal: 8 },
-  marcaCompacta: { justifyContent: 'center', paddingHorizontal: 0 },
-  marcaIcone: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  marcaNome: { fontFamily: typography.bold, fontSize: 16, color: colors.white },
-  marcaPapel: { fontFamily: typography.regular, fontSize: 12, color: colors.textOnDarkMuted },
-  itens: { gap: 4, paddingBottom: 8 },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    minHeight: 48,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-  },
-  itemCompacto: { justifyContent: 'center', paddingHorizontal: 0 },
-  itemAtivo: { backgroundColor: colors.primary },
-  itemTexto: { fontFamily: typography.medium, fontSize: 14, color: colors.textOnDarkMuted, flexShrink: 1 },
-  itemTextoAtivo: { fontFamily: typography.bold, color: colors.primaryDark },
-  sair: { marginTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', borderRadius: 0 },
+const criarEstilos = (t: TemaPainel) => ({
+  selo: { marginLeft: 'auto', minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, backgroundColor: t.destaque, alignItems: 'center', justifyContent: 'center' } as const,
+  seloCompacto: { position: 'absolute', top: 6, right: 6, minWidth: 10, width: 10, height: 10, paddingHorizontal: 0, borderRadius: 5 } as const,
+  seloTexto: { fontFamily: typography.bold, fontSize: 11, color: '#10241A' } as const,
+  root: { flex: 1, flexDirection: 'row', backgroundColor: t.fundo } as const,
+  sidebar: { backgroundColor: t.menuFundo } as const,
+  menu: { flex: 1, paddingHorizontal: 12, paddingBottom: 12 } as const,
+  marca: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 20, paddingHorizontal: 8 } as const,
+  marcaCompacta: { justifyContent: 'center', paddingHorizontal: 0 } as const,
+  marcaIcone: { width: 36, height: 36, borderRadius: 12, backgroundColor: t.destaque, alignItems: 'center', justifyContent: 'center' } as const,
+  marcaNome: { fontFamily: typography.bold, fontSize: 16, color: t.menuMarcaTexto } as const,
+  marcaPapel: { fontFamily: typography.regular, fontSize: 12, color: t.menuTexto } as const,
+  itens: { gap: 4, paddingBottom: 8 } as const,
+  item: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingHorizontal: 12, borderRadius: 14 } as const,
+  itemCompacto: { justifyContent: 'center', paddingHorizontal: 0 } as const,
+  itemAtivo: { backgroundColor: t.menuAtivoFundo } as const,
+  itemTexto: { fontFamily: typography.medium, fontSize: 14, color: t.menuTexto, flexShrink: 1 } as const,
+  itemTextoAtivo: { fontFamily: typography.bold, color: t.menuTextoAtivo } as const,
+  sair: { marginTop: 4, borderTopWidth: 1, borderTopColor: t.menuDivisor, borderRadius: 0 } as const,
 
-  barraTopo: { backgroundColor: colors.background, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 6 },
-  botaoMenu: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  barraTitulo: { fontFamily: typography.bold, fontSize: 15, color: colors.white, flexShrink: 1 },
-  gavetaFundo: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.45)' },
-  gaveta: { width: '82%', maxWidth: 300, backgroundColor: colors.background },
+  barraTopo: { backgroundColor: t.menuFundo, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 6 } as const,
+  botaoMenu: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' } as const,
+  barraTitulo: { fontFamily: typography.bold, fontSize: 15, color: t.menuMarcaTexto, flexShrink: 1 } as const,
+  gavetaFundo: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.45)' } as const,
+  gaveta: { width: '82%', maxWidth: 300, backgroundColor: t.menuFundo } as const,
 
-  corpoRolagem: { paddingHorizontal: 16, paddingTop: 16 },
-  coluna: { width: '100%', maxWidth: painel.conteudoMax, alignSelf: 'center', gap: 16 },
-  cabecalho: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 },
-  titulo: { fontFamily: typography.bold, fontSize: 24, color: colors.primaryDark },
-  subtitulo: { fontFamily: typography.regular, fontSize: 13, color: painel.textoSuave, marginTop: 2 },
-  acao: { flexShrink: 0 },
-  voltar: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', minHeight: 40, marginLeft: -4 },
-  voltarTexto: { fontFamily: typography.medium, fontSize: 13, color: colors.primaryDark },
-  moldura: {
-    backgroundColor: colors.white,
-    borderRadius: painel.cardRaio,
-    borderWidth: 2,
-    borderColor: painel.cardBorda,
-    overflow: 'hidden',
-  },
+  corpoRolagem: { paddingHorizontal: 16, paddingTop: 16 } as const,
+  coluna: { width: '100%', maxWidth: painel.conteudoMax, alignSelf: 'center', gap: 16 } as const,
+  cabecalho: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 } as const,
+  titulo: { fontFamily: typography.bold, fontSize: 24, color: t.texto } as const,
+  subtitulo: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, marginTop: 2 } as const,
+  acao: { flexShrink: 0 } as const,
+  voltar: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', minHeight: 40, marginLeft: -4 } as const,
+  voltarTexto: { fontFamily: typography.medium, fontSize: 13, color: t.texto } as const,
+  moldura: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, overflow: 'hidden' } as const,
+  // telas ainda sem tema, dentro do tema escuro
+  ilhaLegado: { backgroundColor: TEMAS.claro.fundo, borderRadius: t.cardRaio, padding: 12 } as const,
+  acaoLegado: { backgroundColor: TEMAS.claro.fundo, borderRadius: 14, padding: 6 } as const,
 });

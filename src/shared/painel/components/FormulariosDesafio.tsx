@@ -2,20 +2,22 @@
 // Formulários visuais do painel: criar/editar desafio semanal ou mensal, e
 // criar/editar conquista ou marco. Sem código: é só preencher e salvar.
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../ui/AppText';
 import { AppButton } from '../../ui/AppButton';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
 import { ChipsFiltro } from './ControlesLista';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 import {
   CRITERIO_LABEL, ICONES_CONQUISTA, METRICA_LABEL, NUTRIENTES_DESAFIO,
   DesafioPeriodico, InsigniaPainel, salvarDesafioPeriodico, salvarInsignia,
 } from '../../../features/nutricionista/services/desafiosService';
 
 function Campo({ rotulo, dica, children }: { rotulo: string; dica?: string; children: React.ReactNode }) {
+  const s = useEstilos(criarEstilos);
   return (
     <View style={{ gap: 6 }}>
       <AppText style={s.rotulo}>{rotulo}</AppText>
@@ -26,12 +28,14 @@ function Campo({ rotulo, dica, children }: { rotulo: string; dica?: string; chil
 }
 
 function Rodape({ salvando, erro, onSalvar, onCancelar, rotulo }: { salvando: boolean; erro: string | null; onSalvar: () => void; onCancelar: () => void; rotulo: string }) {
+  const s = useEstilos(criarEstilos);
+  const { tema } = useTemaPainel();
   return (
     <View style={{ gap: 8 }}>
       {!!erro && <AppText style={s.erro}>{erro}</AppText>}
       <View style={s.botoes}>
         <AppButton label={salvando ? 'SALVANDO...' : rotulo} fullWidth={false} size="compact" disabled={salvando} onPress={onSalvar} style={{ paddingHorizontal: 18, minHeight: 44 }} />
-        <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} onPress={onCancelar} style={{ paddingHorizontal: 18, minHeight: 44 }} />
+        <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} onPress={onCancelar} style={{ paddingHorizontal: 18, minHeight: 44 }} />
       </View>
     </View>
   );
@@ -40,6 +44,7 @@ function Rodape({ salvando, erro, onSalvar, onCancelar, rotulo }: { salvando: bo
 const METRICAS = Object.keys(METRICA_LABEL).map((k) => ({ chave: k, label: METRICA_LABEL[k] }));
 
 export function FormDesafioPeriodico({ inicial, onSalvo, onCancelar }: { inicial?: DesafioPeriodico | null; onSalvo: () => void; onCancelar: () => void }) {
+  const s = useEstilos(criarEstilos);
   const [periodo, setPeriodo] = useState<'SEMANAL' | 'MENSAL'>(inicial?.periodo ?? 'SEMANAL');
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '');
   const [descricao, setDescricao] = useState(inicial?.descricao ?? '');
@@ -102,6 +107,8 @@ const METRICA_DIAS = new Set(['DIAS_AGUA_META', 'DIAS_ATIVIDADE_META', 'DIAS_COM
 const CRITERIOS = Object.keys(CRITERIO_LABEL).map((k) => ({ chave: k, label: CRITERIO_LABEL[k] }));
 
 export function FormConquista({ inicial, onSalvo, onCancelar }: { inicial?: InsigniaPainel | null; onSalvo: () => void; onCancelar: () => void }) {
+  const s = useEstilos(criarEstilos);
+  const { tema } = useTemaPainel();
   const ehInsignia = inicial?.categoria === 'insignia';
   const [categoria, setCategoria] = useState<'conquista' | 'marco'>(inicial?.categoria === 'marco' ? 'marco' : 'conquista');
   const [nome, setNome] = useState(inicial?.nome ?? '');
@@ -145,7 +152,7 @@ export function FormConquista({ inicial, onSalvo, onCancelar }: { inicial?: Insi
           <View style={s.icones}>
             {ICONES_CONQUISTA.map((n) => (
               <Pressable key={n} onPress={() => setIcone(n)} accessibilityLabel={`Ícone ${n}`} style={[s.icone, icone === n && s.iconeAtivo]}>
-                <Ionicons name={n as any} size={22} color={icone === n ? colors.primaryDark : painel.textoSuave} />
+                <Ionicons name={n as any} size={22} color={icone === n ? tema.texto : tema.textoSuave} />
               </Pressable>
             ))}
           </View>
@@ -160,16 +167,16 @@ export function FormConquista({ inicial, onSalvo, onCancelar }: { inicial?: Insi
   );
 }
 
-const s = StyleSheet.create({
-  form: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: colors.primary, padding: 16, gap: 14 },
-  tituloForm: { fontFamily: typography.bold, fontSize: 16, color: colors.primaryDark },
-  rotulo: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-  dica: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
-  input: { borderWidth: 1.5, borderColor: '#D9D9D9', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontFamily: typography.regular, fontSize: 14, color: colors.primaryDark, backgroundColor: '#fff' },
+const criarEstilos = (t: TemaPainel) => ({
+  form: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: colors.primary, padding: 16, gap: 14 },
+  tituloForm: { fontFamily: typography.bold, fontSize: 16, color: t.texto },
+  rotulo: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
+  dica: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
+  input: { borderWidth: 1.5, borderColor: t.chipBorda, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontFamily: typography.regular, fontSize: 14, color: t.texto, backgroundColor: t.superficieSuave },
   linha: { flexDirection: 'row', gap: 12 },
   botoes: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
   icones: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  icone: { width: 44, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: '#D9E2E8', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  iconeAtivo: { borderColor: colors.primary, backgroundColor: '#E3F5D4' },
-});
+  icone: { width: 44, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: t.chipBorda, alignItems: 'center', justifyContent: 'center', backgroundColor: t.card },
+  iconeAtivo: { borderColor: colors.primary, backgroundColor: t.destaqueSuave },
+}) as const;

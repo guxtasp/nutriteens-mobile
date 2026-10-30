@@ -1,16 +1,17 @@
 // src/shared/painel/components/CartaoSecao.tsx
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { AppText } from '../../ui/AppText';
-import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos } from '../tema/TemaPainelContext';
 import { AjudaInfo } from './AjudaInfo';
 
 type Props = { titulo: string; subtitulo?: string; ajuda?: string; direita?: React.ReactNode; children: React.ReactNode };
 
-/** Cartão branco padrão (mesmo raio/borda dos cards do adolescente). */
+/** Cartão padrão do painel (mesmo raio/borda dos cards do adolescente), claro ou escuro. */
 export function CartaoSecao({ titulo, subtitulo, ajuda, direita, children }: Props) {
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={styles.card}>
       <View style={styles.topo}>
@@ -28,18 +29,10 @@ export function CartaoSecao({ titulo, subtitulo, ajuda, direita, children }: Pro
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: painel.card,
-    borderRadius: painel.cardRaio,
-    borderWidth: 2,
-    borderColor: painel.cardBorda,
-    padding: 16,
-    gap: 12,
-    minWidth: 0,
-  },
-  topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 },
-  linhaTitulo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  titulo: { fontFamily: typography.bold, fontSize: 15, color: colors.primaryDark },
-  subtitulo: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, marginTop: 2 },
+const criarEstilos = (t: TemaPainel) => ({
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 12, minWidth: 0 } as const,
+  topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 } as const,
+  linhaTitulo: { flexDirection: 'row', alignItems: 'center', gap: 8 } as const,
+  titulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto } as const,
+  subtitulo: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, marginTop: 2 } as const,
 });

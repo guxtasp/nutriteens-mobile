@@ -2,7 +2,7 @@
 // Lista de participantes (adolescentes) para a nutricionista: busca, filtro por classificação
 // de segurança alimentar (EBIA), ordenação e "carregar mais". Toque abre o acompanhamento.
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
@@ -13,9 +13,9 @@ import { useListaPaginada } from '../../../shared/painel/hooks/useListaPaginada'
 import { useModoPainel } from '../../../shared/painel/hooks/useModoPainel';
 import { ultimoAcessoTexto } from '../../../shared/painel/formatadores';
 import { AppText } from '../../../shared/ui/AppText';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { NUTRICIONISTA_PAINEL } from '../navigation/nutricionistaMenu';
 import { EBIA_LABEL, Participante, listarParticipantes } from '../services/participantesService';
 
@@ -46,6 +46,7 @@ export function seloEbia(c: string | null) {
 const nome = (p: Participante) => p.nome?.trim() || p.apelido?.trim() || 'Sem nome';
 
 export default function ParticipantesScreen() {
+  const styles = useEstilos(criarEstilos);
   const navigation = useNavigation<any>();
   const { modo } = useModoPainel();
   const lista = useListaPaginada<Participante>(
@@ -135,21 +136,21 @@ export default function ParticipantesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   controles: { gap: 12, marginBottom: 12 },
-  ordemRotulo: { fontFamily: typography.medium, fontSize: 12, color: painel.textoSuave },
+  ordemRotulo: { fontFamily: typography.medium, fontSize: 12, color: t.textoSuave },
   linha: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  linhaDado: { backgroundColor: painel.card, borderRadius: 14, borderWidth: 2, borderColor: painel.cardBorda, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56 },
-  th: { fontFamily: typography.bold, fontSize: 11, color: painel.textoSuave, textTransform: 'uppercase' },
-  td: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight },
+  linhaDado: { backgroundColor: t.card, borderRadius: 14, borderWidth: 2, borderColor: t.cardBorda, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56 },
+  th: { fontFamily: typography.bold, fontSize: 11, color: t.textoSuave, textTransform: 'uppercase' },
+  td: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo },
   cNome: { flex: 3, minWidth: 0 },
   cIdade: { flex: 0.8, minWidth: 0 },
   cEbia: { flex: 2.4, minWidth: 0 },
   cNum: { flex: 1, minWidth: 0 },
   cAcesso: { flex: 1.6, minWidth: 0 },
-  nome: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
-  sub: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-  card: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda, padding: 14, gap: 6, minHeight: 48 },
+  nome: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
+  sub: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14, gap: 6, minHeight: 48 },
   cardTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error, textAlign: 'center' },
-});
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro, textAlign: 'center' },
+}) as const;

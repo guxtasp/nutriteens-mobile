@@ -2,7 +2,7 @@
 // Preferências do painel que existem de verdade hoje: conta atual, reexibir as dicas
 // ("i" e cartões de introdução) e sair.
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
@@ -10,15 +10,17 @@ import { LinhaInfo } from '../../../shared/painel/components/ControlesLista';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { supabase } from '../../../lib/supabase';
 import { ADMIN_PAINEL } from '../navigation/adminMenu';
 
 const PREFIXO_INTRO = 'painel_intro_v1_';
 
 export default function ConfiguracoesScreen() {
+  const styles = useEstilos(criarEstilos);
+  const { tema } = useTemaPainel();
   const { session, signOut } = useAuth();
   const [nome, setNome] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -53,8 +55,8 @@ export default function ConfiguracoesScreen() {
             label="MOSTRAR DICAS DE NOVO"
             fullWidth={false}
             size="compact"
-            outlineColor={colors.primaryDark}
-            textColor={colors.primaryDark}
+            outlineColor={tema.texto}
+            textColor={tema.texto}
             style={styles.botao}
             onPress={reexibirDicas}
           />
@@ -68,9 +70,9 @@ export default function ConfiguracoesScreen() {
             label="SAIR DA CONTA"
             fullWidth={false}
             size="compact"
-            backgroundColor={colors.primaryDark}
-            textColor={colors.white}
-            shadowColor="#123024"
+            backgroundColor={tema.botaoFundo}
+            textColor={tema.botaoTexto}
+            shadowColor={tema.botaoSombra}
             style={styles.botao}
             onPress={() => signOut().catch((e) => console.error('Erro ao sair:', e))}
           />
@@ -80,9 +82,9 @@ export default function ConfiguracoesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  texto: { fontFamily: typography.regular, fontSize: 13, color: painel.textoSuave },
+const criarEstilos = (t: TemaPainel) => ({
+  texto: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave },
   linha: { flexDirection: 'row' },
   botao: { paddingHorizontal: 18, minHeight: 44 },
-  aviso: { fontFamily: typography.semiBold, fontSize: 13, color: '#2F6B12' },
-});
+  aviso: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto },
+}) as const;

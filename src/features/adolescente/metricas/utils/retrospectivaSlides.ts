@@ -40,6 +40,8 @@ export type RetrospectivaAno = {
   slides: SlideAno[];
   /** texto pronto para compartilhar (parabeniza, resume e apresenta o app) */
   textoCompartilhar: string;
+  /** chave do avatar do usuário (profiles.avatar_social), para o cartão "Festa"; preenchida pelo serviço */
+  avatar?: string | null;
 };
 
 export const MAX_NUMEROS = 4;

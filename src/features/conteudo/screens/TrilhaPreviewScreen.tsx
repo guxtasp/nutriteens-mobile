@@ -5,16 +5,14 @@
 //  - "Estrutura (revisão)": resumo (módulos, lições, passos, XP possível), lacunas e se o
 //    adolescente chega a ver esta trilha hoje.
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { TrilhaCaminho } from '../../adolescente/trilha/components/TrilhaPath';
 import { buscarTrilhaEditavel, listarTrilhasOrdem, type TrilhaEditavel, type TrilhaOrdemLinha } from '../services/edicaoService';
@@ -22,12 +20,16 @@ import { AbasPrevia, type AbaPrevia } from '../components/preview/AbasPrevia';
 import { QuadroCelular } from '../components/preview/QuadroCelular';
 import { alertasTrilha, gruposDoCaminho, resumoTrilha } from '../utils/previa';
 import { posicaoNoCaminho, textoPosicaoNoCaminho } from '../utils/trilhaEdicao';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 
 type Props = { config: ConfigPainel; route: { params: { trilhaId: string; origem?: string } } };
 
 const ROTULO_TIPO: Record<string, string> = { conteudo: 'Leitura', quiz: 'Quiz', atividade_rastreavel: 'Prática real' };
 
 export default function TrilhaPreviewScreen({ config, route }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const { trilhaId, origem } = route.params;
   const navigation = useNavigation<any>();
   const [trilha, setTrilha] = useState<TrilhaEditavel | null>(null);
@@ -126,7 +128,7 @@ export default function TrilhaPreviewScreen({ config, route }: Props) {
           )}
 
           <View style={{ flexDirection: 'row' }}>
-            <AppButton label="EDITAR TRILHA" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} style={styles.botao} onPress={() => navigation.navigate('EditarTrilha', { trilhaId, origem })} />
+            <AppButton label="EDITAR TRILHA" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botao} onPress={() => navigation.navigate('EditarTrilha', { trilhaId, origem })} />
           </View>
         </>
       )}
@@ -134,15 +136,15 @@ export default function TrilhaPreviewScreen({ config, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  texto: { fontFamily: typography.regular, fontSize: 14, lineHeight: 20, color: colors.textOnLight },
-  suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
-  ok: { fontFamily: typography.semiBold, fontSize: 13, color: '#2F6B12' },
-  alertas: { backgroundColor: '#FDE3E1', borderRadius: 12, padding: 10, gap: 4 },
-  alertaTexto: { fontFamily: typography.semiBold, fontSize: 12, color: '#B3261E' },
-  modulo: { borderWidth: 2, borderColor: painel.cardBorda, borderRadius: 14, padding: 12, gap: 6 },
-  moduloTitulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
-  licao: { minHeight: 48, justifyContent: 'center', borderTopWidth: 1, borderTopColor: '#EFEFEF', paddingVertical: 4 },
-  licaoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.textOnLight },
+const criarEstilos = (t: TemaPainel) => ({
+  texto: { fontFamily: typography.regular, fontSize: 14, lineHeight: 20, color: t.textoCorpo },
+  suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
+  ok: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto },
+  alertas: { backgroundColor: t.selos.erro.fundo, borderRadius: 12, padding: 10, gap: 4 },
+  alertaTexto: { fontFamily: typography.semiBold, fontSize: 12, color: t.erro },
+  modulo: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 6 },
+  moduloTitulo: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
+  licao: { minHeight: 48, justifyContent: 'center', borderTopWidth: 1, borderTopColor: t.linhaSuave, paddingVertical: 4 },
+  licaoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.textoCorpo },
   botao: { paddingHorizontal: 14, minHeight: 44 },
-});
+}) as const;

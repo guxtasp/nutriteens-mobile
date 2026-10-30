@@ -84,7 +84,7 @@ export function useAniversario({ userId, hojeISO, primeiroNome, podeMostrar }: P
       try {
         const jaFoi = await jaCelebrouAniversario(userId, situacao.ano);
         console.log('[ANIV] gate já celebrou?', jaFoi); // TEMP
-        //if (jaFoi) return;
+        if (jaFoi) return;
         if (cancelado) return;
 
         await marcarAniversarioCelebrado(userId, situacao.ano);

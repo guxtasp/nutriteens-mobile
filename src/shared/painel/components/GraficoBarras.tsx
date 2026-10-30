@@ -3,12 +3,12 @@
 // Barras horizontais (ranking ou comparação "iniciados x concluídos").
 // Em Views — escala bem em qualquer largura e vira lista legível no celular.
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { AppText } from '../../ui/AppText';
-import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
 import { formatarNumero } from '../formatadores';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 
 export type ItemBarra = { rotulo: string; valores: number[] };
 type Props = {
@@ -19,6 +19,8 @@ type Props = {
 };
 
 export function GraficoBarras({ itens, series, vazio = 'Sem dados no período.' }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const max = Math.max(1, ...itens.flatMap((i) => i.valores));
   if (itens.length === 0) return <AppText style={styles.vazio}>{vazio}</AppText>;
   return (
@@ -27,7 +29,7 @@ export function GraficoBarras({ itens, series, vazio = 'Sem dados no período.' 
         <View style={styles.legenda}>
           {series.map((s, i) => (
             <View key={s} style={styles.legendaItem}>
-              <View style={[styles.ponto, { backgroundColor: painel.serie[i % painel.serie.length] }]} />
+              <View style={[styles.ponto, { backgroundColor: tema.serie[i % tema.serie.length] }]} />
               <AppText style={styles.legendaTexto}>{s}</AppText>
             </View>
           ))}
@@ -44,7 +46,7 @@ export function GraficoBarras({ itens, series, vazio = 'Sem dados no período.' 
                 <View
                   style={[
                     styles.barra,
-                    { width: `${Math.max(v > 0 ? 2 : 0, (v / max) * 100)}%`, backgroundColor: painel.serie[i % painel.serie.length] },
+                    { width: `${Math.max(v > 0 ? 2 : 0, (v / max) * 100)}%`, backgroundColor: tema.serie[i % tema.serie.length] },
                   ]}
                 />
               </View>
@@ -57,15 +59,15 @@ export function GraficoBarras({ itens, series, vazio = 'Sem dados no período.' 
   );
 }
 
-const styles = StyleSheet.create({
-  vazio: { fontFamily: typography.regular, fontSize: 13, color: painel.textoSuave, paddingVertical: 12 },
-  legenda: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
-  legendaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  ponto: { width: 10, height: 10, borderRadius: 5 },
-  legendaTexto: { fontFamily: typography.medium, fontSize: 12, color: painel.textoSuave },
-  rotulo: { fontFamily: typography.medium, fontSize: 13, color: colors.primaryDark },
-  linhaBarra: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  trilho: { flex: 1, height: 12, borderRadius: 6, backgroundColor: painel.linhaSuave, overflow: 'hidden' },
-  barra: { height: '100%', borderRadius: 6 },
-  valor: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark, minWidth: 36, textAlign: 'right' },
+const criarEstilos = (t: TemaPainel) => ({
+  vazio: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, paddingVertical: 12 } as const,
+  legenda: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 } as const,
+  legendaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 } as const,
+  ponto: { width: 10, height: 10, borderRadius: 5 } as const,
+  legendaTexto: { fontFamily: typography.medium, fontSize: 12, color: t.textoSuave } as const,
+  rotulo: { fontFamily: typography.medium, fontSize: 13, color: t.texto } as const,
+  linhaBarra: { flexDirection: 'row', alignItems: 'center', gap: 10 } as const,
+  trilho: { flex: 1, height: 12, borderRadius: 6, backgroundColor: t.linhaSuave, overflow: 'hidden' } as const,
+  barra: { height: '100%', borderRadius: 6 } as const,
+  valor: { fontFamily: typography.bold, fontSize: 12, color: t.texto, minWidth: 36, textAlign: 'right' } as const,
 });

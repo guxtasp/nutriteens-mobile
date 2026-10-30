@@ -2,7 +2,7 @@
 // Catálogo de desafios (missões diárias e periódicas) com uso real e botão ativar/desativar.
 // Compartilhado por Admin e Nutricionista; o banco confere o papel em cada chamada.
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { PainelLayout } from '../PainelLayout';
 import { IntroSecao } from '../components/IntroSecao';
@@ -12,12 +12,12 @@ import { EstadoCarregando, EstadoErro } from '../components/EstadosPainel';
 import { Selo, VazioPainel } from '../components/ControlesLista';
 import { AppText } from '../../ui/AppText';
 import { AppButton } from '../../ui/AppButton';
-import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { painel } from '../painelTheme';
 import type { ConfigPainel } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { FormConquista, FormDesafioPeriodico } from '../components/FormulariosDesafio';
+import type { TemaPainel } from '../tema/paletas';
+import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 import {
   CRITERIO_LABEL, InsigniaPainel, definirInsigniaAtiva, listarInsignias,
   DesafioDiario, DesafioPeriodico, METRICA_LABEL, definirDesafioAtivo, listarDesafios,
@@ -26,6 +26,8 @@ import {
 function CartaoDesafio(p: {
   titulo: string; descricao: string; selos: string[]; ativa: boolean; uso: string; ocupado: boolean; erro?: string | null; onAlternar: () => void; onEditar?: () => void;
 }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={[styles.card, !p.ativa && styles.cardInativo]}>
       <View style={styles.topo}>
@@ -38,14 +40,14 @@ function CartaoDesafio(p: {
       {!!p.erro && <AppText style={styles.erro}>{p.erro}</AppText>}
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
         {!!p.onEditar && (
-          <AppButton label="EDITAR" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} style={{ paddingHorizontal: 16, minHeight: 44 }} onPress={p.onEditar} />
+          <AppButton label="EDITAR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={{ paddingHorizontal: 16, minHeight: 44 }} onPress={p.onEditar} />
         )}
         <AppButton
           label={p.ativa ? 'DESATIVAR' : 'ATIVAR'}
           fullWidth={false}
           size="compact"
-          outlineColor={p.ativa ? colors.error : colors.primaryDark}
-          textColor={p.ativa ? colors.error : colors.primaryDark}
+          outlineColor={p.ativa ? tema.erro : tema.texto}
+          textColor={p.ativa ? tema.erro : tema.texto}
           disabled={p.ocupado}
           style={{ paddingHorizontal: 16, minHeight: 44 }}
           onPress={p.onAlternar}
@@ -229,12 +231,12 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda, padding: 14, gap: 8, minWidth: 0 },
+const criarEstilos = (t: TemaPainel) => ({
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14, gap: 8, minWidth: 0 },
   cardInativo: { opacity: 0.75 },
   topo: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  titulo: { fontFamily: typography.bold, fontSize: 15, color: colors.primaryDark },
-  descricao: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight, lineHeight: 19 },
-  uso: { fontFamily: typography.medium, fontSize: 12, color: painel.textoSuave },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-});
+  titulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto },
+  descricao: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo, lineHeight: 19 },
+  uso: { fontFamily: typography.medium, fontSize: 12, color: t.textoSuave },
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+}) as const;

@@ -2,7 +2,7 @@
 // Denúncias e bloqueios do módulo social (somente leitura: o projeto ainda não tem ações
 // de suspensão de conta). Leitura via função do banco restrita ao Admin.
 import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
@@ -13,13 +13,14 @@ import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/
 import { Selo, VazioPainel } from '../../../shared/painel/components/ControlesLista';
 import { tempoRelativo } from '../../../shared/painel/formatadores';
 import { AppText } from '../../../shared/ui/AppText';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { ADMIN_PAINEL } from '../navigation/adminMenu';
 import { ResumoModeracao, buscarModeracao } from '../services/gestaoAdminService';
 
 export default function ModeracaoScreen() {
+  const styles = useEstilos(criarEstilos);
   const navigation = useNavigation<any>();
   const [r, setR] = useState<ResumoModeracao | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -94,11 +95,11 @@ export default function ModeracaoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  item: { borderWidth: 2, borderColor: painel.cardBorda, borderRadius: 14, padding: 12, gap: 6 },
+const criarEstilos = (t: TemaPainel) => ({
+  item: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 6 },
   topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  denunciado: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
-  quando: { fontFamily: typography.regular, fontSize: 11, color: painel.textoSuave, marginLeft: 'auto' },
-  motivo: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight, lineHeight: 19 },
-  quem: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-});
+  denunciado: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
+  quando: { fontFamily: typography.regular, fontSize: 11, color: t.textoSuave, marginLeft: 'auto' },
+  motivo: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo, lineHeight: 19 },
+  quem: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+}) as const;

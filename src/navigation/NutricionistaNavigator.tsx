@@ -12,13 +12,14 @@ import LicaoPreviewScreen from '../features/conteudo/screens/LicaoPreviewScreen'
 import ParticipantesScreen from '../features/nutricionista/screens/ParticipantesScreen';
 import ParticipanteDetalheScreen from '../features/nutricionista/screens/ParticipanteDetalheScreen';
 import DesafiosScreen from '../shared/painel/screens/DesafiosScreen';
+import ExportarDadosScreen from '../shared/painel/screens/ExportarDadosScreen';
+import ReceitasListaScreen from '../features/conteudo/screens/ReceitasListaScreen';
 import EditarTrilhaScreen from '../features/conteudo/screens/EditarTrilhaScreen';
 import EditarLicaoScreen from '../features/conteudo/screens/EditarLicaoScreen';
 import TrilhaPreviewScreen from '../features/conteudo/screens/TrilhaPreviewScreen';
 import ReceitaPreviewScreen from '../features/conteudo/screens/ReceitaPreviewScreen';
 import EditarReceitaScreen from '../features/conteudo/screens/EditarReceitaScreen';
 import EditarTrocaScreen from '../features/conteudo/screens/EditarTrocaScreen';
-import GuiaCriacaoScreen from '../features/conteudo/screens/GuiaCriacaoScreen';
 import NutricionistaDashboardScreen from '../features/nutricionista/dashboard/screens/NutricionistaDashboardScreen';
 
 export type NutricionistaStackParamList = {
@@ -32,6 +33,7 @@ export type NutricionistaStackParamList = {
   NutriProdutosScanner: undefined;
   NutriDesafios: undefined;
   NutriAnalytics: undefined;
+  NutriExportar: undefined;
   ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string; origem?: string };
   LicaoPreview: { licaoId: string; origem?: string; aba?: 'uso' | 'revisao' };
   TrilhaPreview: { trilhaId: string; origem?: string };
@@ -41,7 +43,6 @@ export type NutricionistaStackParamList = {
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
   EditarReceita: { receitaId?: string; origem?: string } | undefined;
   EditarTroca: { trocaId: string; origem?: string };
-  GuiaCriacao: { passo?: number } | undefined;
 };
 
 const Stack = createNativeStackNavigator<NutricionistaStackParamList>();
@@ -60,17 +61,17 @@ const DetalheNoPainel = (props: any) => <ConteudoDetalheScreen config={NUTRICION
 const LicaoPreviewNoPainel = comPainel(LicaoPreviewScreen, 'Lição');
 const Aprovacoes = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Aprovações" subtitulo="Aguardando sua decisão ou publicação" fila />;
 const Conteudos = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Conteúdos" subtitulo="Todo o conteúdo educativo e nutricional" />;
-const Receitas = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Receitas" subtitulo="Revisão nutricional das receitas" tipo="RECEITA" />;
+const Receitas = () => <ReceitasListaScreen config={NUTRICIONISTA_PAINEL} />;
 const Trilhas = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Trilhas" subtitulo="Revisão das trilhas educativas" tipo="TRILHA" />;
 const Trocas = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Alternativas" subtitulo="Revise as justificativas das alternativas alimentares" tipo="TROCA" />;
 const Desafios = () => <DesafiosScreen config={NUTRICIONISTA_PAINEL} />;
+const Exportar = () => <ExportarDadosScreen config={NUTRICIONISTA_PAINEL} />;
 const EditarTrilha = (props: any) => <EditarTrilhaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const EditarLicao = (props: any) => <EditarLicaoScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const EditarReceita = (props: any) => <EditarReceitaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const TrilhaPreview = (props: any) => <TrilhaPreviewScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const ReceitaPreview = (props: any) => <ReceitaPreviewScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const EditarTroca = (props: any) => <EditarTrocaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
-const GuiaCriacao = (props: any) => <GuiaCriacaoScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const ProdutosScanner = () => <SolicitacoesScannerScreen config={NUTRICIONISTA_PAINEL} />;
 const Analytics = () => <AnalyticsScreen config={NUTRICIONISTA_PAINEL} />;
 
@@ -88,6 +89,7 @@ export default function NutricionistaNavigator() {
       <Stack.Screen name="NutriTrocas" component={Trocas} />
       <Stack.Screen name="NutriDesafios" component={Desafios} />
       <Stack.Screen name="NutriAnalytics" component={Analytics} />
+      <Stack.Screen name="NutriExportar" component={Exportar} />
       <Stack.Screen name="ConteudoDetalhe" component={DetalheNoPainel} />
       <Stack.Screen name="LicaoPreview" component={LicaoPreviewNoPainel} />
       <Stack.Screen name="EditarTrilha" component={EditarTrilha} />
@@ -96,7 +98,6 @@ export default function NutricionistaNavigator() {
       <Stack.Screen name="TrilhaPreview" component={TrilhaPreview} />
       <Stack.Screen name="ReceitaPreview" component={ReceitaPreview} />
       <Stack.Screen name="EditarTroca" component={EditarTroca} />
-      <Stack.Screen name="GuiaCriacao" component={GuiaCriacao} />
     </Stack.Navigator>
   );
 }

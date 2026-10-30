@@ -3,16 +3,16 @@
 // tela (EditarLicaoScreen); aqui só se edita o passo recebido e se devolve o novo por onChange.
 // As estruturas geradas seguem o seed (ver utils/passosEdicao.ts).
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { AppText } from '../../../shared/ui/AppText';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import { ROTULO_FORMATO } from '../utils/descreverQuestao';
 import { campoMultilinha } from './CamposEdicao';
 import { LIMITES, parVazios, type OpcaoPasso, type PassoEdicao } from '../utils/passosEdicao';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 
 type Props = {
   passo: PassoEdicao;
@@ -43,6 +43,8 @@ const AJUDA: Record<string, string> = {
 const GRUPOS_SUGERIDOS = ['cereal', 'tuberculo', 'leguminosa', 'proteina', 'vegetal', 'ultraprocessado'];
 
 function Mini({ label, onPress, desativado, perigo }: { label: string; onPress: () => void; desativado?: boolean; perigo?: boolean }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <Pressable
       onPress={onPress}
@@ -51,12 +53,13 @@ function Mini({ label, onPress, desativado, perigo }: { label: string; onPress: 
       accessibilityLabel={label}
       style={[styles.mini, perigo && styles.miniPerigo, desativado && { opacity: 0.35 }]}
     >
-      <AppText style={[styles.miniTexto, perigo && { color: colors.error }]}>{label}</AppText>
+      <AppText style={[styles.miniTexto, perigo && { color: tema.erro }]}>{label}</AppText>
     </Pressable>
   );
 }
 
 function Marca({ ligada, onPress, rotulo, redonda = true }: { ligada: boolean; onPress: () => void; rotulo: string; redonda?: boolean }) {
+  const styles = useEstilos(criarEstilos);
   return (
     <Pressable
       onPress={onPress}
@@ -71,9 +74,11 @@ function Marca({ ligada, onPress, rotulo, redonda = true }: { ligada: boolean; o
 }
 
 function Chip({ texto, ligado, onPress }: { texto: string; ligado: boolean; onPress: () => void }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={[styles.chip, ligado && styles.chipOn]}>
-      <AppText style={[styles.chipTexto, ligado && { color: colors.white }]}>{texto}</AppText>
+      <AppText style={[styles.chipTexto, ligado && { color: tema.botaoTexto }]}>{texto}</AppText>
     </Pressable>
   );
 }
@@ -82,6 +87,7 @@ const trocar = <T,>(lista: T[], i: number, novo: T): T[] => lista.map((x, k) => 
 const tirar = <T,>(lista: T[], i: number): T[] => lista.filter((_, k) => k !== i);
 
 export default function PassoEditor({ passo, indice, total, erros, onChange, onMover, onRemover, embutido }: Props) {
+  const styles = useEstilos(criarEstilos);
   const set = (patch: Partial<PassoEdicao>) => onChange({ ...passo, ...patch });
   const extra = passo.dadosExtra ?? {};
   const setExtra = (patch: Record<string, any>) => onChange({ ...passo, dadosExtra: { ...extra, ...patch } });
@@ -263,6 +269,7 @@ function EditorClassifique({
   setExtra: (p: Record<string, any>) => void;
   setOpcao: (i: number, p: Partial<OpcaoPasso>) => void;
 }) {
+  const styles = useEstilos(criarEstilos);
   const categorias: string[] = Array.isArray(passo.dadosExtra?.categorias) ? passo.dadosExtra.categorias : [];
   const opcoes = passo.opcoes;
 
@@ -323,6 +330,7 @@ function EditorClassifique({
 
 // ------------------------------------------------------------------ prato
 function EditorPrato({ extra, setExtra }: { extra: Record<string, any>; setExtra: (p: Record<string, any>) => void }) {
+  const styles = useEstilos(criarEstilos);
   const alimentos: any[] = Array.isArray(extra.alimentos) ? extra.alimentos : [];
   const criterios: any[] = Array.isArray(extra.criterios) ? extra.criterios : [];
   const gruposDaBandeja = [...new Set(alimentos.map((a) => String(a?.grupo ?? '').trim()).filter(Boolean))];
@@ -401,25 +409,25 @@ function EditorPrato({ extra, setExtra }: { extra: Record<string, any>; setExtra
   );
 }
 
-const styles = StyleSheet.create({
-  rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark },
-  suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave, lineHeight: 17 },
+const criarEstilos = (t: TemaPainel) => ({
+  rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
+  suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
   linha: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   linhaBotoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
-  numero: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark, minWidth: 20, textAlign: 'center' },
+  numero: { fontFamily: typography.bold, fontSize: 14, color: t.texto, minWidth: 20, textAlign: 'center' },
   mini: {
-    minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderRadius: 12, borderWidth: 2, borderColor: painel.cardBorda,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: painel.card,
+    minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderRadius: 12, borderWidth: 2, borderColor: t.cardBorda,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: t.card,
   },
-  miniPerigo: { borderColor: colors.error },
-  miniTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-  marca: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: painel.cardBorda, alignItems: 'center', justifyContent: 'center', marginTop: -10 },
-  marcaOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  marcaCheck: { color: colors.white, fontFamily: typography.bold, fontSize: 14 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: painel.cardBorda, justifyContent: 'center', backgroundColor: painel.card },
-  chipOn: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
-  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-  itemClassifique: { borderWidth: 1, borderColor: '#EFEFEF', borderRadius: 12, padding: 10, gap: 6 },
-  erros: { backgroundColor: colors.exercicioErroSuave + '55', borderRadius: 12, padding: 10, gap: 2 },
-  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: colors.error },
-});
+  miniPerigo: { borderColor: t.erro },
+  miniTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
+  marca: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: t.cardBorda, alignItems: 'center', justifyContent: 'center', marginTop: -10 },
+  marcaOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  marcaCheck: { color: t.botaoTexto, fontFamily: typography.bold, fontSize: 14 },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
+  chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
+  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
+  itemClassifique: { borderWidth: 1, borderColor: t.linhaSuave, borderRadius: 12, padding: 10, gap: 6 },
+  erros: { backgroundColor: t.selos.erro.fundo + '55', borderRadius: 12, padding: 10, gap: 2 },
+  erroTexto: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
+}) as const;

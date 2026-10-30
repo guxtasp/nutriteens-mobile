@@ -1,10 +1,11 @@
 // src/features/admin/components/IngredientesPratoSection.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, TextInput, Pressable, StyleSheet, FlatList } from 'react-native';
+import { View, TextInput, Pressable, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../shared/ui/AppText';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import {
   buscarAlimentosParaSelecao,
   buscarIngredientesDoPrato,
@@ -16,6 +17,8 @@ import {
 type Props = { pratoId: string | null }; // null = alimento ainda não foi salvo
 
 export default function IngredientesPratoSection({ pratoId }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [ingredientes, setIngredientes] = useState<IngredientePrato[]>([]);
   const [busca, setBusca] = useState('');
   const [resultados, setResultados] = useState<Alimento[]>([]);
@@ -100,7 +103,7 @@ export default function IngredientesPratoSection({ pratoId }: Props) {
           {resultados.map((item) => (
             <Pressable key={item.id} style={styles.resultadoItem} onPress={() => adicionarIngrediente(item)}>
               <AppText style={styles.resultadoTexto}>{item.nome}</AppText>
-              <Ionicons name="add-circle" size={18} color={colors.primaryDark} />
+              <Ionicons name="add-circle" size={18} color={tema.texto} />
             </Pressable>
           ))}
         </View>
@@ -134,31 +137,31 @@ export default function IngredientesPratoSection({ pratoId }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   container: { marginTop: 16 },
-  label: { fontFamily: typography.bold, fontSize: 13, color: colors.primaryDark, marginBottom: 8 },
+  label: { fontFamily: typography.bold, fontSize: 13, color: t.texto, marginBottom: 8 },
   input: {
-    borderWidth: 1, borderColor: '#D9D9D9', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10,
-    fontFamily: typography.regular, fontSize: 14, color: colors.primaryDark, marginBottom: 8,
+    borderWidth: 1, borderColor: t.chipBorda, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10,
+    fontFamily: typography.regular, fontSize: 14, color: t.texto, marginBottom: 8,
   },
-  resultadosBox: { borderWidth: 1, borderColor: '#D9D9D9', borderRadius: 8, marginBottom: 12, overflow: 'hidden' },
+  resultadosBox: { borderWidth: 1, borderColor: t.chipBorda, borderRadius: 8, marginBottom: 12, overflow: 'hidden' },
   resultadoItem: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: '#EEE',
+    paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: t.linhaSuave,
   },
-  resultadoTexto: { fontFamily: typography.regular, fontSize: 13, color: colors.primaryDark },
-  vazio: { fontFamily: typography.regular, fontSize: 12, color: '#9AA5A0', marginBottom: 8 },
+  resultadoTexto: { fontFamily: typography.regular, fontSize: 13, color: t.texto },
+  vazio: { fontFamily: typography.regular, fontSize: 12, color: t.placeholder, marginBottom: 8 },
   linhaIngrediente: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.linhaSuave,
   },
-  nomeIngrediente: { flex: 1, fontFamily: typography.regular, fontSize: 13, color: colors.primaryDark },
+  nomeIngrediente: { flex: 1, fontFamily: typography.regular, fontSize: 13, color: t.texto },
   inputProporcao: {
-    width: 56, borderWidth: 1, borderColor: '#D9D9D9', borderRadius: 6,
+    width: 56, borderWidth: 1, borderColor: t.chipBorda, borderRadius: 6,
     paddingVertical: 4, paddingHorizontal: 8, textAlign: 'center', fontSize: 13,
   },
-  botaoSalvar: { marginTop: 12, backgroundColor: colors.primaryDark, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  botaoSalvarTexto: { fontFamily: typography.bold, fontSize: 12, color: '#fff' },
-  avisoBox: { marginTop: 16, backgroundColor: '#FFF8E1', borderRadius: 10, padding: 12 },
-  avisoTexto: { fontFamily: typography.regular, fontSize: 12, color: '#8A6D00' },
-});
+  botaoSalvar: { marginTop: 12, backgroundColor: t.botaoFundo, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  botaoSalvarTexto: { fontFamily: typography.bold, fontSize: 12, color: t.botaoTexto },
+  avisoBox: { marginTop: 16, backgroundColor: t.alertaSuave, borderRadius: 10, padding: 12 },
+  avisoTexto: { fontFamily: typography.regular, fontSize: 12, color: t.selos.aviso.texto },
+}) as const;

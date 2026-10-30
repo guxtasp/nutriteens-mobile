@@ -2,7 +2,7 @@
 // Lista de usuários do Admin: dados reais (via função do banco), busca, filtro por papel,
 // ordenação e "carregar mais". Toque abre os detalhes. Tabela no desktop, cartões no celular.
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
@@ -15,9 +15,9 @@ import { useListaPaginada } from '../../../shared/painel/hooks/useListaPaginada'
 import { useModoPainel } from '../../../shared/painel/hooks/useModoPainel';
 import { dataCurta, ultimoAcessoTexto } from '../../../shared/painel/formatadores';
 import { AppText } from '../../../shared/ui/AppText';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { ADMIN_PAINEL } from '../navigation/adminMenu';
 import { Papel, UsuarioAdmin, labelPapel, listarUsuarios } from '../services/usuariosAdminService';
 
@@ -41,6 +41,7 @@ function SeloStatus({ u }: { u: UsuarioAdmin }) {
 }
 
 export default function UsuariosScreen() {
+  const styles = useEstilos(criarEstilos);
   const navigation = useNavigation<any>();
   const { modo } = useModoPainel();
   const lista = useListaPaginada<UsuarioAdmin>(
@@ -132,27 +133,27 @@ export default function UsuariosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarEstilos = (t: TemaPainel) => ({
   controles: { gap: 12, marginBottom: 12 },
   linhaOrdem: { gap: 6 },
-  ordemRotulo: { fontFamily: typography.medium, fontSize: 12, color: painel.textoSuave },
+  ordemRotulo: { fontFamily: typography.medium, fontSize: 12, color: t.textoSuave },
   linha: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cabecalho: { paddingHorizontal: 14 },
   linhaDado: {
-    backgroundColor: painel.card, borderRadius: 14, borderWidth: 2, borderColor: painel.cardBorda,
+    backgroundColor: t.card, borderRadius: 14, borderWidth: 2, borderColor: t.cardBorda,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 56,
   },
-  th: { fontFamily: typography.bold, fontSize: 11, color: painel.textoSuave, textTransform: 'uppercase' },
-  td: { fontFamily: typography.regular, fontSize: 13, color: colors.textOnLight },
+  th: { fontFamily: typography.bold, fontSize: 11, color: t.textoSuave, textTransform: 'uppercase' },
+  td: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo },
   cNome: { flex: 3, minWidth: 0 },
   cPapel: { flex: 2, minWidth: 0 },
   cStatus: { flex: 1.4, minWidth: 0 },
   cCodigo: { flex: 1.6, minWidth: 0 },
   cData: { flex: 1.6, minWidth: 0 },
-  nome: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
-  sub: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-  card: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda, padding: 14, gap: 8, minHeight: 48 },
+  nome: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
+  sub: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14, gap: 8, minHeight: 48 },
   cardTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   cardSelos: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  erro: { fontFamily: typography.regular, fontSize: 12, color: colors.error, textAlign: 'center' },
-});
+  erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro, textAlign: 'center' },
+}) as const;

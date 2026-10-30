@@ -2,14 +2,15 @@
 // Paleta de blocos (estilo Scratch): um botão colorido por formato de passo, agrupado por tipo.
 // Tocar adiciona o bloco logo depois do selecionado (ou no fim) e já o abre para editar.
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { AppText } from '../../../shared/ui/AppText';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import { ROTULO_FORMATO } from '../utils/descreverQuestao';
 import { COR_CATEGORIA, ORDEM_CATEGORIAS, ROTULO_CATEGORIA, formatosDaCategoria } from '../utils/blocos';
 import type { FormatoPasso } from '../utils/passosEdicao';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos } from '../../../shared/painel/tema/TemaPainelContext';
 
 type Props = {
   total: number;
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export default function PaletaBlocos({ total, max, aposDoBloco, onAdicionar }: Props) {
+  const styles = useEstilos(criarEstilos);
   const cheio = total >= max;
   return (
     <View style={styles.caixa}>
@@ -57,14 +59,14 @@ export default function PaletaBlocos({ total, max, aposDoBloco, onAdicionar }: P
   );
 }
 
-const styles = StyleSheet.create({
-  caixa: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda, padding: 16, gap: 12 },
+const criarEstilos = (t: TemaPainel) => ({
+  caixa: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 12 },
   topo: { gap: 2 },
-  titulo: { fontFamily: typography.bold, fontSize: 15, color: colors.primaryDark },
-  suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
+  titulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto },
+  suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
   grupo: { gap: 6 },
   rotuloGrupo: { fontFamily: typography.bold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase' },
   linha: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   peca: { minHeight: 44, paddingHorizontal: 14, borderRadius: 12, borderWidth: 2, borderBottomWidth: 5, justifyContent: 'center' },
   pecaTexto: { fontFamily: typography.bold, fontSize: 13, color: colors.white },
-});
+}) as const;

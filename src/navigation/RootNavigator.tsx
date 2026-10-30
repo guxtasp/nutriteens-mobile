@@ -18,6 +18,7 @@ import { useAuth } from '../shared/contexts/AuthContext';
 import AdolescenteNavigator from './AdolescenteNavigator';
 import NutricionistaNavigator from './NutricionistaNavigator';
 import AdminNavigator from './AdminNavigator';
+import { TemaPainelProvider } from '../shared/painel/tema/TemaPainelContext';
 
 export type RootStackParamList = {
   Onboarding: undefined;
@@ -206,9 +207,17 @@ if (error?.code === 'PGRST116') {
   function renderNavigatorLogado() {
     switch (papel) {
       case 'NUTRICIONISTA':
-        return <NutricionistaNavigator />;
+        return (
+          <TemaPainelProvider>
+            <NutricionistaNavigator />
+          </TemaPainelProvider>
+        );
       case 'ADMINISTRADOR':
-        return <AdminNavigator />;
+        return (
+          <TemaPainelProvider>
+            <AdminNavigator />
+          </TemaPainelProvider>
+        );
       case 'ADOLESCENTE':
       default:
         return <AdolescenteNavigator etapaOnboarding={etapaOnboarding as EtapaOnboarding} />;

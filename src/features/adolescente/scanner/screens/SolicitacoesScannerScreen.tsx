@@ -1,12 +1,11 @@
 // src/features/adolescente/scanner/screens/SolicitacoesScannerScreen.tsx
 // Painel (nutricionista e admin): pedidos de cadastro do scanner. Aprovar grava o produto com fonte 'EQUIPE'.
 import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { PainelLayout } from '../../../../shared/painel/PainelLayout';
 import { EstadoCarregando, EstadoErro } from '../../../../shared/painel/components/EstadosPainel';
 import { Selo, VazioPainel } from '../../../../shared/painel/components/ControlesLista';
-import { painel } from '../../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../../shared/painel/types';
 import { AppText } from '../../../../shared/ui/AppText';
 import { AppButton } from '../../../../shared/ui/AppButton';
@@ -17,10 +16,13 @@ import type { ClassificacaoNova } from '../../alimentacao/utils/regraFeedbackRef
 import { CATEGORIAS_TROCA, CategoriaTroca, ROTULO_CATEGORIA } from '../../trocas/utils/trocas';
 import { listarSolicitacoes, resolverSolicitacao, SolicitacaoScanner } from '../services/solicitacoesService';
 import { ROTULO_PROCESSAMENTO } from '../utils/scanner';
+import type { TemaPainel } from '../../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../../shared/painel/tema/TemaPainelContext';
 
 const NIVEIS = Object.keys(ROTULO_PROCESSAMENTO) as ClassificacaoNova[];
 
 function Chip({ rotulo, ativo, onPress }: { rotulo: string; ativo: boolean; onPress: () => void }) {
+  const styles = useEstilos(criarEstilos);
   return (
     <Pressable onPress={onPress} style={[styles.chip, ativo && styles.chipAtivo]} accessibilityRole="button" accessibilityState={{ selected: ativo }}>
       <AppText style={[styles.chipTexto, ativo && { fontFamily: typography.bold }]}>{rotulo}</AppText>
@@ -29,6 +31,8 @@ function Chip({ rotulo, ativo, onPress }: { rotulo: string; ativo: boolean; onPr
 }
 
 function Cartao({ s, onResolvida }: { s: SolicitacaoScanner; onResolvida: () => void }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const [aberto, setAberto] = useState(false);
   const [nome, setNome] = useState(s.nomeInformado ?? s.produtoAtualNome ?? '');
   const [marca, setMarca] = useState(s.marcaInformada ?? '');
@@ -88,7 +92,7 @@ function Cartao({ s, onResolvida }: { s: SolicitacaoScanner; onResolvida: () => 
           {!!erro && <AppText style={styles.erro}>{erro}</AppText>}
           <View style={styles.acoes}>
             <AppButton label={ocupado ? 'Salvando...' : 'Cadastrar produto'} onPress={() => decidir('APROVAR')} disabled={ocupado} />
-            <AppButton label="Rejeitar pedido" backgroundColor={colors.white} textColor={colors.primaryDark} outlineColor={colors.primaryDark}
+            <AppButton label="Rejeitar pedido" backgroundColor={tema.card} textColor={tema.texto} outlineColor={tema.texto}
               onPress={() => decidir('REJEITAR')} disabled={ocupado} />
           </View>
         </View>
@@ -117,16 +121,16 @@ export default function SolicitacoesScannerScreen({ config }: { config: ConfigPa
   );
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: painel.card, borderRadius: painel.cardRaio, borderWidth: 2, borderColor: painel.cardBorda, padding: 14, gap: 8 },
+const criarEstilos = (t: TemaPainel) => ({
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14, gap: 8 },
   topo: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  nome: { fontFamily: typography.bold, fontSize: 15, color: colors.primaryDark },
-  suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-  secao: { fontFamily: typography.bold, fontSize: 13, color: colors.primaryDark },
+  nome: { fontFamily: typography.bold, fontSize: 15, color: t.texto },
+  suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+  secao: { fontFamily: typography.bold, fontSize: 13, color: t.texto },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { borderRadius: 999, borderWidth: 1.5, borderColor: colors.exercicioBorda, paddingHorizontal: 12, paddingVertical: 6 },
+  chip: { borderRadius: 999, borderWidth: 1.5, borderColor: t.chipBorda, paddingHorizontal: 12, paddingVertical: 6 },
   chipAtivo: { backgroundColor: colors.primary, borderColor: colors.primaryShadow },
-  chipTexto: { fontFamily: typography.regular, fontSize: 12, color: colors.primaryDark },
-  erro: { fontFamily: typography.regular, fontSize: 13, color: '#B42318' },
+  chipTexto: { fontFamily: typography.regular, fontSize: 12, color: t.texto },
+  erro: { fontFamily: typography.regular, fontSize: 13, color: t.erro },
   acoes: { gap: 10 },
-});
+}) as const;

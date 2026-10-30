@@ -4,22 +4,22 @@
 //    receita real, em modo prévia (não registra eventos de uso);
 //  - "Revisão": dados, ingredientes, passos e lacunas que o adolescente notaria.
 import React, { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import ReceitaDetalheSheet from '../../adolescente/alimentacao/components/ReceitaDetalheSheet';
 import type { ReceitaComAlimento } from '../../adolescente/alimentacao/services/receitasService';
 import { buscarReceitaEditavel, type ReceitaEditavel } from '../services/edicaoService';
 import { AbasPrevia, type AbaPrevia } from '../components/preview/AbasPrevia';
 import { lacunasReceita } from '../utils/previa';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 
 type Props = { config: ConfigPainel; route: { params: { receitaId: string; origem?: string } } };
 
@@ -40,6 +40,8 @@ function paraFichaDoApp(r: ReceitaEditavel): ReceitaComAlimento {
 }
 
 export default function ReceitaPreviewScreen({ config, route }: Props) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   const { receitaId, origem } = route.params;
   const navigation = useNavigation<any>();
   const [receita, setReceita] = useState<ReceitaEditavel | null>(null);
@@ -80,7 +82,7 @@ export default function ReceitaPreviewScreen({ config, route }: Props) {
             <CartaoSecao titulo="Como o adolescente vê" ajuda="Abre a mesma ficha do aplicativo, com ingredientes, modo de preparo e o passo a passo. Nada é registrado.">
               <AppText style={styles.texto}>A ficha abre por cima da tela, como no aplicativo. Toque em "Passo a passo" dentro dela para ver o guia de preparo.</AppText>
               <View style={{ flexDirection: 'row' }}>
-                <AppButton label="ABRIR COMO O ADOLESCENTE VÊ" fullWidth={false} size="compact" backgroundColor={colors.primaryDark} textColor={colors.white} shadowColor="#123024" style={styles.botao} onPress={() => setAberta(true)} />
+                <AppButton label="ABRIR COMO O ADOLESCENTE VÊ" fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botao} onPress={() => setAberta(true)} />
               </View>
             </CartaoSecao>
           )}
@@ -120,7 +122,7 @@ export default function ReceitaPreviewScreen({ config, route }: Props) {
           )}
 
           <View style={{ flexDirection: 'row' }}>
-            <AppButton label="EDITAR RECEITA" fullWidth={false} size="compact" outlineColor={colors.primaryDark} textColor={colors.primaryDark} style={styles.botao} onPress={() => navigation.navigate('EditarReceita', { receitaId, origem })} />
+            <AppButton label="EDITAR RECEITA" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botao} onPress={() => navigation.navigate('EditarReceita', { receitaId, origem })} />
           </View>
 
           {aberta && <ReceitaDetalheSheet receita={paraFichaDoApp(receita)} previa onFechar={() => setAberta(false)} />}
@@ -130,12 +132,12 @@ export default function ReceitaPreviewScreen({ config, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  texto: { fontFamily: typography.regular, fontSize: 14, lineHeight: 20, color: colors.textOnLight },
-  suave: { fontFamily: typography.regular, fontSize: 12, color: painel.textoSuave },
-  passoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark },
-  ok: { fontFamily: typography.semiBold, fontSize: 13, color: '#2F6B12' },
-  alertas: { backgroundColor: '#FDE3E1', borderRadius: 12, padding: 10, gap: 4 },
-  alertaTexto: { fontFamily: typography.semiBold, fontSize: 12, color: '#B3261E' },
+const criarEstilos = (t: TemaPainel) => ({
+  texto: { fontFamily: typography.regular, fontSize: 14, lineHeight: 20, color: t.textoCorpo },
+  suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
+  passoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
+  ok: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto },
+  alertas: { backgroundColor: t.selos.erro.fundo, borderRadius: 12, padding: 10, gap: 4 },
+  alertaTexto: { fontFamily: typography.semiBold, fontSize: 12, color: t.erro },
   botao: { paddingHorizontal: 14, minHeight: 44 },
-});
+}) as const;

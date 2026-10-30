@@ -1,13 +1,14 @@
 // src/features/conteudo/components/CamposEdicao.tsx
 // Peças comuns das telas de edição de conteúdo.
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { painel } from '../../../shared/painel/painelTheme';
 import type { Papel } from '../utils/regrasAprovacao';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 
 /** O que acontece com o status ao editar (espelha fluxo_alteracao_relevante no banco). */
 export function textoAvisoEdicao(papel: Papel | null): string {
@@ -17,6 +18,7 @@ export function textoAvisoEdicao(papel: Papel | null): string {
 }
 
 export function AvisoEdicao({ papel }: { papel: Papel | null }) {
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={styles.aviso}>
       <AppText style={styles.avisoTexto}>{textoAvisoEdicao(papel)}</AppText>
@@ -32,6 +34,8 @@ export function BarraSalvar(p: {
   mensagem?: string | null;
   erro?: string | null;
 }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={{ gap: 8 }}>
       {!!p.erro && <AppText style={styles.erro}>{p.erro}</AppText>}
@@ -41,9 +45,9 @@ export function BarraSalvar(p: {
           label={p.ocupado ? 'SALVANDO…' : p.rotulo}
           fullWidth={false}
           size="compact"
-          backgroundColor={colors.primaryDark}
-          textColor={colors.white}
-          shadowColor="#123024"
+          backgroundColor={tema.botaoFundo}
+          textColor={tema.botaoTexto}
+          shadowColor={tema.botaoSombra}
           disabled={p.ocupado}
           style={styles.botao}
           onPress={p.onSalvar}
@@ -52,8 +56,8 @@ export function BarraSalvar(p: {
           label="CANCELAR"
           fullWidth={false}
           size="compact"
-          outlineColor={colors.primaryDark}
-          textColor={colors.primaryDark}
+          outlineColor={tema.texto}
+          textColor={tema.texto}
           disabled={p.ocupado}
           style={styles.botao}
           onPress={p.onCancelar}
@@ -68,13 +72,13 @@ export function numeroOuNulo(t: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-const styles = StyleSheet.create({
-  aviso: { backgroundColor: colors.warningSoft, borderRadius: 12, padding: 12 },
-  avisoTexto: { fontFamily: typography.regular, fontSize: 12, color: colors.warningShadow, lineHeight: 17 },
+const criarEstilos = (t: TemaPainel) => ({
+  aviso: { backgroundColor: t.alertaSuave, borderRadius: 12, padding: 12 },
+  avisoTexto: { fontFamily: typography.regular, fontSize: 12, color: t.selos.aviso.texto, lineHeight: 17 },
   linha: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   botao: { paddingHorizontal: 18, minHeight: 44 },
-  erro: { fontFamily: typography.regular, fontSize: 13, color: colors.error },
-  ok: { fontFamily: typography.semiBold, fontSize: 13, color: '#2F6B12', backgroundColor: '#E2F3D3', borderRadius: 10, padding: 10 },
-});
+  erro: { fontFamily: typography.regular, fontSize: 13, color: t.erro },
+  ok: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto, backgroundColor: t.destaqueSuave, borderRadius: 10, padding: 10 },
+}) as const;
 export const campoMultilinha = { minHeight: 110, textAlignVertical: 'top' as const };
 export const estiloLinhaCampos = { borderColor: painel.cardBorda };
