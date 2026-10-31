@@ -14,12 +14,15 @@ import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import type { ClassificacaoNova } from '../../alimentacao/utils/regraFeedbackRefeicao';
 import { CATEGORIAS_TROCA, CategoriaTroca, ROTULO_CATEGORIA } from '../../trocas/utils/trocas';
+import { CampoImagem } from '../../../conteudo/components/CampoImagem';
+import { enviarFotoProduto } from '../services/fotoProdutoService';
 import { listarSolicitacoes, resolverSolicitacao, SolicitacaoScanner } from '../services/solicitacoesService';
-import { ROTULO_PROCESSAMENTO } from '../utils/scanner';
+import { CamposFicha, avisosDeClassificacao, camposDaFicha, montarDetalhes, nivelNutriente, numeroDigitado, salDoSodioMg, ROTULO_PROCESSAMENTO } from '../utils/scanner';
 import type { TemaPainel } from '../../../../shared/painel/tema/paletas';
 import { useEstilos, useTemaPainel } from '../../../../shared/painel/tema/TemaPainelContext';
 
 const NIVEIS = Object.keys(ROTULO_PROCESSAMENTO) as ClassificacaoNova[];
+const ROTULO_CAMPO = { acucar: 'açúcar', sal: 'sal', sodio: 'sódio', gorduraSat: 'gordura saturada', fibra: 'fibra', proteina: 'proteína' } as const;
 
 function Chip({ rotulo, ativo, onPress }: { rotulo: string; ativo: boolean; onPress: () => void }) {
   const styles = useEstilos(criarEstilos);
@@ -35,18 +38,27 @@ function Cartao({ s, onResolvida }: { s: SolicitacaoScanner; onResolvida: () => 
   const styles = useEstilos(criarEstilos);
   const [aberto, setAberto] = useState(false);
   const [nome, setNome] = useState(s.nomeInformado ?? s.produtoAtualNome ?? '');
-  const [marca, setMarca] = useState(s.marcaInformada ?? '');
-  const [nova, setNova] = useState<ClassificacaoNova | null>(null);
-  const [categoria, setCategoria] = useState<CategoriaTroca | null>(null);
+  const [marca, setMarca] = useState(s.marcaInformada ?? s.produtoAtualMarca ?? '');
+  const [nova, setNova] = useState<ClassificacaoNova | null>(s.produtoAtualNova);
+  const [categoria, setCategoria] = useState<CategoriaTroca | null>(s.produtoAtualCategoria);
+  const [ficha, setFicha] = useState<CamposFicha>(() => camposDaFicha(s.produtoAtualDetalhes));
+  const campo = (k: keyof CamposFicha) => (v: string) => setFicha((f) => ({ ...f, [k]: v }));
+  const detalhes = montarDetalhes(ficha);
+  // aviso de valor digitado que não vale (não bloqueia: o campo inválido simplesmente não é salvo)
+  const invalidos = (['acucar', 'sal', 'sodio', 'gorduraSat', 'fibra', 'proteina'] as const)
+    .filter((k) => ficha[k].trim() !== '' && (k === 'sodio' ? salDoSodioMg(ficha[k]) : numeroDigitado(ficha[k])) === null);
+  const avisosNova = avisosDeClassificacao(nova, detalhes);
+  const salDoSodio = ficha.sal.trim() === '' ? salDoSodioMg(ficha.sodio) : null;
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   async function decidir(acao: 'APROVAR' | 'REJEITAR') {
     if (ocupado) return;
     if (acao === 'APROVAR' && nome.trim().length < 2) { setErro('Informe o nome do produto.'); return; }
+    if (acao === 'APROVAR' && invalidos.length > 0) { setErro('Confira os valores em vermelho: use números de 0 a 100 (ex.: 12,5).'); return; }
     setOcupado(true); setErro(null);
     try {
-      await resolverSolicitacao(s.id, acao === 'APROVAR' ? { acao, nome, marca, nova, categoria } : { acao });
+      await resolverSolicitacao(s.id, acao === 'APROVAR' ? { acao, nome, marca, nova, categoria, detalhes } : { acao });
       onResolvida();
     } catch (e) {
       console.error('Scanner: não resolveu a solicitação:', e);
@@ -84,11 +96,54 @@ function Cartao({ s, onResolvida }: { s: SolicitacaoScanner; onResolvida: () => 
             <Chip rotulo="Sem classificação" ativo={nova === null} onPress={() => setNova(null)} />
             {NIVEIS.map((n) => <Chip key={n} rotulo={ROTULO_PROCESSAMENTO[n]} ativo={nova === n} onPress={() => setNova(n)} />)}
           </View>
+          {avisosNova.map((a) => <AppText key={a} style={styles.avisoNova}>⚠ {a}</AppText>)}
           <AppText style={styles.secao}>Categoria de troca</AppText>
           <View style={styles.chips}>
             <Chip rotulo="Nenhuma" ativo={categoria === null} onPress={() => setCategoria(null)} />
             {CATEGORIAS_TROCA.map((c) => <Chip key={c} rotulo={ROTULO_CATEGORIA[c]} ativo={categoria === c} onPress={() => setCategoria(c)} />)}
           </View>
+          <AppText style={styles.secao}>Rótulo (a cada 100 g ou 100 ml)</AppText>
+          <AppText style={styles.suave}>
+            É isso que o adolescente vê no Raio-X. Preencha o que estiver na embalagem (a foto do rótulo fica guardada para consulta); o que ficar em branco simplesmente não aparece. Sem calorias.
+          </AppText>
+          <CampoImagem rotulo="Foto do rótulo (guardada só para a equipe consultar)" valor={ficha.rotuloUrl} onChange={campo('rotuloUrl')}
+            proporcao={[3, 4]} enviar={enviarFotoProduto} />
+          <View style={styles.linhaCampos}>
+            <View style={styles.metade}><LabeledInput label="Açúcar (g)" value={ficha.acucar} onChangeText={campo('acucar')} keyboardType="decimal-pad" maxLength={6} /></View>
+            <View style={styles.metade}><LabeledInput label="Sal (g)" value={ficha.sal} onChangeText={campo('sal')} keyboardType="decimal-pad" maxLength={6} /></View>
+          </View>
+          <View style={styles.linhaCampos}>
+            <View style={styles.metade}><LabeledInput label="Sódio (mg) — como no rótulo" value={ficha.sodio} onChangeText={campo('sodio')} keyboardType="decimal-pad" maxLength={6} /></View>
+            <View style={styles.metade}>
+              <AppText style={styles.suave}>
+                {salDoSodio !== null ? `= ${String(salDoSodio).replace('.', ',')} g de sal (sódio × 2,5). Será usado, pois o campo Sal está vazio.` : 'Só o sódio basta: o app converte para sal. Se preencher os dois, vale o Sal.'}
+              </AppText>
+            </View>
+          </View>
+          <View style={styles.linhaCampos}>
+            <View style={styles.metade}><LabeledInput label="Gordura saturada (g)" value={ficha.gorduraSat} onChangeText={campo('gorduraSat')} keyboardType="decimal-pad" maxLength={6} /></View>
+            <View style={styles.metade}><LabeledInput label="Fibra (g)" value={ficha.fibra} onChangeText={campo('fibra')} keyboardType="decimal-pad" maxLength={6} /></View>
+          </View>
+          <View style={styles.linhaCampos}>
+            <View style={styles.metade}><LabeledInput label="Proteína (g)" value={ficha.proteina} onChangeText={campo('proteina')} keyboardType="decimal-pad" maxLength={6} /></View>
+            <View style={styles.metade}><LabeledInput label="Nº de aditivos" value={ficha.aditivos} onChangeText={campo('aditivos')} keyboardType="number-pad" maxLength={2} /></View>
+          </View>
+          {invalidos.length > 0 && <AppText style={styles.erro}>Valor inválido em: {invalidos.map((k) => ROTULO_CAMPO[k]).join(', ')}.</AppText>}
+          <LabeledInput label="Ingredientes (na ordem do rótulo, separados por vírgula; até 8)" value={ficha.ingredientes}
+            onChangeText={campo('ingredientes')} multiline maxLength={400} />
+          <CampoImagem rotulo="Foto da embalagem (aparece para o adolescente)" valor={ficha.imagemUrl} onChange={campo('imagemUrl')}
+            proporcao={[1, 1]} enviar={enviarFotoProduto} />
+          {!!detalhes && (
+            <AppText style={styles.suave}>
+              Prévia: {[
+                nivelNutriente('ACUCAR', detalhes.acucarG) === 'BASTANTE' && 'bastante açúcar',
+                nivelNutriente('SAL', detalhes.salG) === 'BASTANTE' && 'bastante sal',
+                nivelNutriente('GORDURA_SAT', detalhes.gorduraSatG) === 'BASTANTE' && 'bastante gordura saturada',
+                (detalhes.fibraG ?? 0) >= 3 && 'fonte de fibras',
+                (detalhes.proteinaG ?? 0) >= 7.5 && 'fonte de proteína',
+              ].filter(Boolean).join(' · ') || 'sem destaques de atenção'}
+            </AppText>
+          )}
           {!!erro && <AppText style={styles.erro}>{erro}</AppText>}
           <View style={styles.acoes}>
             <AppButton label={ocupado ? 'Salvando...' : 'Cadastrar produto'} onPress={() => decidir('APROVAR')} disabled={ocupado} />
@@ -132,5 +187,8 @@ const criarEstilos = (t: TemaPainel) => ({
   chipAtivo: { backgroundColor: colors.primary, borderColor: colors.primaryShadow },
   chipTexto: { fontFamily: typography.regular, fontSize: 12, color: t.texto },
   erro: { fontFamily: typography.regular, fontSize: 13, color: t.erro },
+  avisoNova: { fontFamily: typography.semiBold, fontSize: 12, color: t.selos.aviso.texto, backgroundColor: t.alertaSuave, borderRadius: 10, padding: 10, lineHeight: 17 },
   acoes: { gap: 10 },
+  linhaCampos: { flexDirection: 'row', gap: 10 },
+  metade: { flex: 1 },
 }) as const;

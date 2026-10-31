@@ -118,7 +118,7 @@ function RaioX({ produto }: { produto: ProdutoScanner }) {
           ))}
         </View>
       )}
-      <AppText style={styles.nota}>Valores a cada 100 g (ou 100 ml). Dados colaborativos da Open Food Facts: podem ter diferenças.</AppText>
+      <AppText style={styles.nota}>{produto.fonte === 'EQUIPE' ? 'Valores a cada 100 g (ou 100 ml), conferidos pela equipe do NutriTeens.' : 'Valores a cada 100 g (ou 100 ml). Dados colaborativos da Open Food Facts: podem ter diferenças.'}</AppText>
     </Cartao>
   );
 }

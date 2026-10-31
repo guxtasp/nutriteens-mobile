@@ -19,9 +19,11 @@ type Props = {
   proporcao?: [number, number];
   /** miniatura menor (fotos dos passos) */
   compacto?: boolean;
+  /** envia a foto e devolve a URL; padrão: bucket das receitas */
+  enviar?: (uri: string, mime: string) => Promise<string>;
 };
 
-export function CampoImagem({ rotulo, valor, onChange, proporcao = [4, 3], compacto }: Props) {
+export function CampoImagem({ rotulo, valor, onChange, proporcao = [4, 3], compacto, enviar = enviarFotoReceita }: Props) {
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
   const [enviando, setEnviando] = useState(false);
@@ -36,7 +38,7 @@ export function CampoImagem({ rotulo, valor, onChange, proporcao = [4, 3], compa
       if (r.canceled || !r.assets?.[0]) return;
       const a = r.assets[0];
       setEnviando(true);
-      onChange(await enviarFotoReceita(a.uri, a.mimeType ?? 'image/jpeg'));
+      onChange(await enviar(a.uri, a.mimeType ?? 'image/jpeg'));
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível enviar a foto.');
     } finally {

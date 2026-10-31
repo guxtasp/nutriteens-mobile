@@ -33,7 +33,7 @@ const TAB_ITEMS: {
 }[] = [
   { key: 'inicio', routeName: 'Home', label: 'Início', icon: 'home-outline', iconAtivo: 'home' },
   { key: 'trilha', routeName: 'Trilha', label: 'Trilha', icon: 'book-outline', iconAtivo: 'book' },
-  { key: 'social', routeName: 'Social', label: 'Social', icon: 'people-outline', iconAtivo: 'people' },
+  { key: 'social', routeName: 'Social', label: 'Turma', icon: 'people-outline', iconAtivo: 'people' },
   { key: 'alimentacao', routeName: 'Alimentacao', label: 'Comer', icon: 'restaurant-outline', iconAtivo: 'restaurant' },
   { key: 'mais', routeName: 'Mais', label: 'Mais', icon: 'menu-outline', iconAtivo: 'menu' },
 ];

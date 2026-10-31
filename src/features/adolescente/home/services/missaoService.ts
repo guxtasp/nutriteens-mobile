@@ -12,6 +12,7 @@ import { registrarEvento } from '../../../../shared/analytics/analytics';
 import { feedbackConquista } from '../../../../shared/audio/feedback';
 import {
   obterVariante,
+  registrarVariantesCustom,
   sortearVariante,
   calcularProgressoAlimentar,
   metaAguaDaVariante,
@@ -161,7 +162,36 @@ async function escolherTipoMissao(userId: string, data: string): Promise<{ tipo:
   return paramsDaVariante(sortearVariante({ evitar: variantesRecentes }));
 }
 
+// Desafios diários criados pelo painel: carregados no máx. a cada 10 min; se falhar
+// (ex.: migration ainda não rodou), o app segue só com as variantes embutidas.
+let ultimaCargaCustom = 0;
+async function carregarVariantesCustom(): Promise<void> {
+  if (Date.now() - ultimaCargaCustom < 10 * 60 * 1000) return;
+  try {
+    const { data, error } = await supabase
+      .from('missoes_variantes_custom')
+      .select('codigo, area, tipo_base, titulo, descricao, icone, regra')
+      .eq('ativa', true);
+    if (error) throw error;
+    registrarVariantesCustom(
+      (data ?? []).map((r: any) => ({
+        codigo: r.codigo,
+        area: r.area,
+        tipoBase: r.tipo_base,
+        titulo: r.titulo,
+        descricao: r.descricao,
+        icone: r.icone ?? '🎯',
+        regra: r.regra,
+      }))
+    );
+    ultimaCargaCustom = Date.now();
+  } catch {
+    // mantém o que já estava registrado
+  }
+}
+
 async function buscarOuCriarMissaoDoDia(userId: string, data: string): Promise<MissaoDoDia> {
+  await carregarVariantesCustom();
   const { data: existente } = await supabase
     .from('missoes_diarias')
     .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio, pontos_recompensa)')

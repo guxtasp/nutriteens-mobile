@@ -14,6 +14,7 @@ export const EVENTOS = [
   'amizade_solicitada', 'amizade_aceita', 'conteudo_abandonado',
   'troca_sugerida', 'troca_aceita', 'troca_recusada',
   'scanner_lido', 'feed_visualizado', 'reacao_enviada',
+  'desafio_grupo_criado', 'desafio_grupo_aceito', 'desafio_grupo_renovado',
 ] as const;
 export type NomeEvento = (typeof EVENTOS)[number];
 

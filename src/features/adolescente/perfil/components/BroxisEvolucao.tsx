@@ -23,22 +23,23 @@ export function BroxisEvolucao({ fase, size = 190 }: Props) {
   return (
     <View style={[styles.palco, { width: size, height: size }]}>
       <View style={[styles.aura, { width: size, height: size, borderRadius: size / 2 }]} />
-      {/* respiração leve; o bebê balança mais rápido */}
+      {/* balanço bem leve (só sobe e desce, sem pulsar o tamanho). A medalha do Super Broxis
+          fica DENTRO do mesmo MotiView: antes ela era fixa e o mascote se mexia por baixo,
+          então os dois "escorregavam" um em relação ao outro. */}
       <MotiView
         key={fase}
-        from={{ translateY: 0, scale: 0.9 }}
-        animate={{ translateY: -6, scale: 1 }}
-        transition={{ type: 'timing', duration: fase === 'filhote' ? 900 : 1400, loop: true, repeatReverse: true }}
+        from={{ translateY: 0 }}
+        animate={{ translateY: -4 }}
+        transition={{ type: 'timing', duration: fase === 'filhote' ? 1100 : 1700, loop: true, repeatReverse: true }}
+        style={styles.conjunto}
       >
         <Image source={ARTE[fase]} style={{ width: lado, height: lado }} resizeMode="contain" />
+        {fase === 'adulto' && (
+          <View pointerEvents="none" style={styles.coroaWrap}>
+            <Ionicons name="ribbon" size={size * 0.2} color={colors.warning} />
+          </View>
+        )}
       </MotiView>
-      {/* depois da imagem na árvore + zIndex/elevation: se vier antes, o mascote
-          (que anima com transform) passa por cima e a medalha some atrás dele */}
-      {fase === 'adulto' && (
-        <View pointerEvents="none" style={styles.coroaWrap}>
-          <Ionicons name="ribbon" size={size * 0.2} color={colors.warning} />
-        </View>
-      )}
     </View>
   );
 }
@@ -46,5 +47,7 @@ export function BroxisEvolucao({ fase, size = 190 }: Props) {
 const styles = StyleSheet.create({
   palco: { alignItems: 'center', justifyContent: 'center' },
   aura: { position: 'absolute', backgroundColor: '#E2F3D3' },
+  conjunto: { alignItems: 'center', justifyContent: 'center' },
+  // a medalha acompanha o mascote; zIndex/elevation para ficar por cima da imagem
   coroaWrap: { position: 'absolute', top: -2, alignSelf: 'center', zIndex: 10, elevation: 10 },
 });

@@ -51,7 +51,7 @@ async function buscarDias(userId: string, inicio: string, fim: string) {
     .select(`
       data,
       registros_agua ( quantidade_ml ),
-      registros_atividade_fisica ( duracao_minutos ),
+      registros_atividade_fisica ( duracao_minutos, quantidade_passos ),
       refeicoes (
         refeicao_alimentos (
           alimentos ( classificacao_nova, grupos_alimentares, alimento_nutrientes ( ${colunas} ) )

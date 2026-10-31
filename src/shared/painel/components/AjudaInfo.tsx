@@ -3,15 +3,16 @@
 import React, { useState } from 'react';
 import { InfoButton } from '../../ui/InfoButton';
 import { InfoSheet } from '../../ui/InfoSheet';
+import { textoAjuda, type AjudaWidget } from '../ajuda';
 
-type Props = { titulo: string; texto: string; exemplo?: string };
+type Props = { titulo: string; texto: AjudaWidget; exemplo?: string };
 
 export function AjudaInfo({ titulo, texto, exemplo }: Props) {
   const [aberto, setAberto] = useState(false);
   return (
     <>
       <InfoButton accessibilityRole="button" accessibilityLabel={`Ajuda: ${titulo}`} onPress={() => setAberto(true)} />
-      <InfoSheet visivel={aberto} onFechar={() => setAberto(false)} titulo={titulo} explicacao={texto} exemplo={exemplo} />
+      <InfoSheet visivel={aberto} onFechar={() => setAberto(false)} titulo={titulo} explicacao={textoAjuda(texto)} exemplo={exemplo} />
     </>
   );
 }

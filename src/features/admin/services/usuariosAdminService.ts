@@ -112,3 +112,30 @@ export function labelPapel(papel: Papel): string {
       return papel;
   }
 }
+
+export type SemanaUsoUsuario = {
+  inicio: string;
+  diasComRegistro: number;
+  diasNoApp: number;
+  licoes: number;
+  /** % de itens ultraprocessados; null com menos de 5 itens na semana (o banco já esconde). */
+  pctUltra: number | null;
+};
+
+/** Uso semanal de um adolescente para o Admin (RPC painel_usuario_uso): sem alimentos nem dados de saúde. */
+export async function buscarUsoUsuario(id: string, semanas = 12): Promise<SemanaUsoUsuario[]> {
+  const { data, error } = await supabase.rpc('painel_usuario_uso', { p_id: id, p_semanas: semanas });
+  if (error) {
+    if (/painel_usuario_uso|schema cache|does not exist/i.test(error.message)) {
+      throw new Error('A função de uso ainda não existe no banco. Rode migration_painel_usuario_uso.sql no SQL Editor.');
+    }
+    throw error;
+  }
+  return ((data as any)?.semanas ?? []).map((s: any): SemanaUsoUsuario => ({
+    inicio: s.inicio,
+    diasComRegistro: Number(s.dias_com_registro ?? 0),
+    diasNoApp: Number(s.dias_no_app ?? 0),
+    licoes: Number(s.licoes ?? 0),
+    pctUltra: s.pct_ultra === null || s.pct_ultra === undefined ? null : Number(s.pct_ultra),
+  }));
+}

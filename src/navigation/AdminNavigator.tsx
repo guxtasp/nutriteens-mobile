@@ -33,8 +33,8 @@ export type AdminStackParamList = {
   AdminDashboard: undefined;
   Usuarios: undefined;
   AdminNutricionistas: undefined;
-  AlimentosList: undefined;
-  AlimentoForm: { alimento?: any };
+  AlimentosList: { aba?: 'ALIMENTOS' | 'PRATOS' } | undefined;
+  AlimentoForm: { alimento?: any; novoPrato?: boolean };
   AdminReceitas: undefined;
   AdminConteudos: undefined;
   AdminTrilhas: undefined;
@@ -55,7 +55,7 @@ export type AdminStackParamList = {
   EditarTrilha: { trilhaId?: string; origem?: string } | undefined;
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
   EditarReceita: { receitaId?: string; origem?: string } | undefined;
-  EditarTroca: { trocaId: string; origem?: string };
+  EditarTroca: { trocaId?: string; origem?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
@@ -73,12 +73,12 @@ function comPainel(Tela: React.ComponentType<any>, titulo: string, opts: { volta
   };
 }
 
-const AlimentosNoPainel = comPainel(AlimentosListScreen, 'Alimentos');
+const AlimentosNoPainel = comPainel(AlimentosListScreen, 'Catálogo');
 const AlimentoFormNoPainel = comPainel(AlimentoFormScreen, 'Alimento', { voltar: true });
 const MetricasNoPainel = () => <AnalyticsScreen config={ADMIN_PAINEL} />;
 const DetalheNoPainel = (props: any) => <ConteudoDetalheScreen config={ADMIN_PAINEL} route={props.route} />;
 const LicaoPreviewNoPainel = comPainel(LicaoPreviewScreen, 'Lição', { voltar: true });
-const Receitas = () => <ReceitasListaScreen config={ADMIN_PAINEL} />;
+const Receitas = () => <ReceitasListaScreen config={ADMIN_PAINEL} abasCatalogo />;
 const Conteudos = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Conteúdos" subtitulo="Consulte tudo que passa pela aprovação da nutricionista" />;
 const Trilhas = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Trilhas" subtitulo="Organize e envie trilhas para aprovação" tipo="TRILHA" />;
 const Trocas = () => <FluxoConteudoScreen config={ADMIN_PAINEL} titulo="Alternativas" subtitulo="Consulte as justificativas e envie para revisão" tipo="TROCA" />;

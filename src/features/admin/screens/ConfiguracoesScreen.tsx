@@ -1,12 +1,13 @@
 // src/features/admin/screens/ConfiguracoesScreen.tsx
-// Preferências do painel que existem de verdade hoje: conta atual, reexibir as dicas
-// ("i" e cartões de introdução) e sair.
+// Preferências do painel que existem de verdade hoje: conta atual, privacidade (regras de LGPD
+// aplicadas, com atalho para a Auditoria), reexibir as dicas e sair. O tema claro/escuro fica no menu lateral.
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { LinhaInfo } from '../../../shared/painel/components/ControlesLista';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
@@ -22,6 +23,7 @@ export default function ConfiguracoesScreen() {
   const styles = useEstilos(criarEstilos);
   const { tema } = useTemaPainel();
   const { session, signOut } = useAuth();
+  const navigation = useNavigation<any>();
   const [nome, setNome] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -46,6 +48,23 @@ export default function ConfiguracoesScreen() {
         <LinhaInfo rotulo="Nome" valor={nome} />
         <LinhaInfo rotulo="E-mail" valor={session?.user.email} />
         <LinhaInfo rotulo="Papel" valor="Administrador" />
+      </CartaoSecao>
+
+      <CartaoSecao titulo="Privacidade dos participantes (LGPD)" ajuda="Regras já aplicadas no banco. Não há o que ligar ou desligar aqui: servem para a equipe saber o que cada perfil enxerga.">
+        <AppText style={styles.texto}>Administração: vê adolescentes só por apelido e código. Nome real, medidas, EBIA e alimentação não aparecem.</AppText>
+        <AppText style={styles.texto}>Nutricionista: a lista mostra só o primeiro nome. O nome completo e os dados clínicos aparecem ao abrir o participante, e cada abertura fica registrada.</AppText>
+        <AppText style={styles.texto}>Analytics: só números agregados; semanas com poucos participantes ou itens viram "sem dados".</AppText>
+        <View style={styles.linha}>
+          <AppButton
+            label="VER ACESSOS NA AUDITORIA"
+            fullWidth={false}
+            size="compact"
+            outlineColor={tema.texto}
+            textColor={tema.texto}
+            style={styles.botao}
+            onPress={() => navigation.navigate('AdminAuditoria')}
+          />
+        </View>
       </CartaoSecao>
 
       <CartaoSecao titulo="Dicas do painel" ajuda={'Os cartões verdes de introdução somem depois de "Entendi". Aqui você pode trazê-los de volta.'}>
@@ -83,7 +102,7 @@ export default function ConfiguracoesScreen() {
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  texto: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave },
+  texto: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, lineHeight: 19 },
   linha: { flexDirection: 'row' },
   botao: { paddingHorizontal: 18, minHeight: 44 },
   aviso: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto },

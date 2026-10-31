@@ -37,8 +37,19 @@ export interface DenunciaSocial {
   denunciadoId: string;
   denunciado: string | null;
   totalDoDenunciado: number;
+  status: 'ABERTA' | 'RESOLVIDA';
+  decisao: DecisaoDenuncia | null;
+  notaEquipe: string | null;
+  resolvidoEm: string | null;
+  resolvidoPor: string | null;
+  /** restrição social ativa do denunciado (ISO) ou null */
+  restritoAte: string | null;
 }
+export type DecisaoDenuncia = 'SEM_ACAO' | 'ADVERTENCIA' | 'IMPROCEDENTE';
 export interface ResumoModeracao {
+  denunciasAbertas: number;
+  abertasAtrasadas: number;
+  restricoesAtivas: number;
   totalDenuncias: number;
   denuncias30d: number;
   totalBloqueios: number;
@@ -51,6 +62,9 @@ export async function buscarModeracao(): Promise<ResumoModeracao> {
   if (error) throw error;
   const r: any = data;
   return {
+    denunciasAbertas: Number(r.denuncias_abertas ?? 0),
+    abertasAtrasadas: Number(r.abertas_atrasadas ?? 0),
+    restricoesAtivas: Number(r.restricoes_ativas ?? 0),
     totalDenuncias: Number(r.total_denuncias ?? 0),
     denuncias30d: Number(r.denuncias_30d ?? 0),
     totalBloqueios: Number(r.total_bloqueios ?? 0),
@@ -64,6 +78,37 @@ export async function buscarModeracao(): Promise<ResumoModeracao> {
       denunciadoId: d.denunciado_id,
       denunciado: d.denunciado,
       totalDoDenunciado: Number(d.total_do_denunciado ?? 1),
+      status: d.status === 'RESOLVIDA' ? 'RESOLVIDA' : 'ABERTA',
+      decisao: d.decisao ?? null,
+      notaEquipe: d.nota_equipe ?? null,
+      resolvidoEm: d.resolvido_em ?? null,
+      resolvidoPor: d.resolvido_por ?? null,
+      restritoAte: d.restrito_ate ?? null,
     })),
   };
+}
+
+/** Registra a decisão da equipe sobre uma denúncia aberta (definitiva; o banco confere o papel).
+ *  `avisar`: o adolescente vê um aviso no app (só advertência). `restringirDias`: 1 a 30, só com advertência;
+ *  suspende pedidos, aceites, reações, Chama Dupla e envio de receita, e já avisa o adolescente. */
+export async function resolverDenuncia(
+  id: string,
+  decisao: DecisaoDenuncia,
+  nota?: string,
+  opcoes: { avisar?: boolean; restringirDias?: number | null } = {}
+): Promise<void> {
+  const { error } = await supabase.rpc('painel_moderacao_resolver', {
+    p_id: id,
+    p_decisao: decisao,
+    p_nota: nota?.trim() || null,
+    p_avisar: !!opcoes.avisar,
+    p_restringir_dias: opcoes.restringirDias ?? null,
+  });
+  if (error) throw error;
+}
+
+/** Encerra antes do prazo a restrição social ativa de um usuário. */
+export async function levantarRestricaoSocial(usuarioId: string): Promise<void> {
+  const { error } = await supabase.rpc('painel_moderacao_levantar_restricao', { p_usuario: usuarioId });
+  if (error) throw error;
 }

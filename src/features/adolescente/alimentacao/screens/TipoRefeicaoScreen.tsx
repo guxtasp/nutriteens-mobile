@@ -13,7 +13,7 @@ import { typography } from '../../../../shared/theme/typography';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import type { TipoRefeicao } from '../services/alimentacaoService';
-import GuiaAlimentacaoSheet from '../components/GuiaAlimentaçãoSheet';
+import GuiaAlimentacaoSheet from '../components/GuiaAlimentacaoSheet';
 import { ICONE_POR_TIPO_REFEICAO } from '../utils/refeicaoInfo';
 
 

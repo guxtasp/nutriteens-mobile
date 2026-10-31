@@ -36,7 +36,7 @@ import { GraficoBarras } from '../components/graficos/GraficoBarras';
 import { GraficoDias } from '../components/graficos/GraficoDias';
 import { ProgressoSegmentado } from '../components/graficos/ProgressoSegmentado';
 
-const INTRO = 'Aqui eu mostro o que você registrou e aprendeu. Sem nota e sem comparação com ninguém: só você e a sua jornada!';
+const INTRO = 'Aqui eu mostro o que você registrou e aprendeu. Só você e a sua jornada!';
 const MAX_GRUPOS = 6;
 
 type Props = {

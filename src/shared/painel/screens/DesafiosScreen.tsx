@@ -15,17 +15,20 @@ import { AppButton } from '../../ui/AppButton';
 import { typography } from '../../theme/typography';
 import type { ConfigPainel } from '../types';
 import { Ionicons } from '@expo/vector-icons';
-import { FormConquista, FormDesafioPeriodico } from '../components/FormulariosDesafio';
+import { FormConquista, FormDesafioDiario, FormDesafioPeriodico, FormPontosDiario } from '../components/FormulariosDesafio';
 import type { TemaPainel } from '../tema/paletas';
 import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
 import {
   CRITERIO_LABEL, InsigniaPainel, definirInsigniaAtiva, listarInsignias,
   DesafioDiario, DesafioPeriodico, METRICA_LABEL, definirDesafioAtivo, listarDesafios,
+  DesafioDiarioCustom, REGRAS_DIARIAS, excluirDesafioPeriodico, excluirDiarioCustom, excluirInsignia,
+  listarDiariosCustom, salvarDiarioCustom,
 } from '../../../features/nutricionista/services/desafiosService';
 
 function CartaoDesafio(p: {
-  titulo: string; descricao: string; selos: string[]; ativa: boolean; uso: string; ocupado: boolean; erro?: string | null; onAlternar: () => void; onEditar?: () => void;
+  titulo: string; descricao: string; selos: string[]; ativa: boolean; uso: string; ocupado: boolean; erro?: string | null; onAlternar: () => void; onEditar?: () => void; onExcluir?: () => void;
 }) {
+  const [confirmando, setConfirmando] = useState(false);
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
   return (
@@ -52,7 +55,19 @@ function CartaoDesafio(p: {
           style={{ paddingHorizontal: 16, minHeight: 44 }}
           onPress={p.onAlternar}
         />
+        {!!p.onExcluir && !confirmando && (
+          <AppButton label="EXCLUIR" fullWidth={false} size="compact" outlineColor={tema.erro} textColor={tema.erro} disabled={p.ocupado} style={{ paddingHorizontal: 16, minHeight: 44 }} onPress={() => setConfirmando(true)} />
+        )}
       </View>
+      {!!p.onExcluir && confirmando && (
+        <View style={{ gap: 8 }}>
+          <AppText style={styles.erro}>Excluir este item de vez? Esta ação não pode ser desfeita.</AppText>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            <AppButton label="SIM, EXCLUIR" fullWidth={false} size="compact" outlineColor={tema.erro} textColor={tema.erro} disabled={p.ocupado} style={{ paddingHorizontal: 16, minHeight: 44 }} onPress={() => { setConfirmando(false); p.onExcluir?.(); }} />
+            <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={{ paddingHorizontal: 16, minHeight: 44 }} onPress={() => setConfirmando(false)} />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -65,6 +80,9 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [erroItem, setErroItem] = useState<{ ref: string; msg: string } | null>(null);
   const [insignias, setInsignias] = useState<InsigniaPainel[]>([]);
+  const [diariosCustom, setDiariosCustom] = useState<DesafioDiarioCustom[]>([]);
+  const [formPontos, setFormPontos] = useState<DesafioDiario | null>(null);
+  const [formDiario, setFormDiario] = useState<DesafioDiarioCustom | 'novo' | null>(null);
   // formulário aberto: null = nenhum; 'novo' = criar; objeto = editar
   const [formDesafio, setFormDesafio] = useState<DesafioPeriodico | 'novo' | null>(null);
   const [formConquista, setFormConquista] = useState<InsigniaPainel | 'novo' | null>(null);
@@ -76,6 +94,7 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
       setPeriodicos(r.periodicos);
       // falha aqui (migration ainda não rodou) não derruba a tela dos desafios
       setInsignias(await listarInsignias().catch(() => []));
+      setDiariosCustom(await listarDiariosCustom().catch(() => []));
       setErro(null);
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível carregar os desafios.');
@@ -117,9 +136,45 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
     }
   }
 
+  async function excluir(ref: string, fn: () => Promise<void>) {
+    setOcupado(ref);
+    setErroItem(null);
+    try {
+      await fn();
+      await carregar();
+    } catch (e: any) {
+      setErroItem({ ref, msg: e?.message ?? 'Não foi possível excluir.' });
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  async function alternarDiarioCustom(d: DesafioDiarioCustom) {
+    setOcupado(d.codigo);
+    setErroItem(null);
+    try {
+      await salvarDiarioCustom({ codigo: d.codigo, titulo: d.titulo, descricao: d.descricao, icone: d.icone ?? '', regra: d.regra, ativa: !d.ativa });
+      await carregar();
+    } catch (e: any) {
+      setErroItem({ ref: d.codigo, msg: e?.message ?? 'Não foi possível alterar.' });
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  function usoDiarioCustom(d: DesafioDiarioCustom) {
+    const r = REGRAS_DIARIAS.find((x) => x.chave === d.regra.regra);
+    if (!r) return `Sorteado ${d.sorteada}x`;
+    const sel = r.seletor?.opcoes.find((o) => o.chave === d.regra[r.seletor!.campo])?.label;
+    const qtd = r.campo ? `${d.regra[r.campo]} ${r.unidade}` : '';
+    return `Meta: ${[sel, qtd].filter(Boolean).join(' · ') || r.label} · Sorteado ${d.sorteada}x`;
+  }
+
   function salvou() {
     setFormDesafio(null);
     setFormConquista(null);
+    setFormDiario(null);
+    setFormPontos(null);
     carregar();
   }
 
@@ -133,7 +188,8 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
         linhas={[
           'Desafios diários: cada dia o adolescente recebe missões (ex.: beber água, registrar refeição). Ao concluir, ganha pontos.',
           'Desafios semanais e mensais: metas maiores, que somam vários dias de hábito.',
-          'Os desafios diários têm regras próprias no app, então aqui só dá para ativar ou desativar. Semanais, mensais, conquistas e marcos você cria e edita pelos botões.',
+          'Os 5 desafios diários do catálogo base podem ser ativados, desativados e ter os pontos ajustados (o texto de cada missão vem das regras do app). Você também pode criar novos desafios diários escolhendo entre 10 tipos que o app já mede (água, atividade, passos, comida de verdade, refeições, grupos alimentares, nutrientes) e a quantidade.',
+          'Desafios criados por você, semanais, mensais, conquistas e marcos podem ser editados e excluídos. Se já houver histórico de uso, o painel pede para desativar em vez de excluir.',
           'Desativar um desafio o tira dos próximos sorteios e metas; o histórico de quem já concluiu permanece.',
         ]}
       />
@@ -147,6 +203,8 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
             {diarios.length === 0 ? (
               <VazioPainel titulo="Nenhum desafio diário" texto="O catálogo de missões diárias está vazio." />
             ) : (
+              <>
+              {formPontos && <FormPontosDiario inicial={formPontos} onSalvo={salvou} onCancelar={() => setFormPontos(null)} />}
               <GridResponsiva minItem={300} gap={12} maxColunas={3}>
                 {diarios.map((d) => (
                   <CartaoDesafio
@@ -159,6 +217,39 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
                     ocupado={ocupado === d.ref}
                     erro={erroItem?.ref === d.ref ? erroItem.msg : null}
                     onAlternar={() => alternar('DIARIO', d.ref, d.ativa)}
+                    onEditar={() => setFormPontos(d)}
+                  />
+                ))}
+              </GridResponsiva>
+              </>
+            )}
+          </CartaoSecao>
+
+          <CartaoSecao
+            titulo={`Desafios diários criados por você (${diariosCustom.length})`}
+            ajuda="Entram no sorteio das missões do dia junto com as do catálogo base. Você escolhe o tipo (que o app já sabe medir) e a quantidade."
+            direita={formDiario ? undefined : <AppButton label="+ NOVO DIÁRIO" fullWidth={false} size="compact" style={{ paddingHorizontal: 14, minHeight: 40 }} onPress={() => setFormDiario('novo')} />}
+          >
+            {formDiario && (
+              <FormDesafioDiario inicial={formDiario === 'novo' ? null : formDiario} onSalvo={salvou} onCancelar={() => setFormDiario(null)} />
+            )}
+            {diariosCustom.length === 0 && !formDiario ? (
+              <VazioPainel titulo="Nenhum desafio diário criado" texto="Toque em + NOVO DIÁRIO. Se der erro, rode migration_painel_excluir_diarios.sql no Supabase." />
+            ) : (
+              <GridResponsiva minItem={300} gap={12} maxColunas={3}>
+                {diariosCustom.map((d) => (
+                  <CartaoDesafio
+                    key={d.codigo}
+                    titulo={`${d.icone ?? ''} ${d.titulo}`.trim()}
+                    descricao={d.descricao}
+                    selos={['Criado no painel']}
+                    ativa={d.ativa}
+                    uso={usoDiarioCustom(d)}
+                    ocupado={ocupado === d.codigo}
+                    erro={erroItem?.ref === d.codigo ? erroItem.msg : null}
+                    onAlternar={() => alternarDiarioCustom(d)}
+                    onEditar={() => setFormDiario(d)}
+                    onExcluir={() => excluir(d.codigo, () => excluirDiarioCustom(d.codigo))}
                   />
                 ))}
               </GridResponsiva>
@@ -184,11 +275,12 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
                     descricao={d.descricao}
                     selos={[d.periodo === 'SEMANAL' ? 'Semanal' : 'Mensal', `${d.pontos} pontos`]}
                     ativa={d.ativa}
-                    uso={`Meta: ${d.alvo} ${METRICA_LABEL[d.metrica] ?? d.metrica} · Resgatado ${d.resgatada}x`}
+                    uso={`Meta: ${d.alvo} ${METRICA_LABEL[d.metrica] ?? d.metrica}${d.parametros?.passos ? ` (${d.parametros.passos} passos/dia)` : ''}${d.parametros?.grupos ? ` (${d.parametros.grupos}+ grupos/dia)` : ''} · Resgatado ${d.resgatada}x`}
                     ocupado={ocupado === d.ref}
                     erro={erroItem?.ref === d.ref ? erroItem.msg : null}
                     onAlternar={() => alternar('PERIODICO', d.ref, d.ativa)}
                     onEditar={() => setFormDesafio(d)}
+                    onExcluir={() => excluir(d.ref, () => excluirDesafioPeriodico(d.ref))}
                   />
                 ))}
               </GridResponsiva>
@@ -219,6 +311,7 @@ export default function DesafiosScreen({ config }: { config: ConfigPainel }) {
                       erro={erroItem?.ref === i.id ? erroItem.msg : null}
                       onAlternar={() => alternarInsignia(i)}
                       onEditar={() => setFormConquista(i)}
+                      onExcluir={i.categoria === 'insignia' ? undefined : () => excluir(i.id, () => excluirInsignia(i.id))}
                     />
                   </View>
                 ))}

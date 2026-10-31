@@ -18,6 +18,7 @@ import type { ConfigPainel } from '../../../shared/painel/types';
 import {
   buscarDetalhe,
   transicionar,
+  excluirConteudo,
   type CorpoReceita,
   type CorpoTrilha,
   type CorpoTroca,
@@ -304,6 +305,24 @@ function Detalhe(p: {
   const perm = permissoes(papel);
   const acoes = acoesPermitidas(papel, dados.status);
   const aviso = avisoEdicao(papel, dados.status);
+  const [confirmaExcluir, setConfirmaExcluir] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+  const [erroExcluir, setErroExcluir] = useState<string | null>(null);
+  const podeExcluir = ['RASCUNHO', 'REJEITADO', 'ARQUIVADO'].includes(dados.status);
+
+  async function excluir() {
+    setExcluindo(true);
+    setErroExcluir(null);
+    try {
+      await excluirConteudo(dados.tipo, dados.conteudoId);
+      p.navigation.goBack();
+    } catch (e: any) {
+      setErroExcluir(e?.message ?? 'Não foi possível excluir.');
+      setConfirmaExcluir(false);
+    } finally {
+      setExcluindo(false);
+    }
+  }
 
   return (
     <>
@@ -465,6 +484,43 @@ function Detalhe(p: {
               );
             })}
             {acoes.length === 0 && <AppText style={styles.meta}>Nenhuma ação disponível neste status.</AppText>}
+          </View>
+        )}
+
+        {!pendente && podeExcluir && (
+          <View style={{ gap: 8, marginTop: 4 }}>
+            {!confirmaExcluir ? (
+              <AppButton
+                label="EXCLUIR"
+                fullWidth={false}
+                size="compact"
+                outlineColor={tema.erro}
+                textColor={tema.erro}
+                disabled={p.ocupado || excluindo}
+                style={styles.botao}
+                onPress={() => setConfirmaExcluir(true)}
+              />
+            ) : (
+              <>
+                <AppText style={styles.erro}>
+                  Excluir este conteúdo de vez? Não dá para desfazer (fica só o registro na auditoria). Para guardar sem apagar, use Arquivar.
+                </AppText>
+                <View style={styles.acoes}>
+                  <AppButton
+                    label={excluindo ? 'EXCLUINDO...' : 'SIM, EXCLUIR'}
+                    fullWidth={false}
+                    size="compact"
+                    outlineColor={tema.erro}
+                    textColor={tema.erro}
+                    disabled={excluindo}
+                    style={styles.botao}
+                    onPress={excluir}
+                  />
+                  <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botao} onPress={() => setConfirmaExcluir(false)} />
+                </View>
+              </>
+            )}
+            {!!erroExcluir && <AppText style={styles.erro}>{erroExcluir}</AppText>}
           </View>
         )}
 

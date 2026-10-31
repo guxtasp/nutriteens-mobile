@@ -11,7 +11,7 @@ import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/
 import { CampoBusca, ChipsFiltro, RodapeLista, Selo, VazioPainel, type TomSelo } from '../../../shared/painel/components/ControlesLista';
 import { useListaPaginada } from '../../../shared/painel/hooks/useListaPaginada';
 import { useModoPainel } from '../../../shared/painel/hooks/useModoPainel';
-import { ultimoAcessoTexto } from '../../../shared/painel/formatadores';
+import { primeiroNome, ultimoAcessoTexto } from '../../../shared/painel/formatadores';
 import { AppText } from '../../../shared/ui/AppText';
 import { typography } from '../../../shared/theme/typography';
 import type { TemaPainel } from '../../../shared/painel/tema/paletas';
@@ -43,7 +43,8 @@ export function tomEbia(c: string | null): TomSelo {
 export function seloEbia(c: string | null) {
   return <Selo texto={c ? EBIA_LABEL[c] ?? c : 'Sem avaliação'} tom={tomEbia(c)} />;
 }
-const nome = (p: Participante) => p.nome?.trim() || p.apelido?.trim() || 'Sem nome';
+// LGPD: lista mostra só o primeiro nome; o código identifica o participante
+const nome = (p: Participante) => primeiroNome(p.nome, p.apelido);
 
 export default function ParticipantesScreen() {
   const styles = useEstilos(criarEstilos);
@@ -62,13 +63,13 @@ export default function ParticipantesScreen() {
         chave="nutri_participantes"
         titulo="Acompanhamento dos participantes"
         linhas={[
-          'Lista dos adolescentes cadastrados. Busque por nome, apelido ou código do participante.',
+          'Lista dos adolescentes cadastrados. Por privacidade (LGPD), a lista mostra só o primeiro nome; o código do participante é a identificação principal. Busque pelo primeiro nome, apelido ou código. O nome completo aparece só ao abrir o participante, e essa abertura fica registrada na Auditoria.',
           'A classificação vem da EBIA (escala de insegurança alimentar) respondida na triagem. Use o filtro para priorizar quem precisa de mais atenção.',
           'Toque em um participante para ver triagem, recordatório e registros dos últimos dias. Use estas informações só para o acompanhamento profissional.',
         ]}
       />
       <View style={styles.controles}>
-        <CampoBusca valor={lista.busca} onChange={lista.setBusca} placeholder="Buscar por nome, apelido ou código" />
+        <CampoBusca valor={lista.busca} onChange={lista.setBusca} placeholder="Buscar por primeiro nome, apelido ou código" />
         <ChipsFiltro opcoes={FILTROS} valor={lista.filtro ?? 'TODOS'} onChange={(c) => lista.setFiltro(c === 'TODOS' ? null : c)} />
         <View style={{ gap: 6 }}>
           <AppText style={styles.ordemRotulo}>Ordenar por</AppText>

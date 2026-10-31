@@ -18,13 +18,15 @@ rpcs(nome, migration) as (values
   ('painel_usuario_detalhe',         'migration_painel_gestao.sql'),
   ('painel_nutricionistas_listar',   'migration_painel_gestao.sql'),
   ('painel_moderacao',               'migration_painel_gestao.sql'),
+  ('painel_moderacao_resolver',      'migration_painel_moderacao.sql'),
   ('painel_desafios_listar',         'migration_painel_gestao.sql'),
   ('painel_desafio_definir_ativo',   'migration_painel_gestao.sql'),
   ('painel_participantes_listar',    'migration_painel_gestao.sql'),
   ('painel_participante_detalhe',    'migration_painel_gestao.sql'),
   ('painel_trilha_temas',            'migration_painel_gestao.sql'),
   ('substituir_ingredientes_prato',  'migration_funcoes_substituir.sql'),
-  ('substituir_passos_receita',      'migration_funcoes_substituir.sql')
+  ('substituir_passos_receita',      'migration_funcoes_substituir.sql'),
+  ('analytics_habitos_escola',       'migration_painel_analytics_extra.sql')
 ),
 fn as (
   select r.nome, r.migration, p.oid as oid

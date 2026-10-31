@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   Share,
@@ -19,6 +20,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSituacaoModeracao } from '../hooks/useSituacaoModeracao';
+import { formatarDataRestricao } from '../utils/moderacao';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
@@ -58,6 +61,16 @@ import EstatisticasCabecalho from '../../_shared/components/EstatisticasCabecalh
 import TabHeader from '../../_shared/components/TabHeader';
 import { ChamaDuplaSection } from '../components/ChamaDuplaSection';
 import { FeedTab } from '../components/FeedTab';
+import JardimEntradaCard from '../components/JardimEntradaCard';
+import DesafioGrupoEntradaCard from '../components/DesafioGrupoEntradaCard';
+import CartinhasCard from '../components/CartinhasCard';
+import JuntosCard from '../components/JuntosCard';
+import { EnviarCartinhaSheet } from '../components/EnviarCartinhaSheet';
+import TurmaHero from '../components/TurmaHero';
+import SeletorTurma from '../components/SeletorTurma';
+import SecaoTitulo from '../components/SecaoTitulo';
+import { ATIVIDADE, turma } from '../theme/turma';
+import { FaixaTurma } from '../components/FaixaTurma';
 import { useChamaDupla } from '../hooks/useChamaDupla';
 import { typography } from '../../../../shared/theme/typography';
 import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
@@ -199,6 +212,7 @@ function mensagemSolicitacao(status: string): string {
 
 export default function SocialScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { situacao: situacaoModeracao } = useSituacaoModeracao();
 
   const [perfil, setPerfil] = useState<PerfilSocial>({
     apelido: null,
@@ -243,6 +257,8 @@ export default function SocialScreen() {
 
   // O feed é a tela principal; "Amigos" guarda perfil, código, pedidos e Chama em Dupla.
   const [aba, setAba] = useState<AbaSocial>('feed');
+  const [amigoCartinha, setAmigoCartinha] = useState<{ amizadeId: string; apelido: string } | null>(null);
+  const [sheetAberto, setSheetAberto] = useState(false);
   // muda a cada "puxar para atualizar" para o feed recarregar junto
   const [feedToken, setFeedToken] = useState(0);
 
@@ -390,7 +406,7 @@ export default function SocialScreen() {
 
       setEditandoPerfil(false);
 
-      mostrarBanner('Seu perfil social foi atualizado!', 'success');
+      mostrarBanner('Seu perfil na Turma foi atualizado!', 'success');
 
       // Agora que existe apelido, o código pode ser gerado.
       if (!codigo) {
@@ -1635,17 +1651,7 @@ export default function SocialScreen() {
   function renderAmigos() {
     return (
       <>
-        <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitleNoMargin}>
-            Meus amigos
-          </Text>
-
-          <View style={styles.counter}>
-            <Text style={styles.counterText}>
-              {amigos.length}
-            </Text>
-          </View>
-        </View>
+        <SecaoTitulo titulo="Minha turma" icone="people" contador={amigos.length} />
 
         {amigos.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -1658,12 +1664,12 @@ export default function SocialScreen() {
             </View>
 
             <Text style={styles.emptyTitle}>
-              Você ainda não tem amigos
+              Sua turma ainda está vazia
             </Text>
 
             <Text style={styles.emptyText}>
-              Compartilhe seu código de amizade ou adicione
-              alguém usando o código que recebeu.
+              Toque em Adicionar amigos para chamar alguém
+              com o seu código ou entrar na turma de um amigo.
             </Text>
           </View>
         ) : (
@@ -1706,6 +1712,16 @@ export default function SocialScreen() {
 
                 <TouchableOpacity
                   style={styles.moreButton}
+                  onPress={() => setAmigoCartinha({ amizadeId: amigo.amizadeId, apelido: amigo.apelido })}
+                  disabled={ocupado}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Mandar cartinha para ${amigo.apelido}`}
+                >
+                  <Ionicons name="mail-outline" size={21} color={colors.primaryDark} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.moreButton}
                   onPress={() =>
                     abrirOpcoesAmigo(amigo)
                   }
@@ -1726,36 +1742,90 @@ export default function SocialScreen() {
   }
 
   function renderSeletorAba() {
-    const abas: { chave: AbaSocial; rotulo: string; icone: keyof typeof Ionicons.glyphMap; badge?: number }[] = [
-      { chave: 'feed', rotulo: 'Feed', icone: 'newspaper-outline' },
-      { chave: 'amigos', rotulo: 'Amigos', icone: 'people-outline', badge: pedidosRecebidos.length },
-    ];
+    return <SeletorTurma ativa={aba} onChange={setAba} pedidos={pedidosRecebidos.length} />;
+  }
 
+  function renderAvisoPedidos() {
+    if (pedidosRecebidos.length === 0) return null;
+    const n = pedidosRecebidos.length;
     return (
-      <View style={styles.seletor} accessibilityRole="tablist">
-        {abas.map((item) => {
-          const ativa = aba === item.chave;
+      <TouchableOpacity
+        style={styles.avisoPedidos}
+        onPress={() => setSheetAberto(true)}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={`Você tem ${n} ${n === 1 ? 'pedido' : 'pedidos'} de amizade. Toque para ver.`}
+      >
+        <View style={styles.avisoPedidosIcone}>
+          <Ionicons name="person-add" size={20} color={colors.primaryDark} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.avisoPedidosTitulo}>
+            {n === 1 ? '1 pedido de amizade' : `${n} pedidos de amizade`}
+          </Text>
+          <Text style={styles.avisoPedidosSub}>Toque para ver e responder</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
+      </TouchableOpacity>
+    );
+  }
 
-          return (
-            <TouchableOpacity
-              key={item.chave}
-              style={[styles.seletorItem, ativa && styles.seletorItemAtivo]}
-              onPress={() => setAba(item.chave)}
-              activeOpacity={0.8}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: ativa }}
+  function renderSheetAdicionar() {
+    return (
+      <Modal
+        visible={sheetAberto}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSheetAberto(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.sheetOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setSheetAberto(false)}
+            accessibilityLabel="Fechar"
+          />
+
+          <View style={styles.sheetCard}>
+            <View style={styles.sheetAlca} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Adicionar amigos</Text>
+              <TouchableOpacity
+                style={styles.modalClose}
+                onPress={() => setSheetAberto(false)}
+                hitSlop={10}
+                accessibilityLabel="Fechar"
+              >
+                <Ionicons name="close" size={20} color="#68777D" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 24 }}
             >
-              <Ionicons name={item.icone} size={18} color={ativa ? colors.primaryDark : '#7D898E'} />
-              <Text style={[styles.seletorTexto, ativa && styles.seletorTextoAtivo]}>{item.rotulo}</Text>
-              {!!item.badge && (
-                <View style={styles.seletorBadge}>
-                  <Text style={styles.seletorBadgeTexto}>{item.badge}</Text>
-                </View>
+              {renderBanner()}
+
+              {!!perfil.apelido && (
+                <>
+                  <Text style={styles.sectionTitle}>Seu código de amizade</Text>
+                  {renderMeuCodigo()}
+                </>
               )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+
+              {renderAdicionarAmigo()}
+
+              {renderPedidosRecebidos()}
+
+              {renderPedidosEnviados()}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     );
   }
 
@@ -1765,7 +1835,7 @@ export default function SocialScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <TabHeader titulo="Amigos" direita={<EstatisticasCabecalho />} />
+      <TabHeader titulo="Turma" direita={<EstatisticasCabecalho />} />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -1786,6 +1856,14 @@ export default function SocialScreen() {
         >
           {renderBanner()}
 
+          {situacaoModeracao.restritoAte && (
+            <View style={[styles.banner, styles.bannerInfo]} accessibilityRole="alert">
+              <Text style={styles.bannerText}>
+                Seu espaço de amigos está em pausa até {formatarDataRestricao(situacaoModeracao.restritoAte)}. Você ainda vê seus amigos, mas não envia nem aceita pedidos, reage, convida para a Chama Dupla ou envia receitas.
+              </Text>
+            </View>
+          )}
+
           {carregando ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator
@@ -1794,11 +1872,13 @@ export default function SocialScreen() {
               />
 
               <Text style={styles.loadingText}>
-                Carregando seu espaço social...
+                Carregando sua turma...
               </Text>
             </View>
           ) : (
             <>
+              <TurmaHero apelido={perfil.apelido || null} amigos={amigos} refreshToken={feedToken} />
+
               {renderSeletorAba()}
 
               {aba === 'feed' ? (
@@ -1820,11 +1900,33 @@ export default function SocialScreen() {
                 <>
                   {renderPerfilSocial()}
 
-                  {renderAdicionarAmigo()}
+                  {renderAvisoPedidos()}
 
-                  {renderPedidosRecebidos()}
+                  <FaixaTurma
+                    amigos={amigos}
+                    refreshToken={feedToken}
+                    onAbrirAmigo={(amigo) =>
+                      navigation.navigate('PerfilAmigo', {
+                        amizadeId: amigo.amizadeId,
+                        apelido: amigo.apelido,
+                        avatar: amigo.avatar,
+                      })
+                    }
+                  />
 
-                  {renderPedidosEnviados()}
+                  <JuntosCard
+                    amigos={amigos}
+                    refreshToken={feedToken}
+                    onMandarCartinha={(a) => setAmigoCartinha({ amizadeId: a.amizadeId, apelido: a.apelido })}
+                  />
+
+                  <CartinhasCard />
+
+                  <SecaoTitulo titulo="Para fazer em turma" icone="rocket" corIcone={ATIVIDADE.desafio.cor} corFundo={ATIVIDADE.desafio.fundo} />
+
+                  <DesafioGrupoEntradaCard onPress={() => navigation.navigate('DesafioGrupo')} />
+
+                  <JardimEntradaCard onPress={() => navigation.navigate('Jardim')} />
 
                   <ChamaDuplaSection chama={chamaDupla} onAbrirHome={() => navigation.navigate('Home')} />
 
@@ -1835,6 +1937,34 @@ export default function SocialScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {!carregando && aba === 'amigos' && !!perfil.apelido && (
+        <View style={styles.barraAdicionar}>
+          <TouchableOpacity
+            style={styles.botaoAdicionar}
+            onPress={() => setSheetAberto(true)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={
+              pedidosRecebidos.length > 0
+                ? `Adicionar amigos. ${pedidosRecebidos.length} ${pedidosRecebidos.length === 1 ? 'pedido esperando' : 'pedidos esperando'}`
+                : 'Adicionar amigos'
+            }
+          >
+            <Ionicons name="person-add" size={20} color={colors.primaryDark} />
+            <Text style={styles.botaoAdicionarTexto}>ADICIONAR AMIGOS</Text>
+            {pedidosRecebidos.length > 0 && (
+              <View style={styles.botaoAdicionarBadge}>
+                <Text style={styles.botaoAdicionarBadgeTexto}>{pedidosRecebidos.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {renderSheetAdicionar()}
+
+      <EnviarCartinhaSheet amigo={amigoCartinha} onFechar={() => setAmigoCartinha(null)} />
 
       {renderModalEditarPerfil()}
 
@@ -1869,30 +1999,34 @@ const styles = StyleSheet.create({
   // ----------------------------------------------------------
   seletor: {
     flexDirection: 'row',
-    padding: 4,
-    marginBottom: 16,
-    borderRadius: 16,
-    backgroundColor: '#EAF0E6',
+    padding: 5,
+    marginBottom: 18,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E4EAE6',
   },
 
   seletorItem: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 46,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    borderRadius: 12,
+    gap: 8,
+    borderRadius: 15,
   },
 
   seletorItemAtivo: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.primary,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.primaryShadow,
   },
 
   seletorTexto: {
+    fontFamily: typography.bold,
     fontSize: 15,
-    fontWeight: '700',
-    color: '#7D898E',
+    color: '#6B7A74',
   },
 
   seletorTextoAtivo: {
@@ -1906,18 +2040,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: '#FF8A1F',
   },
 
   seletorBadgeTexto: {
     fontSize: 12,
     fontWeight: '800',
-    color: colors.primaryDark,
+    color: colors.white,
   },
 
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAF8',
+    backgroundColor: turma.fundo,
   },
 
   content: {
@@ -1932,11 +2066,11 @@ const styles = StyleSheet.create({
 
   compactCard: {
     backgroundColor: colors.white,
-    borderRadius: 18,
-    padding: 12,
-    marginBottom: 6,
+    borderRadius: 22,
+    padding: 14,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#E8EEE9',
+    borderColor: '#E4EAE6',
   },
 
   compactRow: {
@@ -1948,10 +2082,10 @@ const styles = StyleSheet.create({
   compactAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    height: 34,
-    borderRadius: 17,
+    gap: 6,
+    paddingHorizontal: 14,
+    minHeight: 40,
+    borderRadius: 20,
     backgroundColor: '#E7F5D8',
   },
 
@@ -1965,6 +2099,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    minHeight: 44,
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
@@ -2115,8 +2250,8 @@ const styles = StyleSheet.create({
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 27,
-    marginBottom: 11,
+    marginTop: 8,
+    marginBottom: 10,
   },
 
   counter: {
@@ -2607,10 +2742,10 @@ const styles = StyleSheet.create({
 
   listCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 22,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#E9EEEA',
+    borderColor: '#E4EAE6',
     overflow: 'hidden',
   },
 
@@ -2705,7 +2840,7 @@ const styles = StyleSheet.create({
 
   emptyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 19,
+    borderRadius: 22,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
@@ -2753,5 +2888,109 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#7B898E',
     marginTop: 12,
+  },
+
+  // ---- Turma (Parte 2): botão fixo, sheet e aviso de pedidos ----
+  barraAdicionar: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: turma.fundo,
+    borderTopWidth: 1,
+    borderTopColor: '#E9EEEA',
+  },
+
+  botaoAdicionar: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.primaryShadow,
+  },
+
+  botaoAdicionarTexto: {
+    fontFamily: typography.bold,
+    fontSize: 15,
+    letterSpacing: 0.5,
+    color: colors.primaryDark,
+  },
+
+  botaoAdicionarBadge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF8A1F',
+  },
+
+  botaoAdicionarBadgeTexto: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.white,
+  },
+
+  sheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  sheetCard: {
+    width: '100%',
+    maxHeight: '92%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+
+  sheetAlca: {
+    alignSelf: 'center',
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#D9E1DC',
+    marginBottom: 10,
+  },
+
+  avisoPedidos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 64,
+    marginBottom: 14,
+    padding: 12,
+    borderRadius: 22,
+    backgroundColor: '#FFF1DC',
+    borderWidth: 2,
+    borderColor: '#FFC773',
+  },
+
+  avisoPedidosIcone: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFD9A0',
+  },
+
+  avisoPedidosTitulo: {
+    fontFamily: typography.bold,
+    fontSize: 15,
+    color: colors.primaryDark,
+  },
+
+  avisoPedidosSub: {
+    fontSize: 12,
+    color: '#7A5A22',
+    marginTop: 1,
   },
 });

@@ -27,6 +27,7 @@ import { AvatarSocialView } from '../components/AvatarSocialView';
 import { InfoButton } from '../../../../shared/ui/InfoButton';
 import { InfoSheet } from '../../../../shared/ui/InfoSheet';
 import { useChamaDupla } from '../hooks/useChamaDupla';
+import { EnviarCartinhaSheet } from '../components/EnviarCartinhaSheet';
 import { buscarPerfilAmigo, type PerfilAmigo } from '../services/socialService';
 import { rotuloDias, rotuloLicoes } from '../utils/perfilAmigo';
 import { COR_CHAMA, INFO_CHAMA_DUPLA } from '../utils/chamaDupla';
@@ -55,6 +56,7 @@ export default function PerfilAmigoScreen() {
   const [selecionada, setSelecionada] = useState<Insignia | null>(null);
   const [infoChama, setInfoChama] = useState(false);
   const [convidando, setConvidando] = useState(false);
+  const [cartinhaAberta, setCartinhaAberta] = useState(false);
   const chama = useChamaDupla();
   const chamaDoAmigo = chama.chamas.find((c) => c.amizadeId === amizadeId) ?? null;
   const outraDuplaAtiva = !chamaDoAmigo && chama.ativa !== null;
@@ -157,6 +159,19 @@ export default function PerfilAmigoScreen() {
               </>
             )}
           </View>
+        )}
+
+        {estado.tipo !== 'indisponivel' && estado.tipo !== 'erro' && (
+          <TouchableOpacity
+            style={styles.cartinhaBotao}
+            onPress={() => setCartinhaAberta(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Mandar uma cartinha para ${apelido}`}
+          >
+            <Ionicons name="mail" size={20} color="#C2477D" />
+            <AppText style={styles.cartinhaTexto}>Mandar uma cartinha</AppText>
+            <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+          </TouchableOpacity>
         )}
 
         {estado.tipo === 'carregando' && (
@@ -268,6 +283,10 @@ export default function PerfilAmigoScreen() {
         )}
       </ScrollView>
       <InfoSheet visivel={infoChama} onFechar={() => setInfoChama(false)} {...INFO_CHAMA_DUPLA} />
+      <EnviarCartinhaSheet
+        amigo={cartinhaAberta ? { amizadeId, apelido } : null}
+        onFechar={() => setCartinhaAberta(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -348,6 +367,8 @@ const styles = StyleSheet.create({
   chamaTitulo: { flex: 1, fontSize: 14, fontFamily: typography.bold, color: colors.primaryDark },
   chamaTexto: { fontSize: 13, lineHeight: 19, color: colors.trilhaChipTexto },
   chamaBotao: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 12, marginTop: 4 },
+  cartinhaBotao: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#E4EAE6' },
+  cartinhaTexto: { flex: 1, fontSize: 14, fontFamily: typography.semiBold, color: colors.primaryDark },
   detalhe: { marginTop: 12, backgroundColor: '#fff', borderRadius: 14, padding: 14 },
   detalheTitulo: { fontSize: 14, fontFamily: typography.bold, color: colors.primaryDark },
   detalheTexto: { fontSize: 12, color: colors.trilhaChipTexto, marginTop: 2 },

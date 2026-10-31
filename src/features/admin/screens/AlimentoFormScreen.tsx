@@ -109,7 +109,7 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
   const [idSalvo, setIdSalvo] = useState<string | null>(existente?.id ?? null);
 
   const [nome, setNome] = useState(existente?.nome ?? '');
-  const [ehPratoComposto, setEhPratoComposto] = useState(existente?.eh_prato_composto ?? false);
+  const [ehPratoComposto, setEhPratoComposto] = useState(existente?.eh_prato_composto ?? route.params?.novoPrato === true);
   const [classificacao, setClassificacao] = useState<ClassificacaoNova | null>(existente?.classificacao_nova ?? null);
   const [acessivelEbia, setAcessivelEbia] = useState(existente?.acessivel_ebia ?? true);
   const [nivelMaximoEbia, setNivelMaximoEbia] = useState<ClassificacaoEbia>(existente?.nivel_maximo_ebia ?? 'INSEGURANCA_GRAVE');
@@ -186,7 +186,7 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
         await salvarNutrientesDoAlimento(idParaNutrientes, nutrientes);
       }
       if (!ehPratoComposto) navigation.goBack();
-      else avisar('Alimento salvo', 'Agora você pode adicionar os ingredientes do prato, logo abaixo.');
+      else avisar('Prato salvo', 'Agora monte o prato: na seção "Ingredientes do prato" (logo abaixo do nome), busque cada alimento, toque em Adicionar e depois em Salvar ingredientes.');
     } catch (e: any) {
       avisar('Erro ao salvar', e.message ?? 'Tente novamente.');
     } finally {
@@ -221,7 +221,7 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
           onChange={(v) => setEhPratoComposto(v === 'PRATO')}
         />
         <AppText style={styles.ajuda}>
-          {ehPratoComposto ? 'Prato composto é feito de outros alimentos (você escolhe os ingredientes depois de salvar) e pode ter uma receita.' : 'Alimento que se registra sozinho, como fruta, arroz ou leite.'}
+          {ehPratoComposto ? 'Prato composto é feito de outros alimentos (primeiro salve o prato; depois, na seção "Ingredientes do prato", você busca e adiciona cada ingrediente) e pode ter uma receita.' : 'Alimento que se registra sozinho, como fruta, arroz ou leite.'}
         </AppText>
       </View>
       <View style={styles.linhaSwitch}>
@@ -342,7 +342,7 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
   );
 
   const secaoIngredientes = ehPratoComposto ? (
-    <CartaoSecao titulo="Ingredientes do prato" subtitulo={idSalvo ? 'Do que o prato é feito' : 'Salve o alimento para adicionar os ingredientes'}>
+    <CartaoSecao titulo="Ingredientes do prato" subtitulo={idSalvo ? 'Busque, adicione e salve' : 'Passo 1: toque em "Cadastrar alimento" no fim da página'}>
       <IngredientesPratoSection pratoId={idSalvo} />
     </CartaoSecao>
   ) : null;
@@ -363,12 +363,12 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
       <View style={duasColunas ? styles.duas : styles.uma}>
         <View style={duasColunas ? styles.col : styles.uma}>
           {secaoBasico}
+          {secaoIngredientes}
           {secaoClassificacao}
           {secaoOnde}
           {secaoReceita}
         </View>
         <View style={duasColunas ? styles.col : styles.uma}>
-          {secaoIngredientes}
           {secaoNutrientes}
         </View>
       </View>

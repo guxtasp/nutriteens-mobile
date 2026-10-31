@@ -5,9 +5,10 @@ import { AppText } from '../../ui/AppText';
 import { typography } from '../../theme/typography';
 import type { TemaPainel } from '../tema/paletas';
 import { useEstilos } from '../tema/TemaPainelContext';
+import type { AjudaWidget } from '../ajuda';
 import { AjudaInfo } from './AjudaInfo';
 
-type Props = { titulo: string; subtitulo?: string; ajuda?: string; direita?: React.ReactNode; children: React.ReactNode };
+type Props = { titulo: string; subtitulo?: string; ajuda?: AjudaWidget; direita?: React.ReactNode; children: React.ReactNode };
 
 /** Cartão padrão do painel (mesmo raio/borda dos cards do adolescente), claro ou escuro. */
 export function CartaoSecao({ titulo, subtitulo, ajuda, direita, children }: Props) {
@@ -30,7 +31,7 @@ export function CartaoSecao({ titulo, subtitulo, ajuda, direita, children }: Pro
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 12, minWidth: 0 } as const,
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 12, minWidth: 0, flexGrow: 1 } as const,
   topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 } as const,
   linhaTitulo: { flexDirection: 'row', alignItems: 'center', gap: 8 } as const,
   titulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto } as const,

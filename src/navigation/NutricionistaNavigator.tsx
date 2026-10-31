@@ -42,7 +42,7 @@ export type NutricionistaStackParamList = {
   EditarTrilha: { trilhaId?: string; origem?: string } | undefined;
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
   EditarReceita: { receitaId?: string; origem?: string } | undefined;
-  EditarTroca: { trocaId: string; origem?: string };
+  EditarTroca: { trocaId?: string; origem?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<NutricionistaStackParamList>();

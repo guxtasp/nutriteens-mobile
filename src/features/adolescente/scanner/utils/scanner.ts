@@ -6,6 +6,7 @@ import type { CategoriaTroca } from '../../trocas/utils/trocas';
 /** Dados do rótulo (a cada 100 g/ml) vindos da Open Food Facts. Sem calorias, de propósito. */
 export type DetalhesProduto = {
   imagemUrl?: string | null;
+  rotuloUrl?: string | null;    // foto do rótulo, guardada para a equipe conferir (não aparece para o adolescente)
   acucarG?: number | null;
   salG?: number | null;
   gorduraSatG?: number | null;
@@ -125,6 +126,91 @@ export function ingredientesPrincipais(texto: unknown, n = 3): string[] {
     .slice(0, n)
     .map((x) => (x.length > 40 ? `${x.slice(0, 37)}...` : x))
     .map((x) => x.charAt(0).toUpperCase() + x.slice(1));
+}
+
+// ---------- ficha preenchida pela equipe (painel) ----------
+
+/** Campos do formulário da equipe, todos em texto (como digitados). Vazio = não informado. */
+export type CamposFicha = {
+  acucar: string; sal: string; sodio: string; gorduraSat: string; fibra: string; proteina: string;
+  aditivos: string; ingredientes: string; imagemUrl: string; rotuloUrl: string;
+};
+
+export const FICHA_VAZIA: CamposFicha = { acucar: '', sal: '', sodio: '', gorduraSat: '', fibra: '', proteina: '', aditivos: '', ingredientes: '', imagemUrl: '', rotuloUrl: '' };
+
+/** Aceita "12,5", "12.5" e "12,5 g". Vazio ou inválido = null. Máximo 100 g a cada 100 g. */
+export function numeroDigitado(v: string): number | null {
+  const t = (v ?? '').trim().replace(',', '.').replace(/\s*g(ramas?)?$/i, '');
+  if (!t) return null;
+  const x = Number(t);
+  if (!Number.isFinite(x) || x < 0 || x > 100) return null;
+  return Math.round(x * 100) / 100;
+}
+
+/** Sódio do rótulo (mg a cada 100 g/ml) -> sal em gramas (sal = sódio × 2,5). Aceita "400" e "400 mg". Vazio/inválido = null. */
+export function salDoSodioMg(v: string): number | null {
+  const t = (v ?? '').trim().replace(',', '.').replace(/\s*mg$/i, '');
+  if (!t) return null;
+  const mg = Number(t);
+  if (!Number.isFinite(mg) || mg < 0 || mg > 40000) return null;
+  const sal = Math.round(((mg * 2.5) / 1000) * 100) / 100;
+  return sal <= 100 ? sal : null;
+}
+
+export const MAX_INGREDIENTES_FICHA = 8;
+
+/** Texto do formulário -> `detalhes` do produto. Sem nenhum dado = null (o produto fica só com o termômetro). */
+export function montarDetalhes(c: CamposFicha): DetalhesProduto | null {
+  const aditivosNum = (c.aditivos ?? '').trim() === '' ? null : Number((c.aditivos ?? '').trim());
+  const img = (c.imagemUrl ?? '').trim();
+  const rot = (c.rotuloUrl ?? '').trim();
+  const d: DetalhesProduto = {
+    imagemUrl: img.startsWith('https://') && img.length <= 500 ? img : null,
+    rotuloUrl: rot.startsWith('https://') && rot.length <= 500 ? rot : null,
+    acucarG: numeroDigitado(c.acucar),
+    // sal em gramas; se vier só o sódio (como no rótulo brasileiro), converte
+    salG: numeroDigitado(c.sal) ?? salDoSodioMg(c.sodio ?? ''),
+    gorduraSatG: numeroDigitado(c.gorduraSat),
+    fibraG: numeroDigitado(c.fibra),
+    proteinaG: numeroDigitado(c.proteina),
+    aditivos: aditivosNum !== null && Number.isInteger(aditivosNum) && aditivosNum >= 0 && aditivosNum <= 99 ? aditivosNum : null,
+    ingredientes: ingredientesPrincipais(c.ingredientes, MAX_INGREDIENTES_FICHA),
+  };
+  const algum = d.imagemUrl || d.rotuloUrl || d.acucarG !== null || d.salG !== null || d.gorduraSatG !== null || d.fibraG !== null
+    || d.proteinaG !== null || d.aditivos !== null || (d.ingredientes?.length ?? 0) > 0;
+  return algum ? d : null;
+}
+
+/** `detalhes` salvo -> campos do formulário (para a equipe revisar uma ficha incompleta). */
+export function camposDaFicha(d: DetalhesProduto | null | undefined): CamposFicha {
+  const s = (n: number | null | undefined) => (typeof n === 'number' ? String(n).replace('.', ',') : '');
+  return {
+    acucar: s(d?.acucarG), sal: s(d?.salG), sodio: '', gorduraSat: s(d?.gorduraSatG), fibra: s(d?.fibraG), proteina: s(d?.proteinaG),
+    aditivos: typeof d?.aditivos === 'number' ? String(d.aditivos) : '',
+    ingredientes: (d?.ingredientes ?? []).join(', '),
+    imagemUrl: d?.imagemUrl ?? '',
+    rotuloUrl: d?.rotuloUrl ?? '',
+  };
+}
+
+// Marcadores de ultraprocessado na lista de ingredientes (aviso de conferência; não decide nada sozinho).
+const MARCADORES_ULTRA = /corante|aromatizante|aroma artificial|realçador|realcador|conservante|emulsificante|estabilizante|espessante|edulcorante|xarope de (glicose|milho|frutose)|maltodextrina|gordura vegetal|gordura hidrogenada|proteína (isolada|hidrolisada)|acidulante|antioxidante|\be\d{3}\b/i;
+
+/**
+ * Avisos de coerência para a equipe ao classificar o produto (não bloqueiam, só pedem conferência).
+ * A classificação continua sendo decisão da equipe.
+ */
+export function avisosDeClassificacao(nova: ClassificacaoNova | null, d: DetalhesProduto | null | undefined): string[] {
+  const out: string[] = [];
+  const baixo = nova === 'IN_NATURA' || nova === 'INGREDIENTE_CULINARIO';
+  const naoUltra = baixo || nova === 'PROCESSADO';
+  const aditivos = typeof d?.aditivos === 'number' ? d.aditivos : 0;
+  const marcadores = (d?.ingredientes ?? []).some((i) => MARCADORES_ULTRA.test(i));
+  if (baixo && aditivos >= 1) out.push(`Marcado como "${nova === 'IN_NATURA' ? 'natural' : 'ingrediente de cozinha'}", mas tem ${aditivos} aditivo(s). Confira o nível de processamento.`);
+  if (naoUltra && marcadores) out.push('A lista de ingredientes tem item típico de ultraprocessado (corante, aromatizante, xarope, maltodextrina etc.). Confira o nível de processamento.');
+  if (nova === 'ULTRAPROCESSADO' && d && aditivos === 0 && !marcadores && (d.ingredientes?.length ?? 0) > 0) out.push('Marcado como bem industrializado, mas sem aditivos nem marcadores nos ingredientes informados. Confira se está certo.');
+  if (nova === null && (aditivos >= 3 || marcadores)) out.push('Sem classificação, mas a ficha sugere produto industrializado. Considere classificar.');
+  return out;
 }
 
 /** Resposta da OFF (api v2) -> produto nosso. Sem nome utilizável = null ("não encontrado"). */

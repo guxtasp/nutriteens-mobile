@@ -7,26 +7,15 @@ import { CartaoSecao } from '../../../../shared/painel/components/CartaoSecao';
 import { Colunas } from '../../../../shared/painel/components/Colunas';
 import { EstadoCarregando, EstadoErro } from '../../../../shared/painel/components/EstadosPainel';
 import { FiltroPeriodo } from '../../../../shared/painel/components/FiltroPeriodo';
-import { GraficoBarras } from '../../../../shared/painel/components/GraficoBarras';
 import { GraficoLinha } from '../../../../shared/painel/components/GraficoLinha';
 import { GridResponsiva } from '../../../../shared/painel/components/GridResponsiva';
 import { ItemAtividade, ListaAtividades } from '../../../../shared/painel/components/ListaAtividades';
-import { AnelProgresso } from '../../../../shared/painel/components/widgets/AnelProgresso';
-import { BarrasSemana } from '../../../../shared/painel/components/widgets/BarrasSemana';
 import { HeroPainel, type AtalhoHero } from '../../../../shared/painel/components/widgets/HeroPainel';
 import { PendenciasPainel, type Pendencia } from '../../../../shared/painel/components/widgets/PendenciasPainel';
-import { RankingTrilhas } from '../../../../shared/painel/components/widgets/RankingTrilhas';
 import { useDashboardPainel } from '../../../../shared/painel/hooks/useDashboardPainel';
 import { formatarNumero } from '../../../../shared/painel/formatadores';
 import type { IconeNome } from '../../../../shared/painel/types';
-import {
-  conclusaoPorTrilha,
-  mediaPorDiaSemana,
-  saudacao,
-  somar,
-  taxaPercentual,
-  tendenciaPct,
-} from '../../../../shared/painel/utils/widgets';
+import { saudacao, tendenciaPct } from '../../../../shared/painel/utils/widgets';
 import { NUTRICIONISTA_PAINEL } from '../../navigation/nutricionistaMenu';
 import { usePendentesScanner } from '../../../adolescente/scanner/hooks/usePendentesScanner';
 
@@ -58,26 +47,10 @@ export default function NutricionistaDashboardScreen() {
     quando: r.quando,
   }));
 
-  // tudo abaixo vem dos números que a RPC já devolve (sem consulta nova)
+  // só o necessário para a visão geral; a análise de uso (dias, recursos, desafios, trilhas) fica em Analytics
   const derivados = useMemo(() => {
-    const serieUso = dados?.serie_uso ?? [];
-    const usuarios = serieUso.map((p) => p.usuarios);
-    const registros = serieUso.map((p) => p.registros);
-    const desafios = dados?.serie_desafios ?? [];
-    const iniciados = somar(desafios.map((p) => p.iniciados));
-    const concluidos = somar(desafios.map((p) => p.concluidos));
-    return {
-      usuarios,
-      registros,
-      totalRegistros: somar(registros),
-      tendUsuarios: tendenciaPct(usuarios),
-      tendRegistros: tendenciaPct(registros),
-      semana: mediaPorDiaSemana(serieUso.map((p) => p.dia), usuarios),
-      iniciados,
-      concluidos,
-      taxaDesafios: taxaPercentual(concluidos, iniciados),
-      trilhas: conclusaoPorTrilha(dados?.trilhas ?? []),
-    };
+    const usuarios = (dados?.serie_uso ?? []).map((p) => p.usuarios);
+    return { usuarios, tendUsuarios: tendenciaPct(usuarios) };
   }, [dados]);
 
   const aguardando = dados?.kpis.conteudos_aguardando ?? 0;
@@ -127,27 +100,20 @@ export default function NutricionistaDashboardScreen() {
               'Você é a responsável técnica pelo conteúdo nutricional: nada vai para os adolescentes sem a sua aprovação.',
               'Em "Aprovações" fica a fila do que espera a sua decisão. Abra cada item e leia tudo antes de aprovar ou rejeitar.',
               'Os números mostram totais e participantes pelo código (NT-xxxxxx), sem nomes ou dados pessoais.',
+              'Esta tela é a visão geral e as pendências do dia. Para entender como o app é usado (retenção, recursos, funis, trilhas e desafios), abra Analytics.',
               'Toque no ícone "i" de cada indicador para ver o que ele conta. A seta de tendência compara a segunda metade do período com a primeira.',
               'O botão de lua/sol no menu troca entre o tema claro e o escuro.',
             ]}
           />
           <GridResponsiva minItem={150}>
-            <CartaoKpi titulo="Participantes" ajuda="Adolescentes cadastrados no aplicativo." valor={dados.kpis.adolescentes} icone="people-outline" />
+            <CartaoKpi titulo="Participantes" ajuda={{ oque: "Adolescentes cadastrados no aplicativo.", como: "Número acumulado: só cresce. Para ver quem está ativo, use “Participantes ativos”.", origem: "Tabela de perfis (profiles), papel adolescente." }} valor={dados.kpis.adolescentes} icone="people-outline" />
             <CartaoKpi
               titulo={`Participantes ativos (${dias} dias)`}
-              ajuda="Adolescentes que registraram algo ou concluíram uma lição no período escolhido. O minigráfico mostra quantos usaram o app a cada dia."
+              ajuda={{ oque: "Adolescentes que registraram algo ou concluíram uma lição no período escolhido.", como: "Cada pessoa conta uma vez. O minigráfico mostra quantos usaram o app a cada dia; a etiqueta compara a 2ª metade do período com a 1ª.", origem: "Registros de refeição, água e atividade física e lições concluídas." }}
               valor={dados.kpis.ativos}
               icone="pulse-outline"
               sparkline={derivados.usuarios}
               tendencia={derivados.tendUsuarios}
-            />
-            <CartaoKpi
-              titulo={`Registros (${dias} dias)`}
-              ajuda="Soma das refeições, água e atividades registradas no período. O minigráfico mostra o total por dia."
-              valor={derivados.totalRegistros}
-              icone="create-outline"
-              sparkline={derivados.registros}
-              tendencia={derivados.tendRegistros}
             />
             <CartaoKpi
               titulo="Conteúdos aguardando aprovação"
@@ -155,65 +121,25 @@ export default function NutricionistaDashboardScreen() {
               icone="hourglass-outline"
               alerta={dados.kpis.conteudos_aguardando > 0}
             />
-            <CartaoKpi titulo="Trilhas ativas" ajuda="Trilhas educativas publicadas e visíveis para os adolescentes." valor={dados.kpis.trilhas_ativas} icone="map-outline" />
-            <CartaoKpi titulo="Desafios ativos" ajuda="Desafios disponíveis hoje no aplicativo." valor={dados.kpis.desafios_ativos} icone="trophy-outline" />
+            <CartaoKpi titulo="Trilhas ativas" ajuda={{ oque: "Trilhas educativas publicadas e visíveis para os adolescentes.", como: "Mais trilhas significam mais conteúdo disponível; itens em revisão não entram.", origem: "Fluxo de conteúdo (status publicado)." }} valor={dados.kpis.trilhas_ativas} icone="map-outline" />
+            <CartaoKpi titulo="Desafios ativos" ajuda={{ oque: "Desafios diários e periódicos disponíveis hoje no aplicativo.", como: "Se ficar muito baixo, os adolescentes ficam sem missões para cumprir.", origem: "Catálogos de missões diárias e periódicas (somente as ativas)." }} valor={dados.kpis.desafios_ativos} icone="trophy-outline" />
           </GridResponsiva>
 
           <Colunas bases={[460, 300]}>
-            <CartaoSecao titulo="Utilização do aplicativo" subtitulo="Participantes ativos por dia" ajuda="Quantos adolescentes usaram o app em cada dia do período.">
+            <CartaoSecao titulo="Utilização do aplicativo" subtitulo="Participantes ativos por dia" ajuda={{ oque: "Quantos adolescentes usaram o app em cada dia do período.", como: "Picos costumam coincidir com novidades de conteúdo e desafios.", origem: "Registros de refeição, água e atividade física e lições concluídas, por dia." }}>
               <GraficoLinha
                 dias={(dados.serie_uso ?? []).map((p) => p.dia)}
                 series={[{ nome: 'Participantes ativos', valores: derivados.usuarios }]}
               />
             </CartaoSecao>
-            <CartaoSecao titulo="Precisa da sua atenção" subtitulo="Toque para abrir" ajuda="O que está esperando uma ação. Some da lista quando não houver pendências.">
+            <CartaoSecao titulo="Precisa da sua atenção" subtitulo="Toque para abrir" ajuda={{ oque: "Lista do que está esperando uma ação sua.", como: "Toque no item para abrir. Some da lista quando não houver pendências.", origem: "Fluxo de conteúdo e solicitações do painel." }}>
               <PendenciasPainel itens={pendencias} />
             </CartaoSecao>
           </Colunas>
 
-          <Colunas bases={[300, 300, 300]}>
-            <CartaoSecao titulo="Dias mais ativos" subtitulo="Média de participantes ativos por dia da semana" ajuda="Média de adolescentes ativos em cada dia da semana dentro do período escolhido. O dia mais forte fica em verde. Bom para escolher quando publicar conteúdo novo.">
-              <BarrasSemana medias={derivados.semana} />
-            </CartaoSecao>
-            <CartaoSecao titulo="Conclusão de desafios" subtitulo="Missões diárias concluídas ÷ atribuídas" ajuda="Iniciado = missão atribuída ao adolescente. Concluído = missão cumprida, com pontos concedidos.">
-              <AnelProgresso
-                pct={derivados.taxaDesafios}
-                rotulo="concluídas"
-                legenda={derivados.iniciados === 0 ? 'Nenhuma missão atribuída no período.' : `${formatarNumero(derivados.concluidos)} de ${formatarNumero(derivados.iniciados)} missões`}
-              />
-            </CartaoSecao>
-            <CartaoSecao titulo="Recursos mais utilizados" subtitulo={`Últimos ${dias} dias`} ajuda="Funcionalidades mais usadas: alimentação, água, atividade, trilhas e outras.">
-              <GraficoBarras itens={dados.recursos.map((r) => ({ rotulo: r.recurso, valores: [r.total] }))} />
-            </CartaoSecao>
-          </Colunas>
-
-          <Colunas bases={[460, 300]}>
-            <CartaoSecao titulo="Desafios iniciados e concluídos" subtitulo="Missões diárias atribuídas x concluídas" ajuda="Iniciado = missão atribuída ao adolescente. Concluído = missão cumprida, com pontos concedidos.">
-              <GraficoLinha
-                dias={(dados.serie_desafios ?? []).map((p) => p.dia)}
-                series={[
-                  { nome: 'Iniciados', valores: (dados.serie_desafios ?? []).map((p) => p.iniciados) },
-                  { nome: 'Concluídos', valores: (dados.serie_desafios ?? []).map((p) => p.concluidos) },
-                ]}
-              />
-            </CartaoSecao>
-            <CartaoSecao titulo="Conclusão das trilhas" subtitulo="Quem concluiu entre quem iniciou" ajuda="Iniciada = o adolescente concluiu ao menos uma lição. Concluída = concluiu todas as lições da trilha.">
-              <RankingTrilhas itens={derivados.trilhas} />
-            </CartaoSecao>
-          </Colunas>
-
-          <Colunas bases={[460, 300]}>
-            <CartaoSecao titulo="Trilhas iniciadas e concluídas" subtitulo="Total acumulado por trilha" ajuda="Iniciada = o adolescente concluiu ao menos uma lição. Concluída = concluiu todas as lições da trilha.">
-              <GraficoBarras
-                series={['Iniciadas', 'Concluídas']}
-                itens={(dados.trilhas ?? []).map((t) => ({ rotulo: t.titulo, valores: [t.iniciadas, t.concluidas] }))}
-                vazio="Nenhuma trilha ativa."
-              />
-            </CartaoSecao>
-            <CartaoSecao titulo="Registros recentes" subtitulo="Identificados apenas pelo código do participante" ajuda="Últimos registros feitos pelos adolescentes. Por privacidade aparece só o código, nunca o nome.">
-              <ListaAtividades itens={recentes} vazio="Nenhum registro recente." />
-            </CartaoSecao>
-          </Colunas>
+          <CartaoSecao titulo="Registros recentes" subtitulo="Identificados apenas pelo código do participante" ajuda={{ oque: "Últimos registros feitos pelos adolescentes.", como: "Por privacidade aparece só o código do participante, nunca o nome.", origem: "Registros de refeição, água e atividade física." }}>
+            <ListaAtividades itens={recentes} vazio="Nenhum registro recente." />
+          </CartaoSecao>
         </>
       ) : null}
     </PainelLayout>

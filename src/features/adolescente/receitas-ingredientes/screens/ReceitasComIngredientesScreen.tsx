@@ -5,7 +5,7 @@
 //  3) se não gostar de nenhuma, vê outras receitas mesmo sem combinação.
 // Sem ingrediente nenhum, mostra todas as receitas da mais fácil para a mais difícil.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -13,18 +13,25 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
 import { BackButton } from '../../../../shared/ui/BackButton';
+import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
 import { FiltroChips } from '../../../../shared/ui/FiltroChips';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
-import { listarReceitasComIngredientes, type ReceitaComIngredientes } from '../../alimentacao/services/receitasService';
+import {
+  listarIngredientesDisponiveis,
+  listarReceitasComIngredientes,
+  type ReceitaComIngredientes,
+} from '../../alimentacao/services/receitasService';
 import ReceitaDetalheSheet from '../../alimentacao/components/ReceitaDetalheSheet';
 import { EnviarReceitaSheet } from '../../social/components/EnviarReceitaSheet';
 import {
   outrasReceitas,
   receitasQueCombinam,
+  resolverIngredientesComuns,
   sugerirIngredientes,
   todasPorDificuldade,
+  unirUniversos,
   universoDeIngredientes,
   type IngredienteCasa,
   type ReceitaPontuada,
@@ -53,6 +60,8 @@ export default function ReceitasComIngredientesScreen() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [receitas, setReceitas] = useState<ReceitaComIngredientes[]>([]);
+  // alimentos simples do catálogo: o autocomplete não depende de haver receita publicada
+  const [catalogo, setCatalogo] = useState<IngredienteCasa[]>([]);
   const [despensa, setDespensa] = useState<IngredienteCasa[]>([]);
   const [etapa, setEtapa] = useState<Etapa>('ingredientes');
   const [modo, setModo] = useState<Modo>('combinam');
@@ -66,8 +75,13 @@ export default function ReceitasComIngredientesScreen() {
     setCarregando(true);
     setErro(null);
     try {
-      const [lista, guardada] = await Promise.all([listarReceitasComIngredientes(userId), lerDespensa(userId)]);
+      const [lista, guardada, disponiveis] = await Promise.all([
+        listarReceitasComIngredientes(userId),
+        lerDespensa(userId),
+        listarIngredientesDisponiveis(userId),
+      ]);
       setReceitas(lista);
+      setCatalogo(disponiveis);
       setDespensa(guardada);
       // quem já informou ingredientes antes vai direto para as receitas (e pode editar quando quiser)
       setEtapa(guardada.length > 0 ? 'resultados' : 'ingredientes');
@@ -83,8 +97,9 @@ export default function ReceitasComIngredientesScreen() {
     void carregar();
   }, [carregar]);
 
-  const universo = useMemo(() => universoDeIngredientes(receitas), [receitas]);
+  const universo = useMemo(() => unirUniversos(universoDeIngredientes(receitas), catalogo), [receitas, catalogo]);
   const sugestoes = useMemo(() => sugerirIngredientes(universo, termo, despensa), [universo, termo, despensa]);
+  const atalhos = useMemo(() => resolverIngredientesComuns(universo, despensa), [universo, despensa]);
 
   function mudarDespensa(nova: IngredienteCasa[]) {
     setDespensa(nova);
@@ -115,54 +130,86 @@ export default function ReceitasComIngredientesScreen() {
 
   // ---------- etapa 1: o que você tem em casa ----------
   function renderIngredientes() {
+    const semReceitas = receitas.length === 0;
     return (
       <View style={styles.corpo}>
-        <AppText style={styles.pergunta}>O que você tem em casa?</AppText>
-        <AppText style={styles.dica}>Digite um ingrediente e toque para adicionar. Dá pra mudar a lista quando quiser.</AppText>
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
+          <View style={styles.guia}>
+            <BroxisMascot size={64} pose="pensando" entrance="fade" showParticles={false} />
+            <View style={styles.guiaTextos}>
+              <AppText style={styles.guiaTitulo}>É rapidinho, 2 passos:</AppText>
+              <AppText style={styles.guiaPasso}>1. Toque no que você tem em casa.</AppText>
+              <AppText style={styles.guiaPasso}>2. Veja as receitas que combinam.</AppText>
+            </View>
+          </View>
 
-        <View style={styles.buscaCaixa}>
-          <Ionicons name="search" size={18} color="#7A8B94" />
-          <TextInput
-            style={styles.buscaInput}
-            placeholder="Ex.: ovo, banana, arroz..."
-            placeholderTextColor="#7A8B94"
-            value={termo}
-            onChangeText={setTermo}
-            autoCorrect={false}
-          />
-          {termo.length > 0 && (
-            <Pressable onPress={() => setTermo('')} accessibilityLabel="Limpar busca" hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="#7A8B94" />
-            </Pressable>
+          <AppText style={styles.pergunta}>O que você tem em casa?</AppText>
+          <AppText style={styles.dica}>Toque num ingrediente comum ou digite o nome. Dá pra mudar a lista quando quiser.</AppText>
+
+          {atalhos.length > 0 && (
+            <>
+              <AppText style={styles.secaoPrimeira}>Ingredientes comuns</AppText>
+              <View style={styles.chipsDespensa}>
+                {atalhos.map((a) => (
+                  <Pressable key={a.id} style={styles.chipAtalho} onPress={() => adicionar(a)} accessibilityLabel={`Adicionar ${a.nome}`}>
+                    <Ionicons name="add" size={14} color={colors.primaryDark} />
+                    <AppText style={styles.chipDespensaTexto}>{a.nome}</AppText>
+                  </Pressable>
+                ))}
+              </View>
+            </>
           )}
-        </View>
 
-        {termo.trim().length > 0 && (
-          <View style={styles.sugestoesCaixa}>
-            {sugestoes.length === 0 ? (
-              <AppText style={styles.vazioTexto}>Não achei "{termo.trim()}" nas nossas receitas. Tenta outro nome.</AppText>
-            ) : (
-              sugestoes.map((s) => (
-                <Pressable key={s.id} style={styles.sugestaoItem} onPress={() => adicionar(s)}>
-                  <AppText style={styles.sugestaoTexto}>{s.nome}</AppText>
-                  <Ionicons name="add-circle" size={22} color={colors.primary} />
-                </Pressable>
-              ))
+          <AppText style={styles.secao}>Ou procure pelo nome</AppText>
+          <View style={styles.buscaCaixa}>
+            <Ionicons name="search" size={18} color="#7A8B94" />
+            <TextInput
+              style={styles.buscaInput}
+              placeholder="Ex.: ovo, banana, arroz..."
+              placeholderTextColor="#7A8B94"
+              value={termo}
+              onChangeText={setTermo}
+              autoCorrect={false}
+            />
+            {termo.length > 0 && (
+              <Pressable onPress={() => setTermo('')} accessibilityLabel="Limpar busca" hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color="#7A8B94" />
+              </Pressable>
             )}
           </View>
-        )}
 
-        <AppText style={styles.secao}>{despensa.length > 0 ? `Você tem (${despensa.length})` : 'Você ainda não adicionou nada'}</AppText>
-        <View style={styles.chipsDespensa}>
-          {despensa.map((i) => (
-            <Pressable key={i.id} style={styles.chipDespensa} onPress={() => remover(i.id)} accessibilityLabel={`Remover ${i.nome}`}>
-              <AppText style={styles.chipDespensaTexto}>{i.nome}</AppText>
-              <Ionicons name="close" size={14} color={colors.primaryDark} />
-            </Pressable>
-          ))}
-        </View>
+          {termo.trim().length > 0 && (
+            <View style={styles.sugestoesCaixa}>
+              {sugestoes.length === 0 ? (
+                <AppText style={styles.vazioTexto}>Não achei "{termo.trim()}". Tenta outro nome ou toca num ingrediente comum.</AppText>
+              ) : (
+                sugestoes.map((s) => (
+                  <Pressable key={s.id} style={styles.sugestaoItem} onPress={() => adicionar(s)}>
+                    <AppText style={styles.sugestaoTexto}>{s.nome}</AppText>
+                    <Ionicons name="add-circle" size={22} color={colors.primary} />
+                  </Pressable>
+                ))
+              )}
+            </View>
+          )}
 
-        <View style={{ flex: 1 }} />
+          <AppText style={styles.secao}>{despensa.length > 0 ? `Você tem (${despensa.length})` : 'Você ainda não adicionou nada'}</AppText>
+          <View style={styles.chipsDespensa}>
+            {despensa.map((i) => (
+              <Pressable key={i.id} style={styles.chipDespensa} onPress={() => remover(i.id)} accessibilityLabel={`Remover ${i.nome}`}>
+                <AppText style={styles.chipDespensaTexto}>{i.nome}</AppText>
+                <Ionicons name="close" size={14} color={colors.primaryDark} />
+              </Pressable>
+            ))}
+          </View>
+
+          {semReceitas && (
+            <AppText style={styles.avisoSemReceitas}>
+              Ainda não há receitas liberadas para você. Você já pode montar sua lista; as receitas aparecem aqui assim que forem publicadas.
+            </AppText>
+          )}
+        </ScrollView>
+
         <Pressable style={styles.botaoPrimario} onPress={() => { setModo('combinam'); setEtapa('resultados'); }}>
           <AppText style={styles.botaoPrimarioTexto}>
             {despensa.length > 0 ? 'Ver receitas' : 'Pular e ver todas as receitas'}
@@ -266,7 +313,9 @@ export default function ReceitasComIngredientesScreen() {
                   ? 'Nenhuma receita com esses filtros. Tira um filtro pra ver mais.'
                   : modo === 'outras'
                     ? 'Por enquanto são todas as receitas que temos. Que tal adicionar mais ingredientes?'
-                    : 'Ainda não temos receita com esses ingredientes.'}
+                    : receitas.length === 0
+                      ? 'Ainda não há receitas liberadas para você. Volte em breve!'
+                      : 'Ainda não temos receita com esses ingredientes.'}
               </AppText>
               {!filtroAtivo && modo === 'combinam' && despensa.length > 0 && (
                 <Pressable onPress={() => setModo('outras')}>
@@ -347,6 +396,13 @@ const styles = StyleSheet.create({
   sugestaoItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   sugestaoTexto: { fontFamily: typography.medium, fontSize: 14, color: colors.primaryDark },
   secao: { fontFamily: typography.bold, fontSize: 12, color: '#7A8B94', textTransform: 'uppercase', marginTop: 24, marginBottom: 10 },
+  secaoPrimeira: { fontFamily: typography.bold, fontSize: 12, color: '#7A8B94', textTransform: 'uppercase', marginBottom: 10 },
+  guia: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#EAF6DA', borderRadius: 16, padding: 12, marginBottom: 20 },
+  guiaTextos: { flex: 1, gap: 2 },
+  guiaTitulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
+  guiaPasso: { fontFamily: typography.regular, fontSize: 13, color: colors.primaryDark },
+  chipAtalho: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderColor: colors.primary, borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12, backgroundColor: colors.white },
+  avisoSemReceitas: { fontFamily: typography.regular, fontSize: 12, color: '#7A8B94', marginTop: 20, textAlign: 'center' },
   chipsDespensa: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chipDespensa: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EAF6DA', borderRadius: 20, paddingVertical: 7, paddingHorizontal: 12 },
   chipDespensaTexto: { fontFamily: typography.medium, fontSize: 13, color: colors.primaryDark },

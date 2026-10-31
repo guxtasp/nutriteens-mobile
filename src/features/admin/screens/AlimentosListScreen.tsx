@@ -11,6 +11,7 @@ import { typography } from '../../../shared/theme/typography';
 import { painel } from '../../../shared/painel/painelTheme';
 import { CampoBusca, ChipsFiltro, Selo, VazioPainel, type TomSelo } from '../../../shared/painel/components/ControlesLista';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
+import { AbasCatalogo, type AbaCatalogo } from '../components/AbasCatalogo';
 import { Alimento, listarAlimentos, precisaRevisaoNutricional } from '../services/alimentosAdminService';
 import type { TemaPainel } from '../../../shared/painel/tema/paletas';
 import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
@@ -21,9 +22,6 @@ import {
 
 const TOM_NOVA: Record<string, TomSelo> = { IN_NATURA: 'ok', INGREDIENTE_CULINARIO: 'info', PROCESSADO: 'aviso', ULTRAPROCESSADO: 'erro' };
 
-const OP_TIPO = [
-  { chave: 'TODOS', label: 'Todos' }, { chave: 'INGREDIENTE', label: 'Ingredientes' }, { chave: 'PRATO', label: 'Pratos' },
-];
 const OP_ORIGEM = [
   { chave: 'TODAS', label: 'Qualquer origem' }, { chave: 'EQUIPE', label: 'Cadastrados pela equipe' },
   { chave: 'ADOLESCENTE', label: 'Criados por adolescentes' }, { chave: 'REVISAR', label: 'Aguardando revisão' },
@@ -88,7 +86,7 @@ function Linha({ rotulo, children }: { rotulo: string; children: React.ReactNode
   );
 }
 
-export default function AlimentosListScreen({ navigation }: any) {
+export default function AlimentosListScreen({ navigation, route }: any) {
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
   const { width } = useWindowDimensions();
@@ -98,6 +96,13 @@ export default function AlimentosListScreen({ navigation }: any) {
   const [erro, setErro] = useState<string | null>(null);
   const [filtros, setFiltros] = useState<FiltrosAlimentos>(FILTROS_VAZIOS);
   const [painelAberto, setPainelAberto] = useState(false);
+  // aba do catálogo: Alimentos (ingredientes) ou Pratos; a de Receitas é outra tela
+  const aba: 'ALIMENTOS' | 'PRATOS' = route?.params?.aba === 'PRATOS' ? 'PRATOS' : 'ALIMENTOS';
+  const tipoDaAba: FiltrosAlimentos['tipo'] = aba === 'PRATOS' ? 'PRATO' : 'INGREDIENTE';
+  const trocarAba = (a: AbaCatalogo) => {
+    if (a === 'RECEITAS') navigation.navigate('AdminReceitas');
+    else navigation.setParams({ aba: a });
+  };
 
   const carregar = useCallback(() => {
     setCarregando(true);
@@ -109,27 +114,30 @@ export default function AlimentosListScreen({ navigation }: any) {
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
 
   const set = <K extends keyof FiltrosAlimentos>(k: K, v: FiltrosAlimentos[K]) => setFiltros((f) => ({ ...f, [k]: v }));
-  const visiveis = useMemo(() => filtrarAlimentos(alimentos, filtros), [alimentos, filtros]);
+  const visiveis = useMemo(() => filtrarAlimentos(alimentos, { ...filtros, tipo: tipoDaAba }), [alimentos, filtros, tipoDaAba]);
   // completa a última linha com espaços vazios, para o último cartão não esticar sozinho
   const dados = useMemo<(Alimento | null)[]>(() => {
     const falta = (colunas - (visiveis.length % colunas)) % colunas;
     return visiveis.length === 0 ? [] : [...visiveis, ...Array(falta).fill(null)];
   }, [visiveis, colunas]);
-  const ativos = contarFiltros(filtros);
+  const ativos = contarFiltros({ ...filtros, tipo: 'TODOS' }); // o tipo vem da aba, não conta como filtro
   const pendentes = useMemo(() => alimentos.filter(precisaRevisaoNutricional).length, [alimentos]);
   const pratos = useMemo(() => alimentos.filter((a) => a.eh_prato_composto).length, [alimentos]);
+  const doTipo = aba === 'PRATOS' ? pratos : alimentos.length - pratos;
 
   const cabecalho = (
     <View style={styles.cabecalho}>
       <View style={styles.titulos}>
         <View style={{ flex: 1, minWidth: 180 }}>
-          <AppText style={styles.titulo}>Catálogo de alimentos</AppText>
+          <AppText style={styles.titulo}>Catálogo</AppText>
           <AppText style={styles.subtitulo}>
-            {alimentos.length} no total · {pratos} pratos · {alimentos.length - pratos} ingredientes
+            {aba === 'PRATOS' ? 'Pratos compostos do app' : 'Ingredientes e alimentos do app'} · {doTipo} cadastrados
           </AppText>
         </View>
-        <AppButton label="+ NOVO ALIMENTO" fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botaoNovo} onPress={() => navigation.navigate('AlimentoForm', {})} />
+        <AppButton label={aba === 'PRATOS' ? '+ NOVO PRATO' : '+ NOVO ALIMENTO'} fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botaoNovo} onPress={() => navigation.navigate('AlimentoForm', aba === 'PRATOS' ? { novoPrato: true } : {})} />
       </View>
+
+      <AbasCatalogo ativa={aba} onTrocar={trocarAba} contagens={{ ALIMENTOS: alimentos.length - pratos, PRATOS: pratos }} />
 
       {pendentes > 0 && (
         <Pressable onPress={() => set('origem', filtros.origem === 'REVISAR' ? 'TODAS' : 'REVISAR')} style={styles.aviso} accessibilityRole="button">
@@ -141,7 +149,6 @@ export default function AlimentosListScreen({ navigation }: any) {
       )}
 
       <CampoBusca valor={filtros.busca} onChange={(t) => set('busca', t)} placeholder="Buscar alimento pelo nome" />
-      <ChipsFiltro opcoes={OP_TIPO} valor={filtros.tipo} onChange={(c) => set('tipo', c as FiltrosAlimentos['tipo'])} />
 
       <View style={styles.linhaFiltros}>
         <Pressable onPress={() => setPainelAberto((a) => !a)} accessibilityRole="button" accessibilityState={{ expanded: painelAberto }} style={[styles.botaoFiltros, ativos > 0 && styles.botaoFiltrosOn]}>
@@ -157,7 +164,7 @@ export default function AlimentosListScreen({ navigation }: any) {
           </Pressable>
         )}
         <AppText style={styles.contagem}>
-          {visiveis.length === alimentos.length ? `${alimentos.length} alimentos` : `${visiveis.length} de ${alimentos.length}`}
+          {visiveis.length === doTipo ? `${doTipo} ${aba === 'PRATOS' ? 'pratos' : 'alimentos'}` : `${visiveis.length} de ${doTipo}`}
         </AppText>
       </View>
 
@@ -188,8 +195,8 @@ export default function AlimentosListScreen({ navigation }: any) {
         ListHeaderComponent={cabecalho}
         ListEmptyComponent={
           <VazioPainel
-            titulo={alimentos.length === 0 ? 'Nenhum alimento cadastrado' : 'Nenhum alimento com esses filtros'}
-            texto={alimentos.length === 0 ? 'Toque em "Novo alimento" para começar.' : 'Tente tirar algum filtro ou buscar por outro nome.'}
+            titulo={doTipo === 0 && ativos === 0 && filtros.busca === '' ? (aba === 'PRATOS' ? 'Nenhum prato cadastrado' : 'Nenhum alimento cadastrado') : 'Nada com esses filtros'}
+            texto={doTipo === 0 && ativos === 0 && filtros.busca === '' ? `Toque em "${aba === 'PRATOS' ? 'Novo prato' : 'Novo alimento'}" para começar.` : 'Tente tirar algum filtro ou buscar por outro nome.'}
           />
         }
         renderItem={({ item }) => (

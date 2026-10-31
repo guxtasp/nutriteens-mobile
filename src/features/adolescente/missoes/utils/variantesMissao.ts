@@ -186,6 +186,28 @@ export const VARIANTES_MISSAO: readonly VarianteMissao[] = lista;
 
 const POR_CODIGO = new Map(lista.map((v) => [v.codigo, v]));
 
+const CODIGOS_CUSTOM = new Set<string>();
+
+/**
+ * Variantes criadas pelo painel (tabela missoes_variantes_custom). Substitui as
+ * anteriores a cada chamada; as variantes embutidas no código nunca são tocadas.
+ */
+export function registrarVariantesCustom(novas: readonly VarianteMissao[]): void {
+  for (let i = lista.length - 1; i >= 0; i--) {
+    if (CODIGOS_CUSTOM.has(lista[i].codigo)) {
+      POR_CODIGO.delete(lista[i].codigo);
+      lista.splice(i, 1);
+    }
+  }
+  CODIGOS_CUSTOM.clear();
+  for (const v of novas) {
+    if (POR_CODIGO.has(v.codigo)) continue;
+    CODIGOS_CUSTOM.add(v.codigo);
+    lista.push(v);
+    POR_CODIGO.set(v.codigo, v);
+  }
+}
+
 export function obterVariante(codigo: string | undefined | null): VarianteMissao | null {
   return codigo ? (POR_CODIGO.get(codigo) ?? null) : null;
 }

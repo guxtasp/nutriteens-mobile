@@ -152,7 +152,8 @@ export function montarDetalhes(m: MetricasCompletas, ctx: ContextoDetalhes): Rec
       ...(h.diasComRefeicao > 0 ? [{ rotulo: 'Média por dia com registro', valor: decimal(h.refeicoes / h.diasComRefeicao) }] : []),
       ...tipos.map(([t, n]) => ({ rotulo: NOME_REFEICAO[t] ?? humanizarGrupo(t), valor: String(n) })),
     ], dicas: alimDicas },
-    diversidade: { linhas: divLinhas, dicas: divDicas, sugestoes: sugestoes.length ? sugestoes : undefined },
+    // sem nenhum alimento registrado não há o que "variar": nada de sugestão solta
+    diversidade: { linhas: divLinhas, dicas: divDicas, sugestoes: h.alimentosDistintos > 0 && sugestoes.length ? sugestoes : undefined },
     agua: { linhas: aguaLinhas, dicas: aguaDicas },
     atividade: { linhas: ativLinhas, dicas: ativDicas },
     engajamento: { linhas: engLinhas, dicas: engDicas },

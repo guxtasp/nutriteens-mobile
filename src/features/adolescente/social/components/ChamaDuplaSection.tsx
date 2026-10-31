@@ -11,6 +11,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { InfoButton } from '../../../../shared/ui/InfoButton';
 import { InfoSheet } from '../../../../shared/ui/InfoSheet';
 import { AvatarSocialView } from './AvatarSocialView';
+import SecaoTitulo from './SecaoTitulo';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import type { useChamaDupla } from '../hooks/useChamaDupla';
@@ -57,11 +58,13 @@ export function ChamaDuplaSection({ chama, onAbrirHome }: Props) {
 
   return (
     <>
-      <View style={styles.titleRow}>
-        <Ionicons name="flame" size={20} color={COR_CHAMA} />
-        <AppText style={styles.title}>Chama em Dupla</AppText>
-        <InfoButton onPress={() => setInfoAberta(true)} accessibilityLabel="O que é a Chama em Dupla?" />
-      </View>
+      <SecaoTitulo
+        titulo="Chama em Dupla"
+        icone="flame"
+        corIcone={COR_CHAMA}
+        corFundo="#FFF1DC"
+        direita={<InfoButton onPress={() => setInfoAberta(true)} accessibilityLabel="O que é a Chama em Dupla?" />}
+      />
 
       {recebidos.map((c) => (
         <View key={c.id} style={styles.card}>
@@ -177,9 +180,9 @@ export function ChamaDuplaSection({ chama, onAbrirHome }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 10 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 10 },
   title: { flex: 1, fontFamily: typography.bold, fontSize: 17, color: colors.primaryDark },
-  card: { backgroundColor: colors.white, borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#E5E7EB' },
+  card: { backgroundColor: colors.white, borderRadius: 22, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#E4EAE6' },
   linha: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   nome: { fontFamily: typography.semiBold, fontSize: 15, color: colors.textOnLight },
   sub: { fontSize: 13, lineHeight: 19, color: '#6B7280', marginTop: 2 },
@@ -201,8 +204,8 @@ const styles = StyleSheet.create({
   avisoTexto: { flex: 1, fontFamily: typography.medium, fontSize: 13, color: colors.textOnLight },
   avisoOk: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
   acoes: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  botao: { flex: 1, alignItems: 'center', backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 12 },
+  botao: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48, backgroundColor: colors.primary, borderRadius: 16, borderBottomWidth: 4, borderBottomColor: colors.primaryShadow },
   botaoTexto: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
-  botaoSec: { flex: 1, alignItems: 'center', borderRadius: 14, paddingVertical: 12, borderWidth: 1, borderColor: '#D1D5DB' },
+  botaoSec: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48, borderRadius: 16, borderWidth: 2, borderColor: '#DDE3DF', borderBottomWidth: 4 },
   botaoSecTexto: { fontFamily: typography.semiBold, fontSize: 14, color: '#4B5563' },
 });

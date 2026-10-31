@@ -1,7 +1,7 @@
 import {
   avaliarOpenFoodFacts, confiancaDoCandidato, coberturaDePalavras, normalizarTexto, rankearCandidatos, variantesCodigo,
   categoriaPorTags, checksumGs1Ok, colheresDeAcucar, ingredientesPrincipais, mapearOpenFoodFacts, modoDoResultado, nivelNutriente,
-  normalizarCodigo, novaDoOpenFoodFacts, pontosPositivos, resumoDiagnostico, textoAditivos,
+  avisosDeClassificacao, salDoSodioMg, normalizarCodigo, novaDoOpenFoodFacts, numeroDigitado, montarDetalhes, camposDaFicha, FICHA_VAZIA, pontosPositivos, resumoDiagnostico, textoAditivos,
 } from '../scanner';
 
 describe('código de barras', () => {
@@ -204,5 +204,66 @@ describe('correspondência por nome e marca (só candidatos)', () => {
     const r = rankearCandidatos({ nome: 'achocolatado em po', marca: 'nescau' }, lista, 3);
     expect(r.map((c) => c.codigoBarras)).toEqual(['2', '1']);   // 2 (marca bate) vem antes de 1 (sem marca no cadastro)
     expect(r.map((c) => c.confianca)).toEqual(['PROVAVEL', 'POSSIVEL']);
+  });
+});
+
+describe('ficha preenchida pela equipe', () => {
+  it('aceita vírgula, ponto e "g"; rejeita negativo, texto e acima de 100', () => {
+    expect(numeroDigitado('12,5')).toBe(12.5);
+    expect(numeroDigitado('12.5 g')).toBe(12.5);
+    expect(numeroDigitado('')).toBeNull();
+    expect(numeroDigitado('-1')).toBeNull();
+    expect(numeroDigitado('abc')).toBeNull();
+    expect(numeroDigitado('101')).toBeNull();
+  });
+  it('sem nenhum dado vira null', () => {
+    expect(montarDetalhes(FICHA_VAZIA)).toBeNull();
+  });
+  it('monta os detalhes (creme de leite: gordura em destaque)', () => {
+    const d = montarDetalhes({ ...FICHA_VAZIA, acucar: '3,5', sal: '0,1', gorduraSat: '12', proteina: '2,2', aditivos: '2',
+      ingredientes: 'Creme de leite, estabilizante (citrato de sódio), espessante' });
+    expect(d).toMatchObject({ acucarG: 3.5, salG: 0.1, gorduraSatG: 12, proteinaG: 2.2, fibraG: null, aditivos: 2 });
+    expect(d?.ingredientes).toEqual(['Creme de leite', 'Estabilizante (citrato de sódio)', 'Espessante']);
+    expect(nivelNutriente('GORDURA_SAT', d?.gorduraSatG)).toBe('BASTANTE');
+  });
+  it('imagem só https; aditivos inválido vira null; limita os ingredientes', () => {
+    const d = montarDetalhes({ ...FICHA_VAZIA, imagemUrl: 'http://x.com/a.png', aditivos: '1,5', ingredientes: 'a,b,c,d,e,f,g,h,i,j' });
+    expect(d?.imagemUrl).toBeNull();
+    expect(d?.rotuloUrl).toBeNull();
+    expect(d?.aditivos).toBeNull();
+    expect(d?.ingredientes).toHaveLength(8);
+  });
+  it('ida e volta entre formulário e ficha', () => {
+    const d = montarDetalhes({ ...FICHA_VAZIA, acucar: '5,5', fibra: '3', ingredientes: 'Aveia, mel' });
+    expect(camposDaFicha(d)).toMatchObject({ acucar: '5,5', fibra: '3', ingredientes: 'Aveia, Mel' });
+    expect(camposDaFicha(null)).toEqual(FICHA_VAZIA);
+  });
+});
+
+describe('sugestão de rótulo por foto', () => {
+  // import tardio: o serviço importa o supabase, então testamos só a conversão pura
+  it('foto do rótulo guardada na ficha', () => {
+    const d = montarDetalhes({ ...FICHA_VAZIA, rotuloUrl: 'https://x.supabase.co/storage/v1/object/public/scanner/produtos/a.jpg' });
+    expect(d?.rotuloUrl).toContain('https://');
+    expect(camposDaFicha(d).rotuloUrl).toContain('https://');
+  });
+});
+
+describe('sódio e avisos de classificação', () => {
+  it('converte sódio (mg) em sal (g) e usa só se o sal estiver vazio', () => {
+    expect(salDoSodioMg('400')).toBe(1);
+    expect(salDoSodioMg('400 mg')).toBe(1);
+    expect(salDoSodioMg('')).toBeNull();
+    expect(salDoSodioMg('abc')).toBeNull();
+    expect(montarDetalhes({ ...FICHA_VAZIA, sodio: '120' })?.salG).toBe(0.3);
+    expect(montarDetalhes({ ...FICHA_VAZIA, sal: '0,5', sodio: '120' })?.salG).toBe(0.5);
+  });
+  it('avisa quando o nível de processamento parece incoerente', () => {
+    expect(avisosDeClassificacao('IN_NATURA', { aditivos: 2 })).toHaveLength(1);
+    expect(avisosDeClassificacao('PROCESSADO', { ingredientes: ['Água', 'Aromatizante'] })).toHaveLength(1);
+    expect(avisosDeClassificacao('IN_NATURA', { aditivos: 0, ingredientes: ['Aveia'] })).toEqual([]);
+    expect(avisosDeClassificacao(null, { aditivos: 4 })).toHaveLength(1);
+    expect(avisosDeClassificacao('ULTRAPROCESSADO', { aditivos: 0, ingredientes: ['Farinha', 'Açúcar'] })).toHaveLength(1);
+    expect(avisosDeClassificacao('ULTRAPROCESSADO', null)).toEqual([]);
   });
 });

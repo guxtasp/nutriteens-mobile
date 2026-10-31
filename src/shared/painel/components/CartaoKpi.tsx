@@ -9,6 +9,7 @@ import { formatarVariacao } from '../utils/widgets';
 import type { IconeNome } from '../types';
 import type { TemaPainel } from '../tema/paletas';
 import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
+import type { AjudaWidget } from '../ajuda';
 import { AjudaInfo } from './AjudaInfo';
 import { Sparkline } from './widgets/Sparkline';
 
@@ -20,7 +21,7 @@ type Props = {
   alerta?: boolean;
   detalhe?: string;
   /** explicação curta do indicador (abre ao tocar no "i") */
-  ajuda?: string;
+  ajuda?: AjudaWidget;
   /** minigráfico com a evolução diária (opcional) */
   sparkline?: number[];
   /** variação % da 2ª metade do período sobre a 1ª (opcional); null esconde a etiqueta */

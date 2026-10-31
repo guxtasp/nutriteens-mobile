@@ -68,14 +68,14 @@ const MASCOTE = require('../../../../../assets/img/mascot/broxis-aceno.png');
 const MASCOTE_LARGURA = 64;
 const MASCOTE_ALTURA = Math.round((MASCOTE_LARGURA * 463) / 292);
 
-const ALTURA_LINHA = 108; // um pouco maior que antes: dá espaço para os pontinhos entre os nós
+const ALTURA_LINHA = 128; // um pouco maior que antes: dá espaço para os pontinhos entre os nós
 const ESPACO_BALAO = 52; // folga extra ACIMA do nó atual: o balão "BORA!" não pode cobrir o nó anterior
 const TOPO = 104; // folga pro balão "BORA!" caber acima do primeiro nó
-const NODE_SIZE = 66;
-const NODE_SIZE_ATUAL = 72;
-const ARO = 6; // espessura do aro do "prato"
-const TAM_PONTO = 7; // pontinhos entre os nós
-const CAIXA_LARGURA = 128;
+const NODE_SIZE = 80;
+const NODE_SIZE_ATUAL = 90;
+const ARO = 7; // espessura do aro do "prato"
+const TAM_PONTO = 8; // pontinhos entre os nós
+const CAIXA_LARGURA = 140;
 const ALTURA_DIVISORIA = 96; // etiqueta "Módulo N" + folga pro balão do primeiro nó do módulo
 const ALTURA_UNIDADE = 176; // cartão da nova trilha (unidade) + etiqueta do módulo + folga pro balão
 const PERIODO_ONDA = 8; // nós por ciclo completo da onda
@@ -101,7 +101,7 @@ export function TrilhaCaminho({ grupos, onPressNo, onMedirGrupos, onMedirNoAtual
   // reiniciar a cada módulo) e se é o primeiro nó de um novo grupo (pra saber
   // onde encaixar a divisória "Módulo N").
   const { pontos, alturaTotal, offsetsGrupo, yAtual, trilho } = useMemo(() => {
-    const amplitude = Math.min(width * 0.22, 84);
+    const amplitude = Math.min(width * 0.24, 96);
     let indiceGlobal = 0;
     let y = TOPO;
     let yDoAtual: number | null = null;
@@ -325,12 +325,12 @@ function NoDoCaminho({ no, x, y, onPress }: { no: NoTrilha; x: number; y: number
         ]}
       >
         <View style={{ width: miolo, height: miolo, borderRadius: miolo / 2, backgroundColor: face, alignItems: 'center', justifyContent: 'center' }}>
-          <IconeDoNo no={no} size={ehAtual ? 30 : 28} color={corIcone} />
+          <IconeDoNo no={no} size={ehAtual ? 40 : 34} color={corIcone} />
         </View>
         {/* selo de concluída */}
         {concluida && (
           <View style={styles.selo}>
-            <Ionicons name="checkmark" size={13} color={colors.primaryDark} />
+            <Ionicons name="checkmark" size={16} color={colors.primaryDark} />
           </View>
         )}
       </Pressable>
@@ -390,9 +390,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -3,
     bottom: -3,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   },
   balaoWrapper: {
     position: 'absolute',
-    top: -58,
+    top: -62,
     left: 0,
     right: 0,
     alignItems: 'center',

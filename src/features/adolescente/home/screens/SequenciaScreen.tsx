@@ -21,6 +21,8 @@ import { formatarDataISO } from '../../../../shared/utils/data';
 import { feedbackLeve, feedbackToque } from '../../../../shared/audio/feedback';
 import { useHomeData } from '../hooks/useHomeData';
 import { calcularDesafioBroxis } from '../utils/desafioBroxis';
+import { marcosDaSequencia, numerarSemana, rotuloNivel, type MarcoSequencia } from '../utils/marcosSequencia';
+import ConquistaModal from '../components/ConquistaModal';
 
 // sombra única dos cartões (mesma do Extrato de pontos)
 const sombra = {
@@ -72,6 +74,9 @@ export default function SequenciaScreen() {
     ? formatarDataCurta(calcularDataInicio(hojeISO, sequenciaAtual, diaDeHojeMantido))
     : null;
 
+  const numerosSemana = numerarSemana(dias.map((d) => CORES_STATUS_MANTIDO.has(d.status)), sequenciaAtual);
+  const marcos = marcosDaSequencia(sequenciaAtual, maiorSequencia);
+  const [marcoAberto, setMarcoAberto] = useState<MarcoSequencia | null>(null);
   const diasMantidosNaSemana = dias.filter((dia) => CORES_STATUS_MANTIDO.has(dia.status)).length;
   const diasFaltando = desafio.duracaoDias - desafio.diaAtual;
 
@@ -296,10 +301,10 @@ export default function SequenciaScreen() {
                 {dias.map((dia) => {
                   const mantido = CORES_STATUS_MANTIDO.has(dia.status);
                   const ehHoje = dia.status === 'hoje_pendente' || dia.status === 'hoje_mantido';
+                  const numeroSeq = numerosSemana[dias.indexOf(dia)];
                   return (
-                    <View key={dia.data} style={styles.colunaDia}>
-                      <AppText style={[styles.labelDia, ehHoje && styles.labelDiaHoje]}>{dia.label.charAt(0)}</AppText>
-                      <AppText style={[styles.numeroDia, ehHoje && styles.labelDiaHoje]}>{dia.numero}</AppText>
+                    <View key={dia.data} style={styles.colunaDia} accessible accessibilityLabel={`${dia.label}, ${mantido ? (numeroSeq ? `dia ${numeroSeq} da sequência` : 'dia mantido') : 'sem registro'}`}>
+                      <AppText style={[styles.labelDia, (mantido || ehHoje) && styles.labelDiaHoje]}>{dia.label.charAt(0)}</AppText>
                       <View
                         style={[
                           styles.chamaBase,
@@ -307,7 +312,8 @@ export default function SequenciaScreen() {
                           ehHoje && styles.chamaHoje,
                         ]}
                       >
-                        <Ionicons name="flame" size={16} color={mantido ? colors.white : CINZA_INATIVO} />
+                        <Ionicons name="flame" size={22} color={mantido ? colors.white : CINZA_INATIVO} />
+                        {mantido && !!numeroSeq && <AppText style={styles.numeroNaChama}>{numeroSeq}</AppText>}
                       </View>
                     </View>
                   );
@@ -374,8 +380,44 @@ export default function SequenciaScreen() {
                 <AppText style={styles.rodapeLabel}>Sequência recorde</AppText>
               </View>
             </Animated.View>
+
+            {/* --- marcos: insígnia, medalha e troféu --- */}
+            <View style={styles.secaoTopo}>
+              <AppText style={styles.tituloSecao}>Marcos da sequência</AppText>
+              <AppText style={styles.secaoTotal}>{marcos.filter((m) => m.atingido).length} de {marcos.length}</AppText>
+            </View>
+            <View style={{ gap: 10 }}>
+              {marcos.map((m) => (
+                <Pressable
+                  key={m.dias}
+                  disabled={!m.atingido}
+                  onPress={() => { feedbackToque(); setMarcoAberto(m); }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${rotuloNivel(m.nivel)} de ${m.dias} dias. ${m.atingido ? 'Conquistada. Toque para rever.' : `Faltam ${m.faltam} dias.`}`}
+                  style={[styles.marcoLinha, !m.atingido && { opacity: 0.6 }]}
+                >
+                  <View style={[styles.marcoIcone, m.atingido && { backgroundColor: COR_SEQUENCIA }]}>
+                    <Ionicons name={m.nivel === 'TROFEU' ? 'trophy' : m.nivel === 'MEDALHA' ? 'medal' : 'ribbon'} size={22} color={m.atingido ? colors.white : CINZA_INATIVO} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <AppText style={styles.marcoTitulo}>{m.dias} dias de sequência</AppText>
+                    <AppText style={styles.marcoSub}>{rotuloNivel(m.nivel)} · {m.atingido ? 'conquistada' : `faltam ${m.faltam} ${m.faltam === 1 ? 'dia' : 'dias'}`}</AppText>
+                  </View>
+                  {m.atingido && <Ionicons name="checkmark-circle" size={22} color={COR_SEQUENCIA} />}
+                </Pressable>
+              ))}
+            </View>
           </>
         )}
+
+        <ConquistaModal
+          visivel={!!marcoAberto}
+          nivel={marcoAberto?.nivel ?? 'INSIGNIA'}
+          titulo={marcoAberto ? `${marcoAberto.dias} dias de sequência` : ''}
+          descricao="Você voltou dia após dia. Isso é cuidar de você."
+          destaques={marcoAberto ? [`${rotuloNivel(marcoAberto.nivel)} conquistada`, `Recorde: ${textoDias(maiorSequencia)}`] : []}
+          onFechar={() => setMarcoAberto(null)}
+        />
 
       </ScrollView>
     </SafeAreaView>
@@ -461,12 +503,16 @@ const styles = StyleSheet.create({
   },
   colunaDia: { alignItems: 'center', gap: 4, width: 36 },
   labelDia: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
-  numeroDia: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
+  numeroNaChama: { position: 'absolute', bottom: 3, fontFamily: typography.bold, fontSize: 11, color: colors.white },
+  marcoLinha: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.white, borderRadius: 16, padding: 12, ...sombra },
+  marcoIcone: { width: 44, height: 44, borderRadius: 14, backgroundColor: CINZA_FUNDO, alignItems: 'center', justifyContent: 'center' },
+  marcoTitulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
+  marcoSub: { fontFamily: typography.regular, fontSize: 12, color: '#7A8B94', marginTop: 1 },
   labelDiaHoje: { color: COR_SEQUENCIA },
   chamaBase: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 38,
+    height: 44,
+    borderRadius: 14,
     backgroundColor: CINZA_FUNDO,
     alignItems: 'center',
     justifyContent: 'center',

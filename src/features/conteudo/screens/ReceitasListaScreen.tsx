@@ -12,6 +12,7 @@ import { CampoBusca, ChipsFiltro, VazioPainel } from '../../../shared/painel/com
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { typography } from '../../../shared/theme/typography';
+import { AbasCatalogo, type AbaCatalogo } from '../../admin/components/AbasCatalogo';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { transicionar } from '../services/fluxoService';
 import { listarReceitasDoPainel } from '../services/receitasListaService';
@@ -143,7 +144,7 @@ function CartaoReceita({ item, papel, navigation, origem, aoMudar }: { item: Rec
   );
 }
 
-export default function ReceitasListaScreen({ config }: { config: ConfigPainel }) {
+export default function ReceitasListaScreen({ config, abasCatalogo }: { config: ConfigPainel; abasCatalogo?: boolean }) {
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
   const navigation = useNavigation<any>();
@@ -181,12 +182,21 @@ export default function ReceitasListaScreen({ config }: { config: ConfigPainel }
   return (
     <PainelLayout
       config={config}
-      titulo="Receitas"
+      titulo={abasCatalogo ? 'Catálogo' : 'Receitas'}
       subtitulo={itens.length ? `${itens.length} receita(s) no total` : 'Crie e organize as receitas do app'}
       acao={
         <AppButton label="+ NOVA RECEITA" fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botao} onPress={() => navigation.navigate('EditarReceita', { origem })} />
       }
     >
+      {abasCatalogo && (
+        <View style={styles.abasCatalogo}>
+          <AbasCatalogo
+            ativa="RECEITAS"
+            contagens={{ RECEITAS: itens.length }}
+            onTrocar={(a: AbaCatalogo) => navigation.navigate('AlimentosList', { aba: a })}
+          />
+        </View>
+      )}
       {carregando ? (
         <EstadoCarregando />
       ) : erro ? (
@@ -229,6 +239,7 @@ export default function ReceitasListaScreen({ config }: { config: ConfigPainel }
 }
 
 const criarEstilos = (t: TemaPainel) => ({
+  abasCatalogo: { marginBottom: 14 },
   barra: { gap: 10, marginBottom: 14 },
   linhaOpcoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   rotuloOrdem: { fontFamily: typography.bold, fontSize: 12, color: t.textoSuave },

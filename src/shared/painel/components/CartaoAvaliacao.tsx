@@ -9,6 +9,7 @@ import { AppText } from '../../ui/AppText';
 import { typography } from '../../theme/typography';
 import type { TemaPainel } from '../tema/paletas';
 import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
+import type { AjudaWidget } from '../ajuda';
 import { AjudaInfo } from './AjudaInfo';
 
 type Props = {
@@ -18,7 +19,7 @@ type Props = {
   detalhe?: string;
   /** selo à direita (ex.: <Selo .../>) */
   situacao?: React.ReactNode;
-  ajuda?: string;
+  ajuda?: AjudaWidget;
   children: React.ReactNode;
 };
 

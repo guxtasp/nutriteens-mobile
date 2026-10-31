@@ -10,7 +10,13 @@ export type IngredienteReceita = {
   quantidadeTexto: string | null;
 };
 
-export type IngredienteCasa = { id: string; nome: string };
+/**
+ * Ingrediente que o adolescente tem em casa. `ids` é opcional: um atalho como "Arroz" vale para
+ * todas as variações do catálogo (arroz branco, integral...), então combina com mais receitas.
+ */
+export type IngredienteCasa = { id: string; nome: string; ids?: string[] };
+
+const idsDe = (lista: IngredienteCasa[]): Set<string> => new Set(lista.flatMap((i) => i.ids ?? [i.id]));
 
 type Dif = 'FACIL' | 'MEDIO' | 'DIFICIL' | string | null;
 
@@ -46,7 +52,7 @@ export function pontuar<T extends ReceitaBase>(receita: T, idsCasa: ReadonlySet<
  * Desempate: a que menos falta, depois a mais fácil, depois ordem alfabética.
  */
 export function receitasQueCombinam<T extends ReceitaBase>(receitas: T[], ingredientesCasa: IngredienteCasa[]): ReceitaPontuada<T>[] {
-  const ids = new Set(ingredientesCasa.map((i) => i.id));
+  const ids = idsDe(ingredientesCasa);
   return receitas
     .map((r) => pontuar(r, ids))
     .filter((p) => p.tenho.length >= 1)
@@ -71,7 +77,7 @@ export function todasPorDificuldade<T extends ReceitaBase>(receitas: T[]): Recei
  * nenhum ingrediente em comum), começando pelas que pedem menos ingredientes que ele não tem.
  */
 export function outrasReceitas<T extends ReceitaBase>(receitas: T[], ingredientesCasa: IngredienteCasa[]): ReceitaPontuada<T>[] {
-  const ids = new Set(ingredientesCasa.map((i) => i.id));
+  const ids = idsDe(ingredientesCasa);
   return receitas
     .map((r) => pontuar(r, ids))
     .filter((p) => p.tenho.length === 0)
@@ -96,7 +102,7 @@ export function sugerirIngredientes(
 ): IngredienteCasa[] {
   const t = normalizarTexto(termo);
   if (!t) return [];
-  const tenho = new Set(jaTenho.map((i) => i.id));
+  const tenho = idsDe(jaTenho);
   const candidatos = universo.filter((i) => !tenho.has(i.id) && normalizarTexto(i.nome).includes(t));
   const comeca = (i: IngredienteCasa) => (normalizarTexto(i.nome).startsWith(t) ? 0 : 1);
   return candidatos
@@ -121,4 +127,45 @@ export function unirIngredientes(daReceita: IngredienteReceita[], doPrato: Ingre
   doPrato.forEach((i) => mapa.set(i.alimentoId, i));
   daReceita.forEach((i) => mapa.set(i.alimentoId, i));
   return [...mapa.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+/**
+ * Junta duas listas de ingredientes pelo id (a segunda completa a primeira). Usado para o autocomplete
+ * não depender só das receitas publicadas: o catálogo de alimentos também entra.
+ */
+export function unirUniversos(a: IngredienteCasa[], b: IngredienteCasa[]): IngredienteCasa[] {
+  const mapa = new Map<string, IngredienteCasa>();
+  [...b, ...a].forEach((i) => mapa.set(i.id, { id: i.id, nome: i.nome }));
+  return [...mapa.values()].sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
+}
+
+/** Ingredientes do dia a dia mostrados como atalhos na primeira tela (ordem de exibição). */
+export const INGREDIENTES_COMUNS = [
+  'ovo', 'arroz', 'feijão', 'banana', 'leite', 'pão', 'batata', 'cenoura',
+  'tomate', 'frango', 'macarrão', 'queijo', 'maçã', 'mandioca',
+] as const;
+
+const palavras = (nome: string) => normalizarTexto(nome).split(/[^a-z0-9]+/).filter(Boolean);
+
+/**
+ * Transforma cada atalho comum ("arroz") em um ingrediente que vale para todas as variações do
+ * catálogo cuja PRIMEIRA palavra é o atalho ("Arroz, integral, cozido"; "Ovo, de galinha, cozido").
+ * Atalho sem nenhum alimento correspondente some; quem já está em casa não é oferecido de novo.
+ */
+export function resolverIngredientesComuns(
+  universo: IngredienteCasa[],
+  jaTenho: IngredienteCasa[],
+  comuns: readonly string[] = INGREDIENTES_COMUNS,
+  maxIds = 40
+): IngredienteCasa[] {
+  const tenho = idsDe(jaTenho);
+  const resultado: IngredienteCasa[] = [];
+  comuns.forEach((termo) => {
+    const t = normalizarTexto(termo);
+    const ids = universo.filter((i) => palavras(i.nome)[0] === t).map((i) => i.id).slice(0, maxIds);
+    if (ids.length === 0) return;
+    if (ids.every((id) => tenho.has(id))) return;
+    resultado.push({ id: ids[0], nome: termo.charAt(0).toUpperCase() + termo.slice(1), ids });
+  });
+  return resultado;
 }

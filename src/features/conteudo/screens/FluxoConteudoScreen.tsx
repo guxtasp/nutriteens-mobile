@@ -9,6 +9,7 @@ import { GridResponsiva } from '../../../shared/painel/components/GridResponsiva
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
 import { AjudaInfo } from '../../../shared/painel/components/AjudaInfo';
+import { CampoBusca, ChipsFiltro } from '../../../shared/painel/components/ControlesLista';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { typography } from '../../../shared/theme/typography';
@@ -33,6 +34,9 @@ import {
   type TipoConteudo,
   type TomStatus,
 } from '../utils/fluxo';
+import {
+  FILTROS_FLUXO_VAZIOS, autoresDisponiveis, dasAba, filtrarFluxo, type AbaTipo, type FiltrosFluxo, type OrdemFluxo,
+} from '../utils/filtrosFluxo';
 
 type Props = {
   config: ConfigPainel;
@@ -53,6 +57,17 @@ const FILTROS: { chave: string; label: string; status?: StatusFluxo[] }[] = [
   { chave: 'ARQUIVADO', label: 'Arquivado', status: ['ARQUIVADO'] },
 ];
 const STATUS_FILA: StatusFluxo[] = ['AGUARDANDO_APROVACAO', 'APROVADO'];
+const ABAS: { chave: AbaTipo; label: string }[] = [
+  { chave: 'TODOS', label: 'Todos' },
+  { chave: 'TRILHA', label: 'Trilhas' },
+  { chave: 'RECEITA', label: 'Receitas' },
+  { chave: 'TROCA', label: 'Alternativas' },
+];
+const OP_ORDEM: { chave: OrdemFluxo; label: string }[] = [
+  { chave: 'RECENTES', label: 'Mais recentes' },
+  { chave: 'ANTIGOS', label: 'Mais antigos' },
+  { chave: 'AZ', label: 'A–Z' },
+];
 
 
 function CartaoConteudo({
@@ -171,6 +186,13 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
   const [itens, setItens] = useState<ItemFluxo[]>([]);
   const [papel, setPapel] = useState<PapelPainel | null>(null);
   const [filtro, setFiltro] = useState('TODOS');
+  const [aba, setAba] = useState<AbaTipo>('TODOS');
+  const [busca, setBusca] = useState('');
+  const [autor, setAutor] = useState('TODOS');
+  const [ordem, setOrdem] = useState<OrdemFluxo>('RECENTES');
+  // a página pode já ser de um tipo só (Trilhas, Alternativas); abas só na lista geral
+  const comAbas = !fila && !tipo;
+  const tipoAtual: TipoConteudo | undefined = tipo ?? (aba === 'TODOS' ? undefined : aba);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -197,15 +219,28 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
     }, [carregar])
   );
 
+  const daAba = useMemo(() => dasAba(itens, comAbas ? aba : 'TODOS'), [itens, aba, comAbas]);
+  const autores = useMemo(() => autoresDisponiveis(daAba), [daAba]);
+  const statusDoFiltro = FILTROS.find((x) => x.chave === filtro)?.status ?? null;
   const visiveis = useMemo(() => {
-    const f = FILTROS.find((x) => x.chave === filtro);
-    return f?.status ? itens.filter((i) => f.status!.includes(i.status)) : itens;
-  }, [itens, filtro]);
+    const f: FiltrosFluxo = { ...FILTROS_FLUXO_VAZIOS, aba: comAbas ? aba : 'TODOS', status: statusDoFiltro, busca, autor, ordem };
+    return filtrarFluxo(itens, f);
+  }, [itens, comAbas, aba, statusDoFiltro, busca, autor, ordem]);
 
   const contagem = (chave: string) => {
     const f = FILTROS.find((x) => x.chave === chave);
-    return f?.status ? itens.filter((i) => f.status!.includes(i.status)).length : itens.length;
+    return f?.status ? daAba.filter((i) => f.status!.includes(i.status)).length : daAba.length;
   };
+  const contagemAba = (a: AbaTipo) => dasAba(itens, a).length;
+  const filtrando = filtro !== 'TODOS' || busca.trim() !== '' || autor !== 'TODOS';
+  const opAutores = useMemo(
+    () => [{ chave: 'TODOS', label: 'Todos os autores' }, ...autores.map((a) => ({ chave: a, label: a }))],
+    [autores]
+  );
+  function trocarAba(a: AbaTipo) {
+    setAba(a);
+    setAutor('TODOS'); // o autor escolhido pode não existir na outra aba
+  }
 
   return (
     <PainelLayout
@@ -215,7 +250,7 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
       acao={
         fila ? undefined : (
           <View style={styles.acoes}>
-            {tipo !== 'RECEITA' && tipo !== 'TROCA' && (
+            {tipoAtual !== 'RECEITA' && tipoAtual !== 'TROCA' && (
               <AppButton
                 label="+ NOVA TRILHA"
                 fullWidth={false}
@@ -227,7 +262,7 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
                 onPress={() => navigation.navigate('EditarTrilha', { origem })}
               />
             )}
-            {tipo !== 'TRILHA' && tipo !== 'TROCA' && (
+            {tipoAtual !== 'TRILHA' && tipoAtual !== 'TROCA' && (
               <AppButton
                 label="+ NOVA RECEITA"
                 fullWidth={false}
@@ -237,6 +272,18 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
                 shadowColor={tema.botaoSombra}
                 style={styles.botao}
                 onPress={() => navigation.navigate('EditarReceita', { origem })}
+              />
+            )}
+            {tipoAtual === 'TROCA' && (
+              <AppButton
+                label="+ NOVA ALTERNATIVA"
+                fullWidth={false}
+                size="compact"
+                backgroundColor={tema.botaoFundo}
+                textColor={tema.botaoTexto}
+                shadowColor={tema.botaoSombra}
+                style={styles.botao}
+                onPress={() => navigation.navigate('EditarTroca', { origem })}
               />
             )}
           </View>
@@ -262,23 +309,62 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
               ]
         }
       />
-      {!fila && (
-        <View style={styles.filtros}>
-          {FILTROS.map((f) => {
-            const ativo = f.chave === filtro;
+      {comAbas && (
+        <View style={styles.abas} accessibilityRole="tablist">
+          {ABAS.map((a) => {
+            const ativa = a.chave === aba;
             return (
               <Pressable
-                key={f.chave}
-                onPress={() => setFiltro(f.chave)}
-                accessibilityRole="button"
-                style={[styles.chip, ativo && styles.chipAtivo]}
+                key={a.chave}
+                onPress={() => trocarAba(a.chave)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: ativa }}
+                style={[styles.aba, ativa && styles.abaAtiva]}
               >
-                <AppText style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>
-                  {f.label} ({contagem(f.chave)})
+                <AppText style={[styles.abaTexto, ativa && styles.abaTextoAtivo]}>
+                  {a.label} ({contagemAba(a.chave)})
                 </AppText>
               </Pressable>
             );
           })}
+        </View>
+      )}
+      {!fila && (
+        <View style={styles.barra}>
+          <CampoBusca valor={busca} onChange={setBusca} placeholder="Buscar pelo título" />
+          <View style={styles.filtros}>
+            {FILTROS.map((f) => {
+              const ativo = f.chave === filtro;
+              return (
+                <Pressable
+                  key={f.chave}
+                  onPress={() => setFiltro(f.chave)}
+                  accessibilityRole="button"
+                  style={[styles.chip, ativo && styles.chipAtivo]}
+                >
+                  <AppText style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>
+                    {f.label} ({contagem(f.chave)})
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </View>
+          {autores.length > 1 && (
+            <ChipsFiltro opcoes={opAutores} valor={autor} onChange={setAutor} />
+          )}
+          <View style={styles.linhaOrdem}>
+            <AppText style={styles.rotuloOrdem}>Ordenar:</AppText>
+            <ChipsFiltro opcoes={OP_ORDEM} valor={ordem} onChange={(c) => setOrdem(c as OrdemFluxo)} />
+            {filtrando && (
+              <Pressable
+                onPress={() => { setFiltro('TODOS'); setBusca(''); setAutor('TODOS'); }}
+                accessibilityRole="button"
+                hitSlop={8}
+              >
+                <AppText style={styles.limpar}>Limpar filtros</AppText>
+              </Pressable>
+            )}
+          </View>
         </View>
       )}
 
@@ -291,7 +377,7 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
       ) : visiveis.length === 0 ? (
         <View style={styles.vazio}>
           <AppText style={styles.vazioTexto}>
-            {fila ? 'Nada aguardando revisão agora. Quando um conteúdo for enviado, ele aparece aqui.' : 'Nenhum conteúdo neste filtro. Tente outro status ou "Todos".'}
+            {fila ? 'Nada aguardando revisão agora. Quando um conteúdo for enviado, ele aparece aqui.' : 'Nenhum conteúdo com esses filtros. Tente outro status, outra aba ou limpe a busca.'}
           </AppText>
         </View>
       ) : (
@@ -307,7 +393,16 @@ export default function FluxoConteudoScreen({ config, titulo, subtitulo, tipo, f
 
 
 const criarEstilos = (t: TemaPainel) => ({
-  filtros: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  abas: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12, borderBottomWidth: 2, borderBottomColor: t.cardBorda, paddingBottom: 10 },
+  aba: { minHeight: 44, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: t.superficieSuave },
+  abaAtiva: { backgroundColor: t.botaoFundo },
+  abaTexto: { fontFamily: typography.bold, fontSize: 13, color: t.texto },
+  abaTextoAtivo: { color: t.botaoTexto },
+  barra: { gap: 10, marginBottom: 14 },
+  linhaOrdem: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  rotuloOrdem: { fontFamily: typography.bold, fontSize: 12, color: t.textoSuave },
+  limpar: { fontFamily: typography.bold, fontSize: 12, color: t.erro },
+  filtros: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda,
     backgroundColor: t.card, alignItems: 'center', justifyContent: 'center',

@@ -4,6 +4,7 @@ import { supabase } from '../../../../lib/supabase';
 import type { CategoriaTroca } from '../../trocas/utils/trocas';
 import type { ClassificacaoNova } from '../../alimentacao/utils/regraFeedbackRefeicao';
 import type { MotivoSolicitacao } from './scannerService';
+import type { DetalhesProduto } from '../utils/scanner';
 
 export type SolicitacaoScanner = {
   id: string;
@@ -17,6 +18,10 @@ export type SolicitacaoScanner = {
   criadoEm: string;
   produtoAtualNome: string | null;
   produtoAtualFonte: string | null;
+  produtoAtualMarca: string | null;
+  produtoAtualNova: ClassificacaoNova | null;
+  produtoAtualCategoria: CategoriaTroca | null;
+  produtoAtualDetalhes: DetalhesProduto | null;
 };
 
 export async function listarSolicitacoes(): Promise<SolicitacaoScanner[]> {
@@ -28,6 +33,8 @@ export async function listarSolicitacoes(): Promise<SolicitacaoScanner[]> {
     candidatoCodigo: l.candidato_codigo, candidatoNome: l.candidato_nome,
     pedidos: l.pedidos, criadoEm: l.criado_em,
     produtoAtualNome: l.produto_atual_nome, produtoAtualFonte: l.produto_atual_fonte,
+    produtoAtualMarca: l.produto_atual_marca ?? null, produtoAtualNova: l.produto_atual_nova ?? null,
+    produtoAtualCategoria: l.produto_atual_categoria ?? null, produtoAtualDetalhes: l.produto_atual_detalhes ?? null,
   }));
 }
 
@@ -38,13 +45,13 @@ export async function contarSolicitacoes(): Promise<number> {
 }
 
 export type DecisaoSolicitacao =
-  | { acao: 'APROVAR'; nome: string; marca?: string; nova: ClassificacaoNova | null; categoria: CategoriaTroca | null; nota?: string }
+  | { acao: 'APROVAR'; nome: string; marca?: string; nova: ClassificacaoNova | null; categoria: CategoriaTroca | null; detalhes: DetalhesProduto | null; nota?: string }
   | { acao: 'REJEITAR'; nota?: string };
 
 export async function resolverSolicitacao(id: string, d: DecisaoSolicitacao): Promise<void> {
   const base = { p_id: id, p_acao: d.acao, p_nota: d.nota?.trim() || null };
   const { error } = await supabase.rpc('scanner_resolver_solicitacao', d.acao === 'APROVAR'
-    ? { ...base, p_nome: d.nome.trim(), p_marca: d.marca?.trim() || null, p_nova: d.nova, p_categoria: d.categoria }
+    ? { ...base, p_nome: d.nome.trim(), p_marca: d.marca?.trim() || null, p_nova: d.nova, p_categoria: d.categoria, p_detalhes: d.detalhes }
     : base);
   if (error) throw error;
 }

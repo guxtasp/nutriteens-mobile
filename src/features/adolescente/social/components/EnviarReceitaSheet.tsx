@@ -58,7 +58,7 @@ export function EnviarReceitaSheet({ receita, onFechar }: Props) {
           {amigos === null ? (
             <ActivityIndicator color={colors.primaryDark} style={{ marginVertical: 24 }} />
           ) : amigos.length === 0 ? (
-            <AppText style={styles.vazio}>Você ainda não tem amigos no app. Adicione alguém na aba Social!</AppText>
+            <AppText style={styles.vazio}>Você ainda não tem amigos no app. Chame alguém para a sua Turma!</AppText>
           ) : (
             <ScrollView
               style={styles.lista}

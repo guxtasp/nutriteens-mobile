@@ -20,6 +20,8 @@ import {
 import type { AmigoSocial } from '../services/socialService';
 import { aplicarReacao, type EventoFeed, type Reacao } from '../utils/feed';
 import { AmigosStrip } from './AmigosStrip';
+import JardimBotao from './JardimBotao';
+import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
 import { FeedCard } from './FeedCard';
 
 type Props = {
@@ -161,47 +163,46 @@ export function FeedTab({ amigos, temApelido, refreshToken, onAbrirAmigo, onIrPa
     if (visivel === false) {
       return (
         <View style={styles.consentimentoCompacto}>
+          <Ionicons name="eye-off-outline" size={18} color="#5F7167" />
           <Text style={styles.consentimentoCompactoTexto}>Suas conquistas não aparecem para os amigos.</Text>
-          <TouchableOpacity
+          <JardimBotao
+            variante="suave"
+            tamanho="pequeno"
+            bloco={false}
+            label="ATIVAR"
+            desabilitado={salvandoConsentimento}
             onPress={() => void alterarConsentimento(true)}
-            disabled={salvandoConsentimento}
-            accessibilityRole="button"
-          >
-            <Text style={styles.link}>Ativar</Text>
-          </TouchableOpacity>
+          />
         </View>
       );
     }
 
     return (
       <View style={styles.consentimentoCard}>
-        <Text style={styles.consentimentoTitulo}>Mostrar minhas conquistas aos amigos?</Text>
+        <View style={styles.consentimentoTopo}>
+          <View style={styles.consentimentoSelo}><Ionicons name="people" size={20} color={colors.primaryDark} /></View>
+          <Text style={[styles.consentimentoTitulo, { flex: 1, marginBottom: 0 }]}>Mostrar minhas conquistas aos amigos?</Text>
+        </View>
         <Text style={styles.consentimentoTexto}>
           Seus amigos poderiam ver quando você ganha uma insígnia, conclui lições, mantém a sequência ou faz uma receita.
           Nunca aparecem o que você comeu, peso, escola ou dados pessoais. Você pode parar quando quiser.
         </Text>
 
-        <TouchableOpacity
-          style={styles.botaoPrimario}
-          onPress={() => void alterarConsentimento(true)}
-          disabled={salvandoConsentimento}
-          accessibilityRole="button"
-        >
-          {salvandoConsentimento ? (
-            <ActivityIndicator color={colors.primaryDark} />
-          ) : (
-            <Text style={styles.botaoPrimarioTexto}>Sim, compartilhar</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.botaoSecundario}
-          onPress={() => void alterarConsentimento(false)}
-          disabled={salvandoConsentimento}
-          accessibilityRole="button"
-        >
-          <Text style={styles.botaoSecundarioTexto}>Agora não</Text>
-        </TouchableOpacity>
+        <View style={{ gap: 8 }}>
+          <JardimBotao
+            variante="primario"
+            icone="checkmark"
+            label="SIM, COMPARTILHAR"
+            carregando={salvandoConsentimento}
+            onPress={() => void alterarConsentimento(true)}
+          />
+          <JardimBotao
+            variante="contorno"
+            label="AGORA NÃO"
+            desabilitado={salvandoConsentimento}
+            onPress={() => void alterarConsentimento(false)}
+          />
+        </View>
       </View>
     );
   }
@@ -210,25 +211,19 @@ export function FeedTab({ amigos, temApelido, refreshToken, onAbrirAmigo, onIrPa
     if (amigos.length === 0) {
       return (
         <View style={styles.vazio}>
-          <View style={styles.vazioIcone}>
-            <Ionicons name="people-outline" size={30} color={colors.primaryDark} />
-          </View>
+          <BroxisMascot pose="curioso" size={110} entrance="nenhuma" showParticles={false} />
           <Text style={styles.vazioTitulo}>Seu feed fica animado com amigos</Text>
           <Text style={styles.vazioTexto}>
             Adicione amigos pelo código de amizade para ver as conquistas deles e comemorar juntos.
           </Text>
-          <TouchableOpacity style={styles.botaoPrimario} onPress={onIrParaAmigos} accessibilityRole="button">
-            <Text style={styles.botaoPrimarioTexto}>Adicionar amigos</Text>
-          </TouchableOpacity>
+          <JardimBotao variante="primario" icone="person-add" label="ADICIONAR AMIGOS" onPress={onIrParaAmigos} />
         </View>
       );
     }
 
     return (
       <View style={styles.vazio}>
-        <View style={styles.vazioIcone}>
-          <Ionicons name="newspaper-outline" size={30} color={colors.primaryDark} />
-        </View>
+        <BroxisMascot pose="calmo" size={110} entrance="nenhuma" showParticles={false} />
         <Text style={styles.vazioTitulo}>Ainda sem novidades</Text>
         <Text style={styles.vazioTexto}>
           Quando seus amigos concluírem lições, ganharem insígnias ou fizerem receitas, tudo aparece aqui.
@@ -266,14 +261,15 @@ export function FeedTab({ amigos, temApelido, refreshToken, onAbrirAmigo, onIrPa
       )}
 
       {visivel === true && (
-        <TouchableOpacity
-          style={styles.parar}
+        <JardimBotao
+          variante="texto"
+          tamanho="pequeno"
+          icone="eye-off-outline"
+          label="Parar de compartilhar minhas conquistas"
+          desabilitado={salvandoConsentimento}
           onPress={confirmarParar}
-          disabled={salvandoConsentimento}
-          accessibilityRole="button"
-        >
-          <Text style={styles.pararTexto}>Parar de compartilhar minhas conquistas</Text>
-        </TouchableOpacity>
+          style={{ marginTop: 6 }}
+        />
       )}
     </View>
   );
@@ -281,10 +277,26 @@ export function FeedTab({ amigos, temApelido, refreshToken, onAbrirAmigo, onIrPa
 
 const styles = StyleSheet.create({
   consentimentoCard: {
-    backgroundColor: '#EAF5DF',
-    borderRadius: 18,
+    backgroundColor: '#EEF8E4',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#D3EBBC',
     padding: 16,
     marginBottom: 16,
+  },
+  consentimentoTopo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  consentimentoSelo: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#D9EFC5',
   },
   consentimentoTitulo: {
     fontSize: 17,
@@ -303,8 +315,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    backgroundColor: '#F1F5EE',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E4EAE6',
+    borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 16,
@@ -356,10 +370,11 @@ const styles = StyleSheet.create({
   vazio: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#E4ECDF',
+    borderColor: '#E4EAE6',
     padding: 22,
+    gap: 4,
   },
   vazioIcone: {
     width: 60,

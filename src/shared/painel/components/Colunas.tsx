@@ -10,7 +10,7 @@ export function Colunas({ children, bases }: { children: React.ReactNode; bases:
   return (
     <View style={styles.linha}>
       {itens.map((filho, i) => (
-        <View key={i} style={{ flexGrow: 1, flexShrink: 1, flexBasis: bases[i] ?? 300, minWidth: 0 }}>
+        <View key={i} style={{ flexGrow: 1, flexShrink: 1, flexBasis: bases[i] ?? 300, minWidth: 0, alignSelf: 'stretch' }}>
           {filho}
         </View>
       ))}
@@ -18,4 +18,4 @@ export function Colunas({ children, bases }: { children: React.ReactNode; bases:
   );
 }
 
-const styles = StyleSheet.create({ linha: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 } });
+const styles = StyleSheet.create({ linha: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, alignItems: 'stretch' } });

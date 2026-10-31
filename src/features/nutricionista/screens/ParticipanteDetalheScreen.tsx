@@ -27,10 +27,12 @@ import { PerfilParticipante } from '../components/PerfilParticipante';
 import { AvaliacaoEbia } from '../components/AvaliacaoEbia';
 import { AvaliacaoRecordatorio } from '../components/AvaliacaoRecordatorio';
 import { RegistrosParticipante } from '../components/RegistrosParticipante';
+import { EvolucaoParticipante } from '../components/EvolucaoParticipante';
 
-type Aba = 'visao' | 'avaliacoes' | 'registros';
+type Aba = 'visao' | 'evolucao' | 'avaliacoes' | 'registros';
 const ABAS: AbaPainel<Aba>[] = [
   { chave: 'visao', label: 'Visão geral', icone: 'grid-outline' },
+  { chave: 'evolucao', label: 'Evolução', icone: 'trending-up-outline' },
   { chave: 'avaliacoes', label: 'Avaliações', icone: 'clipboard-outline' },
   { chave: 'registros', label: 'Registros', icone: 'calendar-outline' },
 ];
@@ -84,7 +86,7 @@ export default function ParticipanteDetalheScreen({ route }: { route: { params: 
             chave="nutri_participante_detalhe"
             titulo="Como ler esta página"
             linhas={[
-              'Visão geral resume o participante; Avaliações mostra a triagem inicial; Registros mostra o hábito dos últimos 14 dias.',
+              'Visão geral resume o participante; Evolução mostra os hábitos semana a semana e compara as reavaliações; Avaliações mostra a triagem; Registros mostra o dia a dia dos últimos 14 dias.',
               'Estes dados são sensíveis: use apenas para o acompanhamento profissional e não compartilhe fora da equipe.',
             ]}
           />
@@ -120,6 +122,8 @@ export default function ParticipanteDetalheScreen({ route }: { route: { params: 
               </Colunas>
             </>
           )}
+
+          {aba === 'evolucao' && <EvolucaoParticipante id={p.id} />}
 
           {aba === 'avaliacoes' && (
             <>

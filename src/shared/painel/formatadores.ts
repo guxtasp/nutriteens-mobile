@@ -34,3 +34,13 @@ export function dataCurta(iso: string | null | undefined): string {
 export function ultimoAcessoTexto(iso: string | null | undefined): string {
   return iso ? tempoRelativo(iso) : 'Nunca acessou';
 }
+
+/**
+ * LGPD: nas listas do painel mostramos só o primeiro nome (minimização de dados).
+ * O nome completo fica restrito à tela de detalhe, e a identificação principal
+ * continua sendo o código do participante (NT-000001).
+ */
+export function primeiroNome(nome?: string | null, apelido?: string | null): string {
+  const base = (nome ?? '').trim() || (apelido ?? '').trim();
+  return base ? base.split(/\s+/)[0] : 'Sem nome';
+}

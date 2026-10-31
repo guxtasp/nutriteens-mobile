@@ -29,11 +29,13 @@ const FILTROS = [
 ];
 const ORDENS = [
   { chave: 'recentes', label: 'Mais recentes' },
-  { chave: 'nome', label: 'Nome (A–Z)' },
+  { chave: 'nome', label: 'Nome/apelido (A–Z)' },
   { chave: 'acesso', label: 'Último acesso' },
 ];
 
+// LGPD (D4): adolescente aparece por apelido e código; o nome real é só da nutricionista.
 function nomeExibido(u: UsuarioAdmin) {
+  if (u.papel === 'ADOLESCENTE') return u.apelido?.trim() || u.codigoParticipante || 'Sem apelido';
   return u.nome?.trim() || u.apelido?.trim() || 'Sem nome';
 }
 function SeloStatus({ u }: { u: UsuarioAdmin }) {
@@ -57,14 +59,14 @@ export default function UsuariosScreen() {
         chave="admin_usuarios"
         titulo="Gerenciar usuários"
         linhas={[
-          'Aqui ficam as contas de adolescentes, nutricionistas e administradores. Busque por nome, apelido ou código do participante.',
+          'Aqui ficam as contas de adolescentes, nutricionistas e administradores. Por privacidade (LGPD), adolescentes aparecem por apelido e código. Busque por apelido, código do participante ou nome da equipe.',
           'Ativo = usou o aplicativo nos últimos 30 dias. Toque em um usuário para ver os detalhes.',
           'Por privacidade, esta área não mostra dados de saúde nem de alimentação dos adolescentes.',
         ]}
       />
 
       <View style={styles.controles}>
-        <CampoBusca valor={lista.busca} onChange={lista.setBusca} placeholder="Buscar por nome, apelido ou código" />
+        <CampoBusca valor={lista.busca} onChange={lista.setBusca} placeholder="Buscar por apelido, código ou equipe" />
         <ChipsFiltro opcoes={FILTROS} valor={lista.filtro ?? 'TODOS'} onChange={(c) => lista.setFiltro(c === 'TODOS' ? null : c)} />
         <View style={styles.linhaOrdem}>
           <AppText style={styles.ordemRotulo}>Ordenar por</AppText>
@@ -101,7 +103,7 @@ export default function UsuariosScreen() {
               <Pressable key={u.id} onPress={() => abrir(u)} accessibilityRole="button" style={[styles.linha, styles.linhaDado]}>
                 <View style={styles.cNome}>
                   <AppText style={styles.nome} numberOfLines={1}>{nomeExibido(u)}</AppText>
-                  {!!u.apelido && u.nome !== u.apelido && <AppText style={styles.sub} numberOfLines={1}>@{u.apelido}</AppText>}
+                  {!!u.apelido && u.papel !== 'ADOLESCENTE' && u.nome !== u.apelido && <AppText style={styles.sub} numberOfLines={1}>@{u.apelido}</AppText>}
                 </View>
                 <View style={styles.cPapel}><Selo texto={labelPapel(u.papel)} tom="info" /></View>
                 <View style={styles.cStatus}><SeloStatus u={u} /></View>

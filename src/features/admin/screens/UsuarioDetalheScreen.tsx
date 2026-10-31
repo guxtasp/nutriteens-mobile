@@ -18,6 +18,7 @@ import { typography } from '../../../shared/theme/typography';
 import type { TemaPainel } from '../../../shared/painel/tema/paletas';
 import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { ADMIN_PAINEL } from '../navigation/adminMenu';
+import { UsoSemanalUsuario } from '../components/UsoSemanalUsuario';
 import { DetalheUsuarioAdmin, buscarUsuario, labelPapel } from '../services/usuariosAdminService';
 
 export default function UsuarioDetalheScreen({ route }: { route: { params: { id: string } } }) {
@@ -45,7 +46,9 @@ export default function UsuarioDetalheScreen({ route }: { route: { params: { id:
     }, [carregar])
   );
 
-  const titulo = u?.nome?.trim() || u?.apelido?.trim() || 'Usuário';
+  // LGPD (D4): o banco já não envia o nome de adolescentes ao Admin; aqui só escolhemos o rótulo
+  const ehAdolescente = u?.papel === 'ADOLESCENTE';
+  const titulo = ehAdolescente ? (u?.apelido?.trim() || u?.codigoParticipante || 'Adolescente') : (u?.nome?.trim() || u?.apelido?.trim() || 'Usuário');
 
   return (
     <PainelLayout config={ADMIN_PAINEL} titulo={titulo} subtitulo={u ? labelPapel(u.papel) : undefined} voltar>
@@ -56,12 +59,12 @@ export default function UsuarioDetalheScreen({ route }: { route: { params: { id:
       ) : (
         <>
           <Colunas bases={[320, 320]}>
-            <CartaoSecao titulo="Cadastro" ajuda="Informações da conta usadas na gestão do sistema. Dados de saúde dos adolescentes não aparecem aqui.">
+            <CartaoSecao titulo="Cadastro" ajuda="Informações da conta usadas na gestão do sistema. O nome real e os dados de saúde dos adolescentes não aparecem aqui (LGPD): só a nutricionista os vê, e cada abertura fica registrada na Auditoria.">
               <View style={styles.selos}>
                 <Selo texto={labelPapel(u.papel)} tom="info" />
                 <Selo texto={u.ativo ? 'Ativo (30 dias)' : 'Inativo'} tom={u.ativo ? 'ok' : 'neutro'} />
               </View>
-              <LinhaInfo rotulo="Nome" valor={u.nome} />
+              {!ehAdolescente && <LinhaInfo rotulo="Nome" valor={u.nome} />}
               <LinhaInfo rotulo="Apelido" valor={u.apelido} />
               {u.papel === 'ADOLESCENTE' && <LinhaInfo rotulo="Código do participante" valor={u.codigoParticipante} />}
               {u.papel === 'ADOLESCENTE' && <LinhaInfo rotulo="Instituição" valor={u.instituicaoEnsino} />}
@@ -94,7 +97,11 @@ export default function UsuarioDetalheScreen({ route }: { route: { params: { id:
                 <CartaoKpi titulo="Amigos" valor={u.amigos} icone="people-outline" />
               </GridResponsiva>
             </CartaoSecao>
-          ) : (
+          ) : null}
+
+          {u.papel === 'ADOLESCENTE' && <UsoSemanalUsuario id={u.id} />}
+
+          {u.papel !== 'ADOLESCENTE' && (
             <CartaoSecao titulo="Trabalho com conteúdos" ajuda="Quantos conteúdos esta pessoa criou e quantos revisou no fluxo de aprovação.">
               <GridResponsiva minItem={150} gap={12} maxColunas={3}>
                 <CartaoKpi titulo="Conteúdos criados" valor={u.conteudosCriados} icone="document-text-outline" />

@@ -437,3 +437,32 @@ export async function salvarTroca(id: string, d: { frase: string; dica: string; 
     .eq('id', id);
   falha(error);
 }
+
+/** Cria uma alternativa. Ela nasce em RASCUNHO (trigger trocas_fluxo_criar) e segue o fluxo de aprovação. */
+export async function criarTroca(d: {
+  categoria: string;
+  origemId: string | null;
+  destinoId: string;
+  tiposRefeicao: string[];
+  frase: string;
+  dica: string;
+  rapida: boolean;
+}): Promise<string> {
+  const { data: u } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('alimento_trocas')
+    .insert({
+      categoria: d.categoria,
+      origem_id: d.origemId,
+      destino_id: d.destinoId,
+      tipos_refeicao: d.tiposRefeicao,
+      frase: d.frase.trim(),
+      dica: d.dica.trim() || null,
+      rapida: d.rapida,
+      criado_por: u.user?.id ?? null,
+    })
+    .select('id')
+    .single();
+  falha(error);
+  return (data as any).id as string;
+}

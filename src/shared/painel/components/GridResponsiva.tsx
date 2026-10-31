@@ -23,7 +23,7 @@ export function GridResponsiva({ minItem = 150, gap = 12, maxColunas = 6, childr
     <View onLayout={aoMedir} style={[styles.grid, { gap }, largura === 0 && { opacity: 0 }]}>
       {largura > 0 &&
         itens.map((filho, i) => (
-          <View key={i} style={{ width: larguraItem }}>
+          <View key={i} style={{ width: larguraItem, alignSelf: 'stretch' }}>
             {filho}
           </View>
         ))}
@@ -31,4 +31,4 @@ export function GridResponsiva({ minItem = 150, gap = 12, maxColunas = 6, childr
   );
 }
 
-const styles = StyleSheet.create({ grid: { flexDirection: 'row', flexWrap: 'wrap', width: '100%' } });
+const styles = StyleSheet.create({ grid: { flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignItems: 'stretch' } });

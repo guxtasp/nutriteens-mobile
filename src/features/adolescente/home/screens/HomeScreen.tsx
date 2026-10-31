@@ -27,6 +27,8 @@ import { obterConteudoCelebracao } from '../utils/celebracaoSequencia';
 import { detectarPerdaSequencia } from '../utils/perdaSequencia';
 import { lerUltimaSequenciaVista, salvarUltimaSequenciaVista } from '../utils/perdaSequenciaStorage';
 import { concederXp } from '../../../../shared/services/xpService';
+import AvisoModeracaoModal from '../../social/components/AvisoModeracaoModal';
+import { useSituacaoModeracao } from '../../social/hooks/useSituacaoModeracao';
 import { useRecompensasStore } from '../../recompensas/store/recompensasStore';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'Home'>;
@@ -56,6 +58,7 @@ export default function HomeScreen() {
     recarregar,
   } = useHomeData();
   const [menuAberto, setMenuAberto] = useState(false);
+  const { situacao: situacaoModeracao, dispensarAviso } = useSituacaoModeracao();
   const { nomeCompleto, userId } = useAuth();
   const primeiroNome = nomeCompleto?.trim().split(' ')[0] ?? 'Usuário';
   const { mlHoje, metaMl } = useAguaHoje();
@@ -232,6 +235,8 @@ export default function HomeScreen() {
         diasPerdidos={diasPerdidos}
         onFinalizado={() => setPerdaVisivel(false)}
       />
+
+      <AvisoModeracaoModal aviso={situacaoModeracao.aviso} onEntendi={dispensarAviso} />
 
       <AniversarioModal
         visivel={aniversario.visivel}

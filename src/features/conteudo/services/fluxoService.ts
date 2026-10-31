@@ -181,3 +181,9 @@ export async function buscarDetalhe(tipo: TipoConteudo, conteudoId: string): Pro
     })),
   };
 }
+
+/** Exclui trilha ou receita inteira (só rascunho/rejeitada/arquivada; o banco confere). */
+export async function excluirConteudo(tipo: 'TRILHA' | 'RECEITA' | 'TROCA', conteudoId: string): Promise<void> {
+  const { error } = await supabase.rpc('conteudo_excluir', { p_tipo: tipo, p_id: conteudoId });
+  if (error) throw error;
+}

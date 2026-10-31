@@ -142,7 +142,12 @@ export async function buscarReceitaPorId(receitaId: string): Promise<ReceitaComA
 // Ingredientes = receita_ingredientes (com quantidade em texto) + prato_ingredientes
 // do prato resultante (que é o que a equipe edita hoje no painel).
 import { comCache } from '../../../../shared/offline/cacheLocal';
-import { unirIngredientes, type IngredienteReceita as IngredienteCombinacao } from '../../receitas-ingredientes/utils/combinarReceitas';
+import {
+  unirIngredientes,
+  type IngredienteCasa,
+  type IngredienteReceita as IngredienteCombinacao,
+} from '../../receitas-ingredientes/utils/combinarReceitas';
+import { listarAlimentosIniciais } from './alimentacaoService';
 
 export type ReceitaComIngredientes = ReceitaComAlimento & { ingredientes: IngredienteCombinacao[] };
 
@@ -188,4 +193,19 @@ export async function listarReceitasComIngredientes(userId: string): Promise<Rec
       return { ...resto, ingredientes: unirIngredientes(daReceita, porPrato.get(r.alimento_resultante_id) ?? []) } as ReceitaComIngredientes;
     });
   });
+}
+
+/**
+ * Ingredientes que o adolescente pode escolher em "o que tenho em casa": alimentos simples do catálogo
+ * (já filtrados pela escala EBIA dele). Não depende de existir receita publicada: antes a lista vinha só
+ * dos ingredientes das receitas e, se nenhuma passasse no filtro, tudo virava "Não achei...".
+ * Falha em silêncio (lista vazia): a tela ainda funciona só com o que as receitas trazem.
+ */
+export async function listarIngredientesDisponiveis(userId: string): Promise<IngredienteCasa[]> {
+  try {
+    const alimentos = await listarAlimentosIniciais(userId);
+    return alimentos.filter((a) => !a.eh_prato_composto).map((a) => ({ id: a.id, nome: a.nome }));
+  } catch {
+    return [];
+  }
 }

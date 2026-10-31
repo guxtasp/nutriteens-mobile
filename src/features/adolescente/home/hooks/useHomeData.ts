@@ -13,6 +13,8 @@
 // só leitura), então uni-lo aqui duplicaria a lógica de escrita em dois
 // lugares — o ganho de juntar os dois seria menor que o risco de divergir.
 import { registrarDiaChamaDupla } from '../../social/services/chamaDuplaService';
+import { regarJardinsHoje } from '../../social/services/jardimService';
+import { sincronizarDesafiosHoje } from '../../social/services/desafioGrupoService';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../../../lib/supabase';
@@ -108,7 +110,12 @@ export function useHomeData() {
       }
 
       // Chama em Dupla: avisa o banco que hoje foi cumprido (idempotente, não bloqueia a Home)
-      if (hojeMantido) void registrarDiaChamaDupla();
+      if (hojeMantido) {
+        void registrarDiaChamaDupla();
+        void regarJardinsHoje(); // Jardim do grupo: 1 ponto por pessoa por dia (idempotente)
+      }
+      // Desafio em grupo: marca o dia se a meta pessoal da métrica foi batida (idempotente, silencioso)
+      void sincronizarDesafiosHoje(userId, hoje);
 
       // 3. status da semana: busca em lote só os OUTROS dias (hoje já
       // sabemos, não manda ele de novo pro lote)

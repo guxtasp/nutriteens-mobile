@@ -1,12 +1,12 @@
 // src/features/adolescente/social/components/ReacoesBar.tsx
 //
-// Linha de reações prontas (👏 💪 🍎 🔥) de um evento do feed. Conjunto fixo,
-// sem texto livre. Em evento de outra pessoa dá para reagir; no meu, só vejo
-// as contagens.
+// Linha de reações prontas de um evento do feed (Parabéns, Força, Bora, Fogo). Conjunto fixo, sem texto livre.
+// Ícones do app em vez de emojis. Em evento de outra pessoa dá para reagir; no meu, só vejo as contagens.
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-import { colors } from '../../../../shared/theme/colors';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { AppText } from '../../../../shared/ui/AppText';
+import { typography } from '../../../../shared/theme/typography';
 import { REACAO_INFO, REACOES, type EventoFeed, type Reacao } from '../utils/feed';
 
 type Props = {
@@ -15,10 +15,16 @@ type Props = {
   onReagir: (evento: EventoFeed, reacao: Reacao) => void;
 };
 
+/** Ícone e cor de cada reação (o emoji continua só como dado no banco/utils). */
+export const VISUAL_REACAO: Record<Reacao, { icone: keyof typeof Ionicons.glyphMap; iconeVazio: keyof typeof Ionicons.glyphMap; cor: string; fundo: string }> = {
+  PARABENS: { icone: 'ribbon', iconeVazio: 'ribbon-outline', cor: '#B07A12', fundo: '#FFF1C9' },
+  FORCA: { icone: 'barbell', iconeVazio: 'barbell-outline', cor: '#2F7FC4', fundo: '#DCEEFE' },
+  BORA: { icone: 'nutrition', iconeVazio: 'nutrition-outline', cor: '#3E8E2F', fundo: '#DDF1CF' },
+  FOGO: { icone: 'flame', iconeVazio: 'flame-outline', cor: '#D9731A', fundo: '#FFE9D2' },
+};
+
 export function ReacoesBar({ evento, desabilitado = false, onReagir }: Props) {
   const somenteLeitura = evento.ehMeu;
-
-  // Nos meus eventos só mostro as reações que já recebi.
   const lista = somenteLeitura ? REACOES.filter((r) => (evento.reacoes[r] ?? 0) > 0) : REACOES;
   if (lista.length === 0) return null;
 
@@ -28,21 +34,30 @@ export function ReacoesBar({ evento, desabilitado = false, onReagir }: Props) {
         const n = evento.reacoes[reacao] ?? 0;
         const selecionada = evento.minhaReacao === reacao;
         const info = REACAO_INFO[reacao];
+        const v = VISUAL_REACAO[reacao];
+        const bloqueada = desabilitado || somenteLeitura;
 
         return (
-          <TouchableOpacity
+          <Pressable
             key={reacao}
-            activeOpacity={0.7}
-            disabled={desabilitado || somenteLeitura}
+            disabled={bloqueada}
             onPress={() => onReagir(evento, reacao)}
             accessibilityRole="button"
             accessibilityLabel={`${info.rotulo}${n > 0 ? `, ${n}` : ''}`}
-            accessibilityState={{ selected: selecionada, disabled: desabilitado || somenteLeitura }}
-            style={[styles.pill, selecionada && styles.pillSelecionada]}
+            accessibilityState={{ selected: selecionada, disabled: bloqueada }}
+            style={({ pressed }) => [
+              styles.pill,
+              selecionada && { backgroundColor: v.fundo, borderColor: v.cor },
+              pressed && !bloqueada && { transform: [{ scale: 0.95 }] },
+            ]}
           >
-            <Text style={styles.emoji}>{info.emoji}</Text>
-            {n > 0 && <Text style={[styles.contagem, selecionada && styles.contagemSelecionada]}>{n}</Text>}
-          </TouchableOpacity>
+            <Ionicons name={selecionada ? v.icone : v.iconeVazio} size={17} color={selecionada ? v.cor : '#6B7A74'} />
+            {n > 0 ? (
+              <AppText style={[styles.contagem, selecionada && { color: v.cor }]}>{n}</AppText>
+            ) : (
+              !somenteLeitura && <AppText style={styles.rotulo}>{info.rotulo}</AppText>
+            )}
+          </Pressable>
         );
       })}
     </View>
@@ -50,38 +65,9 @@ export function ReacoesBar({ evento, desabilitado = false, onReagir }: Props) {
 }
 
 const styles = StyleSheet.create({
-  linha: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  pill: {
-    minHeight: 36,
-    minWidth: 48,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    backgroundColor: '#F3F8EE',
-    borderWidth: 1,
-    borderColor: '#E1EBD8',
-  },
-  pillSelecionada: {
-    backgroundColor: '#E2F3D3',
-    borderColor: colors.primary,
-  },
-  emoji: {
-    fontSize: 17,
-  },
-  contagem: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#5F7167',
-  },
-  contagemSelecionada: {
-    color: colors.primaryDark,
-  },
+  linha: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  pill: { minHeight: 38, paddingHorizontal: 12, borderRadius: 19, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#F6F8F6', borderWidth: 1.5, borderColor: '#E4EAE6' },
+  contagem: { fontFamily: typography.bold, fontSize: 13, color: '#5F7167' },
+  rotulo: { fontFamily: typography.semiBold, fontSize: 12.5, color: '#6B7A74' },
 });
+

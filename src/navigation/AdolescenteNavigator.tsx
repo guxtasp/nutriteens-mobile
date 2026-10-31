@@ -28,6 +28,12 @@ import LicaoCompletaScreen from '../features/adolescente/trilha/screens/LicaoCom
 import ModuloCompletaScreen from '../features/adolescente/trilha/screens/ModuloCompletaScreen';
 import TrilhaCompletaScreen from '../features/adolescente/trilha/screens/TrilhaCompletaScreen';
 import SocialScreen from '../features/adolescente/social/screens/SocialScreen';
+import JardimScreen from '../features/adolescente/social/screens/JardimScreen';
+import DesafioGrupoScreen from '../features/adolescente/social/screens/DesafioGrupoScreen';
+import DesafioDetalheScreen from '../features/adolescente/social/screens/DesafioDetalheScreen';
+import NovoDesafioScreen from '../features/adolescente/social/screens/NovoDesafioScreen';
+import JardimDetalheScreen from '../features/adolescente/social/screens/JardimDetalheScreen';
+import NovoJardimScreen from '../features/adolescente/social/screens/NovoJardimScreen';
 import PerfilAmigoScreen from '../features/adolescente/social/screens/PerfilAmigoScreen';
 import MaisScreen from '../features/adolescente/_shared/screens/MaisScreen';
 import AtividadeFisicaScreen from '../features/adolescente/atividade-fisica/screens/AtividadeFisicaScreen';
@@ -92,6 +98,12 @@ export type AdolescenteStackParamList = {
   Social: undefined;
   // Só o que o banco libera a um amigo; apelido/avatar vêm só pra tela não piscar.
   PerfilAmigo: { amizadeId: string; apelido: string; avatar: string | null };
+  Jardim: undefined;
+  JardimDetalhe: { id: string };
+  NovoJardim: undefined;
+  DesafioGrupo: undefined;
+  DesafioDetalhe: { id: string };
+  NovoDesafio: undefined;
   Mais: undefined;
   Lembretes: undefined;
   Notificacoes: undefined;
@@ -166,6 +178,12 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="PerfilAmigo" component={PerfilAmigoScreen} />
+                    <Stack.Screen name="Jardim" component={JardimScreen} />
+                    <Stack.Screen name="JardimDetalhe" component={JardimDetalheScreen} />
+                    <Stack.Screen name="NovoJardim" component={NovoJardimScreen} />
+                    <Stack.Screen name="DesafioGrupo" component={DesafioGrupoScreen} />
+                    <Stack.Screen name="DesafioDetalhe" component={DesafioDetalheScreen} />
+                    <Stack.Screen name="NovoDesafio" component={NovoDesafioScreen} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Lembretes" component={LembretesScreen} />
                     <Stack.Screen name="Notificacoes" component={NotificacoesScreen} />
@@ -206,6 +224,12 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="PerfilAmigo" component={PerfilAmigoScreen} />
+                    <Stack.Screen name="Jardim" component={JardimScreen} />
+                    <Stack.Screen name="JardimDetalhe" component={JardimDetalheScreen} />
+                    <Stack.Screen name="NovoJardim" component={NovoJardimScreen} />
+                    <Stack.Screen name="DesafioGrupo" component={DesafioGrupoScreen} />
+                    <Stack.Screen name="DesafioDetalhe" component={DesafioDetalheScreen} />
+                    <Stack.Screen name="NovoDesafio" component={NovoDesafioScreen} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Lembretes" component={LembretesScreen} />
                     <Stack.Screen name="Notificacoes" component={NotificacoesScreen} />

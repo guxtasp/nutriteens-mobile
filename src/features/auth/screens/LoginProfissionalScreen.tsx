@@ -132,18 +132,18 @@ function PainelMarca({ pequeno }: { pequeno: boolean }) {
           <AppText style={styles.seloTexto}>PAINEL PARA PROFISSIONAIS</AppText>
         </View>
 
-        <View accessible accessibilityLabel="Acompanhe a jornada dos adolescentes." style={styles.manchete}>
-          <AppText style={[styles.mancheteTexto, pequeno && styles.mancheteMenor]}>Acompanhe a jornada</AppText>
+        <View accessible accessibilityLabel="Acompanhe o cuidado e a evolução dos participantes." style={styles.manchete}>
+          <AppText style={[styles.mancheteTexto, pequeno && styles.mancheteMenor]}>Acompanhe o cuidado</AppText>
           <View style={styles.mancheteLinha}>
-            <AppText style={[styles.mancheteTexto, pequeno && styles.mancheteMenor]}>dos</AppText>
+            <AppText style={[styles.mancheteTexto, pequeno && styles.mancheteMenor]}>e a</AppText>
             <View style={styles.marcaTexto}>
-              <AppText style={[styles.mancheteTexto, pequeno && styles.mancheteMenor, { color: colors.primaryDark }]}>adolescentes.</AppText>
+              <AppText style={[styles.mancheteTexto, pequeno && styles.mancheteMenor, { color: colors.primaryDark }]}>evolução.</AppText>
             </View>
           </View>
         </View>
 
         <AppText style={styles.apoio}>
-          Indicadores, conteúdos e gestão do NutriTeens em um só lugar, para quem cuida de transformar o Guia Alimentar em hábitos.
+          Indicadores, conteúdos e gestão do NutriTeens em um só lugar, para quem acompanha os participantes e transforma o Guia Alimentar em hábitos.
         </AppText>
 
         <View style={styles.recursos}>
@@ -327,7 +327,7 @@ export default function LoginProfissionalScreen({ navigation }: Props) {
           Ainda não tem acesso? As contas de nutricionista e administrador são criadas pela equipe do NutriTeens.
         </AppText>
         <Pressable onPress={() => navigation.navigate('Onboarding')} accessibilityRole="link" style={styles.voltar}>
-          <AppText style={styles.link}>Sou adolescente: ir para o início</AppText>
+          <AppText style={styles.linkDiscreto}>Procurando o aplicativo? Acesse a página do adolescente</AppText>
         </Pressable>
       </View>
     </MotiView>
@@ -510,6 +510,7 @@ const styles = StyleSheet.create({
   botao: { justifyContent: 'center' },
   carregando: { position: 'absolute', right: 20, top: 20 },
 
+  linkDiscreto: { fontFamily: typography.regular, fontSize: 12, color: '#4F6B5C', textDecorationLine: 'underline' }, // 5,6:1 sobre branco
   rodape: { marginTop: 28, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#E5E7E5' },
   rodapeTexto: { fontFamily: typography.regular, fontSize: 13, lineHeight: 20, color: '#3C5A49' },
   voltar: { minHeight: 44, justifyContent: 'center', marginTop: 4 },
