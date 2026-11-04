@@ -48,6 +48,12 @@ export function feedbackAniversario(): void {
   vibrar(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
 }
 
+/** Boas-vindas do primeiro acesso: fanfarra + vibração de sucesso. */
+export function feedbackBoasVindas(): void {
+  tocarSom('fanfarra');
+  vibrar(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
+}
+
 /** Momento de comemoração (celebração da sequência): fanfarra + vibração de sucesso. */
 export function feedbackCelebracao(): void {
   tocarSom('fanfarra');

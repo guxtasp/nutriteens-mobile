@@ -16,6 +16,8 @@ import CartaoMetricasHome from '../../metricas/components/CartaoMetricasHome';
 import CelebracaoSequenciaModal from '../components/CelebracaoSequenciaModal';
 import PerdaSequenciaOverlay from '../components/PerdaSequenciaOverlay';
 import AniversarioModal from '../components/AniversarioModal';
+import BoasVindasModal from '../components/BoasVindasModal';
+import { useBoasVindas } from '../hooks/useBoasVindas';
 import { useHomeData } from '../hooks/useHomeData';
 import { useAniversario } from '../hooks/useAniversario';
 import { useRetrospectivaAno } from '../hooks/useRetrospectivaAno';
@@ -59,7 +61,7 @@ export default function HomeScreen() {
   } = useHomeData();
   const [menuAberto, setMenuAberto] = useState(false);
   const { situacao: situacaoModeracao, dispensarAviso } = useSituacaoModeracao();
-  const { nomeCompleto, userId } = useAuth();
+  const { nomeCompleto, userId, session } = useAuth();
   const primeiroNome = nomeCompleto?.trim().split(' ')[0] ?? 'Usuário';
   const { mlHoje, metaMl } = useAguaHoje();
 
@@ -172,17 +174,37 @@ export default function HomeScreen() {
     };
   }, [dadosCarregados, userId, sequenciaAtual, diaDeHojeMantido]);
 
+  // --- boas-vindas do primeiro acesso ---
+  //
+  // Tela de boas-vindas do Bróxis na primeira vez que a conta nova abre a Home (uma vez só,
+  // só para contas criadas há poucos dias). Mesma regra de fila das outras: espera a celebração
+  // de sequência e o aviso de perda terminarem. Sem XP (ver useBoasVindas.ts).
+  const podeMostrarAnimacaoCheia =
+    dadosCarregados && perdaVerificada && !celebracaoVisivel && !verificandoCelebracao && !perdaVisivel;
+  const boasVindas = useBoasVindas({
+    userId,
+    contaCriadaEm: session?.user.created_at,
+    hojeISO,
+    primeiroNome: nomeCompleto?.trim().split(' ')[0] || null,
+    podeMostrar: podeMostrarAnimacaoCheia,
+  });
+
+  useEffect(() => {
+    if (boasVindas.pendente) pausarRecompensas('boasvindas');
+    else retomarRecompensas('boasvindas');
+    return () => retomarRecompensas('boasvindas');
+  }, [boasVindas.pendente, pausarRecompensas, retomarRecompensas]);
+
   // --- feliz aniversário ---
   //
   // Mensagem do Bróxis no dia do aniversário (ou até 3 dias depois), uma vez por ano. Fica
-  // pendente enquanto a celebração de sequência ou o aviso de perda estão na tela e aparece
-  // quando terminam: duas animações cheias nunca juntas. Sem XP (ver useAniversario.ts).
+  // pendente enquanto a celebração de sequência, o aviso de perda ou as boas-vindas estão na
+  // tela e aparece quando terminam: duas animações cheias nunca juntas. Sem XP (ver useAniversario.ts).
   const aniversario = useAniversario({
     userId,
     hojeISO,
     primeiroNome: nomeCompleto?.trim().split(' ')[0] || null,
-    podeMostrar:
-      dadosCarregados && perdaVerificada && !celebracaoVisivel && !verificandoCelebracao && !perdaVisivel,
+    podeMostrar: podeMostrarAnimacaoCheia && !boasVindas.pendente,
   });
 
   // retrospectiva do ano: só consulta quando a mensagem de aniversário está na tela
@@ -237,6 +259,8 @@ export default function HomeScreen() {
       />
 
       <AvisoModeracaoModal aviso={situacaoModeracao.aviso} onEntendi={dispensarAviso} />
+
+      <BoasVindasModal visivel={boasVindas.visivel} mensagem={boasVindas.mensagem} onFechar={boasVindas.fechar} />
 
       <AniversarioModal
         visivel={aniversario.visivel}
