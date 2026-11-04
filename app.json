@@ -4,28 +4,32 @@
     "slug": "nutriteens",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/img/mascot/icon-app.png",
+    "icon": "./assets/img/mascot/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/img/mascot/icon-app.png",
+      "image": "./assets/img/mascot/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FCCB28"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nutriteens.nutriteens",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/img/mascot/icon-app.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/img/mascot/adaptive-icon.png",
+        "backgroundColor": "#FCCB28"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.nutriteens.nutriteens"
     },
     "web": {
-      "favicon": "./assets/img/mascot/icon-app.png"
+      "favicon": "./assets/img/mascot/favicon.png"
     },
     "scheme": "nutriteens",
     "plugins": [

@@ -120,7 +120,7 @@ export async function definirSomAtivo(ativo: boolean): Promise<void> {
 /**
  * Toca um som de teste e devolve um relatório em texto (pro botão "Testar
  * som" da aba Mais). Toca mesmo com os sons desligados no app, só pra
- * diagnosticar.
+ * diagnosticar. Espera até 2 s os arquivos carregarem e lista quais falharam.
  */
 export async function diagnosticarSom(): Promise<string> {
   if (!Audio) {
@@ -131,12 +131,21 @@ export async function diagnosticarSom(): Promise<string> {
   }
   try {
     configurarModo();
+    const nomes = Object.keys(FONTES) as NomeSom[];
+    nomes.forEach(obterPlayer);
+
+    // espera até 2 s todos os arquivos carregarem
+    const limite = Date.now() + 2000;
+    while (Date.now() < limite && nomes.some((n) => !players[n]?.isLoaded)) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const naoCarregaram = nomes.filter((n) => !players[n]?.isLoaded);
+
     const player = obterPlayer('acerto');
     if (!player) return 'Não consegui criar o player de áudio.';
-
     await Promise.resolve(player.seekTo(0)).catch(() => {});
     player.play();
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await new Promise((resolve) => setTimeout(resolve, 400));
 
     const carregado = player.isLoaded;
     const tocando = player.playing;
@@ -147,8 +156,10 @@ export async function diagnosticarSom(): Promise<string> {
         : 'O arquivo carregou, mas o player não começou a tocar.';
 
     return (
-      `Arquivo carregado: ${carregado ? 'sim' : 'não'}\n` +
-      `Tocando agora: ${tocando ? 'sim' : 'não'}\n` +
+      `Sons carregados: ${nomes.length - naoCarregaram.length}/${nomes.length}\n` +
+      (naoCarregaram.length ? `Não carregaram: ${naoCarregaram.join(', ')}\n` : '') +
+      `Teste (acerto) carregado: ${carregado ? 'sim' : 'não'}\n` +
+      `Teste (acerto) tocando: ${tocando ? 'sim' : 'não'}\n` +
       `Sons ligados no app: ${somAtivo ? 'sim' : 'não'}\n\n` +
       dica
     );
