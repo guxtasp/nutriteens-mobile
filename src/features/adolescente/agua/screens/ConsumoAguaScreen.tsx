@@ -1,6 +1,6 @@
 // src/features/adolescente/agua/screens/ConsumoAguaScreen.tsx
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Pressable, Alert } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, StyleSheet, Pressable, Alert, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -40,6 +40,24 @@ export default function ConsumoAguaScreen() {
   const [metaAtingidaAgora, setMetaAtingidaAgora] = useState(false);
   // "Agora não" no modal de peso: a tela segue usável com a meta padrão
   const [pesoDispensado, setPesoDispensado] = useState(false);
+  // iOS: um Modal que tenta abrir no meio da transição de entrada da tela (ou com o menu "+" ainda
+  // se fechando) falha em silêncio e deixa a tela inteira sem resposta ao toque. O dado do perfil chega
+  // rápido, então o modal de peso só pode aparecer depois que a tela assentou.
+  const [telaAssentou, setTelaAssentou] = useState(false);
+  useEffect(() => {
+    let cancelado = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tarefa = InteractionManager.runAfterInteractions(() => {
+      timer = setTimeout(() => {
+        if (!cancelado) setTelaAssentou(true);
+      }, 500);
+    });
+    return () => {
+      cancelado = true;
+      tarefa.cancel();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   const handleRegistrar = useCallback(async () => {
     try {
@@ -117,7 +135,7 @@ export default function ConsumoAguaScreen() {
       </View>
 
       <PesoAlturaModal
-        visivel={precisaPesoAltura && !pesoDispensado}
+        visivel={telaAssentou && precisaPesoAltura && !pesoDispensado}
         onConfirmar={salvarPesoAltura}
         onFechar={() => setPesoDispensado(true)}
       />

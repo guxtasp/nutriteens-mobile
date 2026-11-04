@@ -259,6 +259,17 @@ def quase():
     ], pico=0.45)
 
 
+def tour():
+    # "fiu" subindo + três faíscas de sino: o Bróxis apresentando algo no tour do app
+    return misturar([
+        (0.00, sweep(420, 1500, 0.16, 0.45, queda=3.5)),
+        (0.12, nota(E6, 0.22, 0.45, SINO, queda=4.5)),
+        (0.20, nota(G6, 0.22, 0.40, SINO, queda=4.5)),
+        (0.28, nota(C6, 0.55, 0.55, SINO, queda=4.0)),
+        (0.28, nota(E6, 0.55, 0.16, SUAVE, queda=4.0)),
+    ], pico=0.55)
+
+
 def musica_jogo():
     """Música de fundo calma, em loop: 8 compassos (C - Am - F - G), 90 bpm, 22,05 kHz.
     Pad macio + arpejo pentatônico leve. Termina e recomeça sem estalo."""
@@ -321,6 +332,7 @@ SONS = {
     "sucessoSuave": sucesso_suave,
     "quase": quase,
     "aniversario": aniversario,
+    "tour": tour,
 }
 
 if __name__ == "__main__":

@@ -14,6 +14,8 @@ import { ICONE_POR_TIPO_REFEICAO } from '../utils/refeicaoInfo';
 import type { NivelQualidade } from '../utils/regraFeedbackRefeicao';
 import TrocaLista from '../../trocas/components/TrocaLista';
 import { registrarTrocaSugerida } from '../../trocas/services/trocasService';
+import { feedbackConquista, feedbackLeve } from '../../../../shared/audio/feedback';
+import { tocarSom } from '../../../../shared/audio/sons';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'FeedbackRefeicao'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'FeedbackRefeicao'>;
@@ -47,6 +49,21 @@ export default function FeedbackRefeicaoScreen() {
   const { params } = useRoute<RouteProps>();
   const conteudo = escolherConteudo(params.nivelQualidade, params.intensidade);
   const troca = params.troca ?? null;
+
+  // som e vibração da reação do Bróxis, uma vez ao abrir a tela (um instante depois do som de
+  // "registro", que já toca ao salvar a refeição). Refeição excelente comemora; nos outros níveis o
+  // som é suave e nunca de erro: a reação é acolhedora, não de reprovação.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (params.nivelQualidade === 'EXCELENTE') {
+        feedbackConquista();
+      } else {
+        tocarSom('sucessoSuave');
+        feedbackLeve();
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     troca?.opcoes.forEach((o) => registrarTrocaSugerida(o.id, 'refeicao'));
