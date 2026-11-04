@@ -32,6 +32,8 @@ import { concederXp } from '../../../../shared/services/xpService';
 import AvisoModeracaoModal from '../../social/components/AvisoModeracaoModal';
 import { useSituacaoModeracao } from '../../social/hooks/useSituacaoModeracao';
 import { useRecompensasStore } from '../../recompensas/store/recompensasStore';
+import { TourAlvo, useTourRolagem } from '../../tour/TourContext';
+import { useTourPrimeiroAcesso } from '../../tour/useTourPrimeiroAcesso';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'Home'>;
 
@@ -60,6 +62,8 @@ export default function HomeScreen() {
     recarregar,
   } = useHomeData();
   const [menuAberto, setMenuAberto] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  useTourRolagem(scrollRef);
   const { situacao: situacaoModeracao, dispensarAviso } = useSituacaoModeracao();
   const { nomeCompleto, userId, session } = useAuth();
   const primeiroNome = nomeCompleto?.trim().split(' ')[0] ?? 'Usuário';
@@ -207,6 +211,16 @@ export default function HomeScreen() {
     podeMostrar: podeMostrarAnimacaoCheia && !boasVindas.pendente,
   });
 
+  // --- tour de apresentação ---
+  //
+  // Continuação das boas-vindas: assim que o aluno fecha o modal (e nenhuma outra animação cheia
+  // está na fila), o Bróxis oferece um tour opcional. Ver tour/useTourPrimeiroAcesso.ts.
+  useTourPrimeiroAcesso({
+    userId,
+    boasVindasPendente: boasVindas.pendente,
+    podeIniciar: podeMostrarAnimacaoCheia && !aniversario.pendente,
+  });
+
   // retrospectiva do ano: só consulta quando a mensagem de aniversário está na tela
   const retrospectivaAno = useRetrospectivaAno(userId, hojeISO, aniversario.visivel);
 
@@ -227,13 +241,16 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.tela}>
       {/* rolável: a barra de baixo e os botões flutuantes ficam fixos por cima */}
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={styles.conteudo}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={false} onRefresh={recarregar} tintColor={colors.primaryDark} />}
       >
       <HomeHeader nome={primeiroNome} pontos={xpTotal} sequenciaAtual={sequenciaAtual} />
-      <WeekDaySelector dias={diasComStatus} />
+      <TourAlvo id="semana">
+        <WeekDaySelector dias={diasComStatus} />
+      </TourAlvo>
 
       <WaterProgressCard mlAtual={mlHoje} mlMeta={metaMl} />
 

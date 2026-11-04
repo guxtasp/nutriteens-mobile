@@ -62,6 +62,7 @@ import type { TrocaSugerida } from '../features/adolescente/trocas/services/troc
 import OfflineBanner from '../shared/offline/OfflineBanner';
 import { OfflineProvider } from '../shared/offline/OfflineContext';
 import RecompensasHost from '../features/adolescente/recompensas/components/RecompensasHost';
+import { TourProvider } from '../features/adolescente/tour/TourContext';
 
 export type AdolescenteStackParamList = {
   TriagemIntro: undefined;
@@ -149,6 +150,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
     <OfflineProvider>
     <AtividadeFisicaProvider>
         <AlimentacaoProvider>
+          <TourProvider>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 {etapaOnboarding === 'TRIAGEM' ? (
                 <>
@@ -256,6 +258,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
             <LembretesGate ativo={etapaOnboarding !== 'TRIAGEM'} />
             <RecompensasHost ativo={etapaOnboarding !== 'TRIAGEM'} />
             <OfflineBanner />
+          </TourProvider>
       </AlimentacaoProvider>
     </AtividadeFisicaProvider>
     </OfflineProvider>

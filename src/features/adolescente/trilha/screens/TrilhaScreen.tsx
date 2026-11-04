@@ -42,6 +42,7 @@ import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { buscarTrilhasComProgresso, ModuloDaTrilha, Trilha, LicaoDaTrilha } from '../services/trilhaService';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { useTourAlvo } from '../../tour/TourContext';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;
 const LICOES_POR_MODULO = 5;
@@ -55,6 +56,7 @@ export default function TrilhaScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { userId } = useAuth();
   const { message, type, showMessage, clearMessage } = useMessageBanner();
+  const refTourFaixa = useTourAlvo('trilha-faixa');
 
   const [menuAberto, setMenuAberto] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -374,6 +376,8 @@ export default function TrilhaScreen() {
 
       {!!moduloNaFaixa && !carregando && (
         <Pressable
+          ref={refTourFaixa}
+          collapsable={false}
           style={({ pressed }) => [styles.faixa, pressed && podeEscolherTrilha && styles.faixaPressionada]}
           disabled={!podeEscolherTrilha}
           onPress={() => setSeletorAberto(true)}

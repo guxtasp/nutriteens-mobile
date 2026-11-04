@@ -12,6 +12,7 @@ import { SinoNotificacoes } from '../../notificacoes/components/SinoNotificacoes
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { useTourAlvo } from '../../tour/TourContext';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'Home'>;
 type Props = { 
@@ -27,6 +28,8 @@ const COR_SEQUENCIA = '#EA580C';
 export default function HomeHeader({ nome, pontos, sequenciaAtual, onAbrirPerfil }: Props) {
   const saudacao = useSaudacao();
   const navigation = useNavigation<NavigationProp>();
+  const refPerfil = useTourAlvo('perfil');
+  const refEstatisticas = useTourAlvo('estatisticas');
 
   const handleAbrirPerfil = useCallback(() => {
     if (onAbrirPerfil) {
@@ -50,6 +53,8 @@ export default function HomeHeader({ nome, pontos, sequenciaAtual, onAbrirPerfil
         </AppText>
 
         <Pressable
+          ref={refPerfil}
+          collapsable={false}
           onPress={handleAbrirPerfil}
           style={styles.perfilBotao}
           accessibilityRole="button"
@@ -62,7 +67,7 @@ export default function HomeHeader({ nome, pontos, sequenciaAtual, onAbrirPerfil
       <AppText style={styles.pergunta}>{saudacao}</AppText>
 
       {/* linha 2: XP, sequência e sino — fora da linha da saudação para não espremê-la */}
-      <View style={styles.estatisticas}>
+      <View ref={refEstatisticas} collapsable={false} style={styles.estatisticas}>
         {/* XP: sempre visível, mesmo em 0 — é um contador persistente, diferente da sequência */}
         <EstatisticaPill
           icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
@@ -122,6 +127,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 6,
     marginTop: 12,
+    // encolhe à largura das pílulas: o destaque do tour não pega a linha toda
+    alignSelf: 'flex-start',
   },
   perfilBotao: {
     padding: 4,

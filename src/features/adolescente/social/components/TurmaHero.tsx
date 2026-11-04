@@ -13,6 +13,7 @@ import { typography } from '../../../../shared/theme/typography';
 import { buscarAmigosHoje } from '../services/feedService';
 import type { AmigoSocial } from '../services/socialService';
 import { turma } from '../theme/turma';
+import { useTourAlvo } from '../../tour/TourContext';
 
 type Props = {
   apelido: string | null;
@@ -30,6 +31,7 @@ function frase(apelido: string | null, qtdAmigos: number, naSequencia: number): 
 
 export default function TurmaHero({ apelido, amigos, refreshToken }: Props) {
   const [hoje, setHoje] = useState<Record<string, boolean>>({});
+  const refTour = useTourAlvo('turma-hero');
 
   useEffect(() => {
     let vivo = true;
@@ -42,6 +44,7 @@ export default function TurmaHero({ apelido, amigos, refreshToken }: Props) {
   const { titulo, sub } = frase(apelido, qtd, naSequencia);
 
   return (
+    <View ref={refTour} collapsable={false} style={estilos.envoltorio}>
     <LinearGradient colors={[turma.heroDe, turma.heroPara]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={estilos.hero}>
       <View style={estilos.bolaGrande} pointerEvents="none" />
       <View style={estilos.bolaPequena} pointerEvents="none" />
@@ -69,11 +72,14 @@ export default function TurmaHero({ apelido, amigos, refreshToken }: Props) {
         <BroxisMascot pose={naSequencia > 0 ? 'supercontente' : 'aceno'} size={104} entrance="nenhuma" showParticles={false} />
       </View>
     </LinearGradient>
+    </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  hero: { borderRadius: 26, padding: 18, paddingRight: 112, minHeight: 150, marginBottom: 16, overflow: 'hidden', borderBottomWidth: 4, borderBottomColor: 'rgba(0,0,0,0.18)' },
+  // o espaço de baixo fica no envoltório: o destaque do tour pega só o cartão verde
+  envoltorio: { marginBottom: 16 },
+  hero: { borderRadius: 26, padding: 18, paddingRight: 112, minHeight: 150, overflow: 'hidden', borderBottomWidth: 4, borderBottomColor: 'rgba(0,0,0,0.18)' },
   bolaGrande: { position: 'absolute', right: -40, top: -50, width: 170, height: 170, borderRadius: 85, backgroundColor: 'rgba(255,255,255,0.08)' },
   bolaPequena: { position: 'absolute', right: 70, bottom: -34, width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.07)' },
   textos: { gap: 3 },

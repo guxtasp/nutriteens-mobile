@@ -9,6 +9,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography } from '../../../../shared/theme/typography';
+import { TourAlvo, useTourAlvo } from '../../tour/TourContext';
 
 export type HomeTabKey = 'inicio' | 'trilha' | 'social' | 'alimentacao' | 'mais';
 
@@ -37,6 +38,15 @@ const TAB_ITEMS: {
   { key: 'alimentacao', routeName: 'Alimentacao', label: 'Comer', icon: 'restaurant-outline', iconAtivo: 'restaurant' },
   { key: 'mais', routeName: 'Mais', label: 'Mais', icon: 'menu-outline', iconAtivo: 'menu' },
 ];
+
+// ids das abas como alvos do tour (ver tour/tourPassos.ts)
+const ID_TOUR_ABA: Record<HomeTabKey, string> = {
+  inicio: 'aba-inicio',
+  trilha: 'aba-trilha',
+  social: 'aba-turma',
+  alimentacao: 'aba-comer',
+  mais: 'aba-mais',
+};
 
 type SlotLayout = { x: number; width: number };
 
@@ -67,6 +77,7 @@ function raioIndicador(index: number) {
 export default function HomeBottomBar({ activeTab, onAbrirMenu, menuAberto }: Props) {
   const navigation = useNavigation<NavigationProp>();
   const rotacao = useRef(new Animated.Value(0)).current;
+  const refFab = useTourAlvo('novo-registro');
    const insets = useSafeAreaInsets(); 
 
 
@@ -179,7 +190,7 @@ export default function HomeBottomBar({ activeTab, onAbrirMenu, menuAberto }: Pr
     const ativo = item.key === activeTab;
 
     return (
-      <View key={item.key} style={styles.slot} onLayout={handleSlotLayout(item.key)}>
+      <TourAlvo key={item.key} id={ID_TOUR_ABA[item.key]} style={styles.slot} onLayout={handleSlotLayout(item.key)}>
         <Pressable
           onPress={() => handlePress(item)}
           accessibilityRole="button"
@@ -200,7 +211,7 @@ export default function HomeBottomBar({ activeTab, onAbrirMenu, menuAberto }: Pr
             {item.label}
           </AppText>
         </Pressable>
-      </View>
+      </TourAlvo>
     );
   };
 
@@ -211,7 +222,7 @@ export default function HomeBottomBar({ activeTab, onAbrirMenu, menuAberto }: Pr
         { paddingBottom: 24 + insets.bottom } 
       ]}
     >      
-      <Pressable style={styles.fab} onPress={onAbrirMenu} accessibilityLabel="Novo registro">
+      <Pressable ref={refFab} collapsable={false} style={styles.fab} onPress={onAbrirMenu} accessibilityLabel="Novo registro">
         <Animated.View style={{ transform: [{ rotate }] }}>
           <Ionicons name="add" size={24} color={colors.white} />
         </Animated.View>

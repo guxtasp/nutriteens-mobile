@@ -23,6 +23,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import type { TipoLicao } from '../services/trilhaService';
 import { pontosDoTrilho } from '../utils/trilhoPontilhado';
 import { TEMA_TRILHA as T } from '../ui/tema';
+import { useTourAlvo } from '../../tour/TourContext';
 
 export type StatusLicao = 'concluida' | 'atual' | 'bloqueada';
 
@@ -266,6 +267,8 @@ function BalaoAcao({ texto, cor, fundo }: { texto: string; cor: string; fundo: s
 
 function NoDoCaminho({ no, x, y, onPress }: { no: NoTrilha; x: number; y: number; onPress: () => void }) {
   const ehAtual = no.status === 'atual';
+  // só o nó atual se registra: é ele que o tour destaca
+  const refTour = useTourAlvo('trilha-no-atual', ehAtual);
   const bloqueada = no.status === 'bloqueada';
   const concluida = no.status === 'concluida';
   const pendente = ehPendente(no);
@@ -312,6 +315,8 @@ function NoDoCaminho({ no, x, y, onPress }: { no: NoTrilha; x: number; y: number
       )}
 
       <Pressable
+        ref={refTour}
+        collapsable={false}
         disabled={bloqueada}
         onPress={onPress}
         hitSlop={8}

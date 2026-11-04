@@ -9,6 +9,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { turma } from '../theme/turma';
+import { useTourAlvo } from '../../tour/TourContext';
 
 export type AbaTurma = 'feed' | 'amigos';
 
@@ -27,6 +28,7 @@ const PADDING = 5;
 
 export default function SeletorTurma({ ativa, onChange, pedidos }: Props) {
   const [largura, setLargura] = useState(0);
+  const refTour = useTourAlvo('turma-abas');
   const pos = useRef(new Animated.Value(ativa === 'feed' ? 0 : 1)).current;
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function SeletorTurma({ ativa, onChange, pedidos }: Props) {
   const larguraPilula = largura > 0 ? (largura - PADDING * 2) / ABAS.length : 0;
 
   return (
-    <View style={estilos.caixa} accessibilityRole="tablist" onLayout={(e) => setLargura(e.nativeEvent.layout.width)}>
+    <View ref={refTour} collapsable={false} style={estilos.caixa} accessibilityRole="tablist" onLayout={(e) => setLargura(e.nativeEvent.layout.width)}>
       {larguraPilula > 0 && (
         <Animated.View
           pointerEvents="none"

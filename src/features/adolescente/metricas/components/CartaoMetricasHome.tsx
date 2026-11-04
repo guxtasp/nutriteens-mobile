@@ -17,6 +17,7 @@ import type { CartaoId } from '../utils/cartoesInfo';
 import { useResumoJornadaHome } from '../hooks/useResumoJornadaHome';
 import { MiniBarraMistura } from './graficos/MiniBarraMistura';
 import { MiniRastreador } from './graficos/MiniRastreador';
+import { useTourAlvo } from '../../tour/TourContext';
 
 const CHIPS: { id: CartaoId; rotulo: string }[] = [
   { id: 'alimentacao', rotulo: 'Refeições' },
@@ -29,12 +30,13 @@ type Props = { onPress: (aba?: AbaId) => void };
 
 export default function CartaoMetricasHome({ onPress }: Props) {
   const estado = useResumoJornadaHome();
+  const refTour = useTourAlvo('metricas');
   const resumo = estado.status === 'pronto' ? estado.resumo : null;
   const m = resumo?.mistura;
   const conq = resumo?.conquistasNoPeriodo ?? 0;
 
   return (
-    <View style={styles.raiz}>
+    <View ref={refTour} collapsable={false} style={styles.raiz}>
       {resumo ? (
         <>
           <Pressable

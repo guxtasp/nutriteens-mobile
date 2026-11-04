@@ -12,6 +12,7 @@ import { typography } from '../../../../shared/theme/typography';
 import { definirSomAtivo, diagnosticarSom, somEstaAtivo, tocarSom } from '../../../../shared/audio/sons';
 import HomeBottomBar from '../components/HomeBottomBar';
 import QuickActionsMenu from '../components/QuickActionsMenu';
+import { useTour } from '../../tour/TourContext';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;
 
@@ -20,6 +21,13 @@ export default function MaisScreen() {
   const [menuAberto, setMenuAberto] = useState(false);
   const [somLigado, setSomLigado] = useState(somEstaAtivo());
   const [testando, setTestando] = useState(false);
+  const { iniciar: iniciarTour } = useTour();
+
+  // o tour começa na Home: volta para ela e dá um instante para a tela assentar
+  function handleReverTour() {
+    navigation.popToTop();
+    setTimeout(iniciarTour, 500);
+  }
 
   function handleSelecionarAcao(opcao: 'alimentacao' | 'agua' | 'atividade') {
     setMenuAberto(false);
@@ -97,6 +105,19 @@ export default function MaisScreen() {
               thumbColor={colors.white}
             />
           </View>
+
+          <View style={styles.divisor} />
+
+          <Pressable style={styles.linha} onPress={handleReverTour}>
+            <View style={styles.iconeCirculo}>
+              <Ionicons name="compass" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.textos}>
+              <AppText style={styles.linhaTitulo}>Rever o tour do app</AppText>
+              <AppText style={styles.linhaSub}>O Bróxis mostra de novo onde fica cada coisa</AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9AA5A0" />
+          </Pressable>
 
           <View style={styles.divisor} />
 

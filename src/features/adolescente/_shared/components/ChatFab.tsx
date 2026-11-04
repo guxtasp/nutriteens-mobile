@@ -9,6 +9,7 @@ import { MotiView } from 'moti';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../../shared/theme/colors';
 import ChatBroxisSheet from './ChatBroxisSheet';
+import { useTourAlvo } from '../../tour/TourContext';
 
 // A HomeBottomBar ocupa (padding de baixo 24 + área segura) + ~76 de altura, e é
 // desenhada por cima de tudo (zIndex/elevation 10). O botão do chat precisa ficar
@@ -20,6 +21,7 @@ const FOLGA_ACIMA_DA_BARRA = 16;
 export default function ChatFab({ onPress }: { onPress?: () => void }) {
   const [aberto, setAberto] = useState(false);
   const insets = useSafeAreaInsets();
+  const refTour = useTourAlvo('chat');
   const bottom = PADDING_BAIXO_BARRA + ALTURA_BARRA + FOLGA_ACIMA_DA_BARRA + insets.bottom;
 
   function handlePress() {
@@ -38,6 +40,8 @@ export default function ChatFab({ onPress }: { onPress?: () => void }) {
         pointerEvents="box-none"
       >
         <Pressable
+          ref={refTour}
+          collapsable={false}
           style={({ pressed }) => [styles.botao, pressed && styles.botaoPressionado]}
           onPress={handlePress}
           accessibilityRole="button"

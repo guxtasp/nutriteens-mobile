@@ -8,6 +8,7 @@ import type { MissaoDoDia } from '../../home/services/missaoService';
 import { useResumoMissoesHome } from '../hooks/useResumoMissoesHome';
 import { intervaloDoPeriodo, nomeDoMes, textoContagem } from '../utils/periodos';
 import { textoBarra, textoFalta } from '../utils/progresso';
+import { useTourAlvo } from '../../tour/TourContext';
 
 type Props = { missao: MissaoDoDia; concluida: boolean; onPress: () => void };
 
@@ -29,13 +30,14 @@ function BarraComTexto({ fracao, texto }: { fracao: number; texto: string }) {
  */
 export default function MissoesWidget({ missao, concluida, onPress }: Props) {
   const { progresso, mes } = useResumoMissoesHome(missao);
+  const refTour = useTourAlvo('missoes');
   const feita = concluida || !!progresso?.concluida;
   // fim do mês calculado no aparelho: aparece na hora, mesmo sem internet
   const { diasRestantes, fim } = intervaloDoPeriodo('MENSAL');
   const [, fimMes, fimDia] = fim.split('-');
 
   return (
-    <Pressable onPress={onPress} style={styles.raiz} accessibilityRole="button" accessibilityLabel="Abrir missões">
+    <Pressable ref={refTour} collapsable={false} onPress={onPress} style={styles.raiz} accessibilityRole="button" accessibilityLabel="Abrir missões">
       {/* banner (fica atrás do card; o mascote sai por cima do card) */}
       <View style={styles.banner}>
         <AppText style={styles.bannerTitulo}>Missão de {nomeDoMes()}</AppText>

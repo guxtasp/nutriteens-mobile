@@ -6,14 +6,16 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { layout } from '../../../../shared/theme/layout';
 import { typography } from '../../../../shared/theme/typography';
+import { useTourAlvo } from '../../tour/TourContext';
 
 type Props = { mlAtual: number; mlMeta: number; onAdicionar?: () => void };
 
 export default function WaterProgressCard({ mlAtual, mlMeta, onAdicionar }: Props) {
   const progresso = Math.min(mlAtual / mlMeta, 1);
+  const refTour = useTourAlvo('agua');
 
   return (
-    <View style={styles.card}>
+    <View ref={refTour} collapsable={false} style={styles.card}>
       <AppText style={styles.titulo}>Seu registro de consumo de água</AppText>
       <View style={styles.linha}>
         <View style={styles.iconeGota}>
