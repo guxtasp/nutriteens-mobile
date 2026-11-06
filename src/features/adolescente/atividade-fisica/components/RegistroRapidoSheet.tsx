@@ -1,7 +1,8 @@
 // src/features/adolescente/components/RegistroRapidoSheet.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Modal, Pressable, TextInput, StyleSheet, Animated } from 'react-native';
+import { View, Modal, Pressable, TextInput, StyleSheet, Animated, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default function RegistroRapidoSheet({ visivel, onFechar, onAdicionar }: Props) {
+  const insets = useSafeAreaInsets();
   const [nome, setNome] = useState('');
   const [duracao, setDuracao] = useState('');
   const [montado, setMontado] = useState(visivel);
@@ -68,18 +70,20 @@ export default function RegistroRapidoSheet({ visivel, onFechar, onAdicionar }: 
   if (!montado) return null;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={onFechar}>
+    <Modal visible transparent animationType="none" onRequestClose={onFechar} statusBarTranslucent navigationBarTranslucent>
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onFechar}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
       </Pressable>
 
+      {/* o teclado empurra a folha para cima; sem isso ele cobriria os campos (edge-to-edge no Android) */}
+      <KeyboardAvoidingView behavior="padding" style={styles.kav} pointerEvents="box-none">
       <Animated.View
         style={[
           styles.sheetWrapper,
           { transform: [{ translateY: sheetTranslateY }] },
         ]}
       >
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]} onPress={() => {}}>
           <View style={styles.puxador} />
 
           <View style={styles.cabecalho}>
@@ -121,6 +125,7 @@ export default function RegistroRapidoSheet({ visivel, onFechar, onAdicionar }: 
           </Pressable>
         </Pressable>
       </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -130,11 +135,11 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
+  // cobre a tela só para o KeyboardAvoidingView medir o teclado; toques passam (pointerEvents=box-none)
+  kav: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
   sheetWrapper: {
-    position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
   },
   sheet: {
     backgroundColor: colors.white ?? '#fff',

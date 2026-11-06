@@ -1,11 +1,12 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
 import { ProgressBar } from '../../../../shared/ui/ProgressBar';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { Progresso, textoAtual, textoFalta } from '../utils/progresso';
+import { estadoDaMissao, ROTULO_ESTADO, type DestinoMissao } from '../utils/destinoMissao';
 
 type Props = {
   icone: string | null;
@@ -17,13 +18,27 @@ type Props = {
   pontosCreditados: boolean;
   /** ex.: "Termina amanhã" */
   rodape?: string;
+  /** onde a missão pode ser cumprida; sem isso o card não é clicável */
+  destino?: DestinoMissao | null;
+  onAbrirDestino?: (destino: DestinoMissao) => void;
 };
 
 /** Card único para missões diárias, semanais e mensais: barra + "quanto falta". */
-export function MissaoProgressoCard({ icone, titulo, descricao, progresso, pontos, pontosCreditados, rodape }: Props) {
+export function MissaoProgressoCard({ icone, titulo, descricao, progresso, pontos, pontosCreditados, rodape, destino, onAbrirDestino }: Props) {
   const feita = progresso.concluida;
+  const estado = estadoDaMissao(progresso);
+  // missão concluída não precisa de atalho: o card só vira botão enquanto há o que fazer
+  const acionavel = !!destino && !!onAbrirDestino && !feita;
+  const Raiz: React.ElementType = acionavel ? Pressable : View;
+  const propsRaiz = acionavel
+    ? {
+        onPress: () => onAbrirDestino!(destino!),
+        accessibilityRole: 'button' as const,
+        accessibilityLabel: `${titulo}. ${ROTULO_ESTADO[estado]}. ${destino!.rotulo}`,
+      }
+    : {};
   return (
-    <View style={[styles.card, feita && styles.cardFeita]}>
+    <Raiz style={[styles.card, feita && styles.cardFeita]} {...propsRaiz}>
       <View style={styles.topo}>
         <AppText style={styles.icone}>{icone ?? '🎯'}</AppText>
         <View style={{ flex: 1 }}>
@@ -43,6 +58,19 @@ export function MissaoProgressoCard({ icone, titulo, descricao, progresso, ponto
         <AppText style={styles.atual}>{textoAtual(progresso)}</AppText>
       </View>
 
+      {/* estado escrito (não só cor/ícone) e, quando há o que fazer, para onde ir */}
+      <View style={styles.estadoLinha}>
+        <View style={[styles.chipEstado, estado === 'em_andamento' && styles.chipEmAndamento, feita && styles.chipConcluida]}>
+          <AppText style={styles.chipEstadoTexto}>{ROTULO_ESTADO[estado]}</AppText>
+        </View>
+        {acionavel && (
+          <View style={styles.irPara}>
+            <AppText style={styles.irParaTexto}>{destino!.rotulo}</AppText>
+            <Ionicons name="chevron-forward" size={16} color={colors.primaryDark} />
+          </View>
+        )}
+      </View>
+
       <View style={styles.rodape}>
         <View style={[styles.chipPontos, feita && pontosCreditados && styles.chipPontosGanhos]}>
           <AppText style={styles.chipPontosTexto}>
@@ -51,7 +79,7 @@ export function MissaoProgressoCard({ icone, titulo, descricao, progresso, ponto
         </View>
         {!!rodape && !feita && <AppText style={styles.prazo}>{rodape}</AppText>}
       </View>
-    </View>
+    </Raiz>
   );
 }
 
@@ -67,6 +95,13 @@ const styles = StyleSheet.create({
   atual: { fontSize: 12, fontFamily: typography.semiBold, color: colors.placeholder },
   falta: { fontSize: 12, fontFamily: typography.bold, color: colors.primaryDark },
   faltaFeita: { color: colors.success },
+  estadoLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, minHeight: 28 },
+  chipEstado: { backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
+  chipEmAndamento: { backgroundColor: '#FFF3D6' },
+  chipConcluida: { backgroundColor: colors.primary },
+  chipEstadoTexto: { fontSize: 11, fontFamily: typography.bold, color: colors.primaryDark },
+  irPara: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 28 },
+  irParaTexto: { fontSize: 12, fontFamily: typography.bold, color: colors.primaryDark },
   rodape: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   chipPontos: { backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 },
   chipPontosGanhos: { backgroundColor: colors.primary },

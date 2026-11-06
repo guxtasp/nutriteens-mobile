@@ -15,12 +15,16 @@
 import { registrarDiaChamaDupla } from '../../social/services/chamaDuplaService';
 import { regarJardinsHoje } from '../../social/services/jardimService';
 import { sincronizarDesafiosHoje } from '../../social/services/desafioGrupoService';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { useSemanaAtual } from './useSemanaAtual';
 import { formatarDataISO } from '../../../../shared/utils/data';
+import { lerCache, salvarCache } from '../../../../shared/offline/cacheLocal';
+import { useOffline } from '../../../../shared/offline/OfflineContext';
+import { ehErroDeRede } from '../../../../shared/offline/erroRede';
+import { aproveitarSnapshotHome, type SnapshotHome } from '../utils/snapshotHome';
 import { calcularStatusDia, DiaSemana } from '../types/statusDia';
 import { obterOuAtribuirMissaoDoDia, avaliarMissaoDoDia, concederPontosMissaoSeNecessario, MissaoDoDia } from '../services/missaoService';
 import {
@@ -139,8 +143,47 @@ export function useHomeData() {
         }))
       );
       setDadosCarregados(true);
+
+      // última carga que deu certo: é o que a Home mostra se o app abrir sem internet
+      const snapshot: SnapshotHome = {
+        gravadoEm: hoje,
+        missao: missaoDoDia,
+        missaoConcluida: missaoConcluidaHoje,
+        sequenciaAtual: proximoEstado.sequenciaAtual,
+        maiorSequencia: proximoEstado.maiorSequencia,
+        xpTotal: xp?.xp_total ?? 0,
+        diaDeHojeMantido: hojeMantido,
+        diasMantidos: Array.from(diasMantidos),
+      };
+      void salvarCache(`home:${userId}`, snapshot);
     } catch (erro) {
-      console.error('Erro ao carregar dados da Home:', erro);
+      if (ehErroDeRede(erro)) {
+        // sem internet: mostra o último estado conhecido (se ainda valer) em vez de uma tela vazia
+        console.warn('Home sem internet, usando a última cópia local:', erro);
+        const copia = aproveitarSnapshotHome(
+          await lerCache<SnapshotHome>(`home:${userId}`),
+          hojeISO,
+          formatarDataISO(new Date(Date.now() - 86400000)),
+        );
+        if (copia) {
+          const mantidos = new Set(copia.diasMantidos);
+          setMissao(copia.missao);
+          setMissaoConcluida(copia.missaoConcluida);
+          setSequenciaAtual(copia.sequenciaAtual);
+          setMaiorSequencia(copia.maiorSequencia);
+          setXpTotal(copia.xpTotal);
+          setDiaDeHojeMantido(copia.diaDeHojeMantido);
+          setDiasComStatus(
+            dias.map((dia) => ({
+              ...dia,
+              status: calcularStatusDia({ data: dia.data, hojeISO, mantido: mantidos.has(dia.data) }),
+            })),
+          );
+          setDadosCarregados(true);
+        }
+      } else {
+        console.error('Erro ao carregar dados da Home:', erro);
+      }
     } finally {
       setCarregando(false);
     }
@@ -151,6 +194,12 @@ export function useHomeData() {
       carregar();
     }, [carregar])
   );
+
+  // registros feitos sem internet que acabaram de ser enviados: a Home reavalia missão, sequência e XP
+  const { versaoSync } = useOffline();
+  useEffect(() => {
+    if (versaoSync > 0) void carregar();
+  }, [versaoSync, carregar]);
 
   return {
     carregando,

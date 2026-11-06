@@ -38,10 +38,10 @@ export default function LicaoCompletaScreen() {
         </View>
 
         <View style={styles.linha}>
-          <AppText style={styles.linhaLabel}>XP GANHO</AppText>
+          <AppText style={styles.linhaLabel}>{params.pendente ? 'XP' : 'XP GANHO'}</AppText>
           <View style={styles.linhaValor}>
             <Ionicons name="gift" size={16} color={colors.primary} />
-            <AppText style={styles.linhaNumero}>{params.xpGanho}</AppText>
+            <AppText style={styles.linhaNumero}>{params.pendente ? 'a caminho' : params.xpGanho}</AppText>
           </View>
         </View>
       </View>

@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { TipoRegular } from '../data/mensagensLembrete';
@@ -109,10 +109,7 @@ export default function LembretesScreen() {
   if (Platform.OS === 'web') {
     return (
       <SafeAreaView style={styles.tela}>
-        <View style={styles.cabecalho}>
-          <BackButton onPress={() => navigation.goBack()} />
-          <AppText style={styles.titulo}>Lembretes</AppText>
-        </View>
+        <ScreenHeader titulo="Lembretes" onVoltar={() => navigation.goBack()} />
         <AppText style={[styles.aviso, { paddingHorizontal: 20 }]}>
           Os lembretes só funcionam no aplicativo do celular.
         </AppText>
@@ -125,10 +122,7 @@ export default function LembretesScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <AppText style={styles.titulo}>Lembretes</AppText>
-      </View>
+      <ScreenHeader titulo="Lembretes" onVoltar={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.conteudo}>
         <AppText style={styles.intro}>

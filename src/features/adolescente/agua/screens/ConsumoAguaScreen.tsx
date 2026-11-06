@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { tocarSom } from '../../../../shared/audio/sons';
@@ -76,13 +76,11 @@ export default function ConsumoAguaScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo}>Consumo de água</AppText>
-          <AppText style={styles.subtitulo}>Resumo diário do seu consumo de água</AppText>
-        </View>
-      </View>
+      <ScreenHeader
+        titulo="Consumo de água"
+        subtitulo="Resumo diário do seu consumo de água"
+        onVoltar={() => navigation.goBack()}
+      />
 
       <View style={styles.corpo}>
         <View style={styles.garrafaBloco}>

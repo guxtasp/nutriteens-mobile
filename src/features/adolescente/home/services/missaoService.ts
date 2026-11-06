@@ -10,6 +10,8 @@ import { alimentoEBoaFonte, type NutrienteChave } from '../../alimentacao/utils/
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
 import { feedbackConquista } from '../../../../shared/audio/feedback';
+import { comCache } from '../../../../shared/offline/cacheLocal';
+import { lancarSeErroDeRede } from '../../../../shared/offline/erroRede';
 import {
   obterVariante,
   registrarVariantesCustom,
@@ -46,7 +48,8 @@ export async function obterOuAtribuirMissaoDoDia(userId: string, data: string): 
   const jaEmVoo = emVoo.get(chave);
   if (jaEmVoo) return jaEmVoo;
 
-  const promise = buscarOuCriarMissaoDoDia(userId, data).finally(() => {
+  // sem internet, devolve a missão que já tinha sido carregada neste dia (só erro de rede cai na cópia)
+  const promise = comCache(`missao:dia:${userId}:${data}`, () => buscarOuCriarMissaoDoDia(userId, data)).finally(() => {
     if (emVoo.get(chave) === promise) emVoo.delete(chave);
   });
   emVoo.set(chave, promise);
@@ -192,12 +195,14 @@ async function carregarVariantesCustom(): Promise<void> {
 
 async function buscarOuCriarMissaoDoDia(userId: string, data: string): Promise<MissaoDoDia> {
   await carregarVariantesCustom();
-  const { data: existente } = await supabase
-    .from('missoes_diarias')
-    .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio, pontos_recompensa)')
-    .eq('user_id', userId)
-    .eq('data', data)
-    .maybeSingle();
+  const { data: existente } = lancarSeErroDeRede(
+    await supabase
+      .from('missoes_diarias')
+      .select('id, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio, pontos_recompensa)')
+      .eq('user_id', userId)
+      .eq('data', data)
+      .maybeSingle(),
+  );
 
   if (existente) return mapearMissao(existente);
 
@@ -311,43 +316,48 @@ export function mapearMissao(row: any): MissaoDoDia {
 // `avaliarMissaoDoDia` (usada pela Home) é só "o progresso bateu a meta?", então
 // há UMA regra de cumprimento só, e a tela de Missões mostra exatamente o mesmo.
 export async function calcularProgressoMissaoDoDia(userId: string, data: string, missao: MissaoDoDia): Promise<Progresso> {
+  // sem internet: último progresso conhecido desta missão (nunca "0" por falha de rede)
+  return comCache(`missao:progresso:${userId}:${data}:${missao.id}`, () => calcularProgressoOnline(userId, data, missao));
+}
+
+async function calcularProgressoOnline(userId: string, data: string, missao: MissaoDoDia): Promise<Progresso> {
   const variante = obterVariante(missao.parametros.variante);
   if (variante) return calcularProgressoVariante(userId, data, variante, missao);
 
   switch (missao.tipo) {
     case 'AGUA_ML': {
-      const { data: registros } = await supabase
+      const { data: registros } = lancarSeErroDeRede(await supabase
         .from('registros_agua')
         .select('quantidade_ml, registros_diarios!inner(user_id, data)')
         .eq('registros_diarios.user_id', userId)
-        .eq('registros_diarios.data', data);
+        .eq('registros_diarios.data', data));
       const total = (registros ?? []).reduce((soma, r: any) => soma + r.quantidade_ml, 0);
 
       // meta PERSONALIZADA por peso (a mesma de useAguaHoje/ConsumoAguaScreen),
       // não o alvo_ml genérico do catálogo — assim a missão bate com o que a
       // tela de água já mostra pro adolescente. Sem peso cadastrado, cai pro
       // valor do catálogo como aproximação.
-      const { data: perfil } = await supabase.from('profiles').select('peso_kg').eq('id', userId).single();
+      const { data: perfil } = lancarSeErroDeRede(await supabase.from('profiles').select('peso_kg').eq('id', userId).single());
       const alvoMl = perfil?.peso_kg ? calcularMetaAguaMl(perfil.peso_kg) : missao.criterio.alvo_ml;
       return criarProgresso(total, alvoMl, UNIDADES.ml);
     }
 
     case 'ATIVIDADE_MIN': {
-      const { data: registros } = await supabase
+      const { data: registros } = lancarSeErroDeRede(await supabase
         .from('registros_atividade_fisica')
         .select('duracao_minutos, registros_diarios!inner(user_id, data)')
         .eq('registros_diarios.user_id', userId)
-        .eq('registros_diarios.data', data);
+        .eq('registros_diarios.data', data));
       const total = (registros ?? []).reduce((soma, r: any) => soma + r.duracao_minutos, 0);
       return criarProgresso(total, missao.criterio.alvo_min, UNIDADES.min);
     }
 
     case 'ALIMENTO_NATURAL_QTD': {
-      const { data: itens } = await supabase
+      const { data: itens } = lancarSeErroDeRede(await supabase
         .from('refeicao_alimentos')
         .select('quantidade, alimentos(classificacao_nova), refeicoes!inner(registro_diario_id, registros_diarios!inner(user_id, data))')
         .eq('refeicoes.registros_diarios.user_id', userId)
-        .eq('refeicoes.registros_diarios.data', data);
+        .eq('refeicoes.registros_diarios.data', data));
       const qtd = (itens ?? [])
         .filter((i: any) => ['IN_NATURA', 'INGREDIENTE_CULINARIO'].includes(i.alimentos.classificacao_nova))
         .reduce((soma, i: any) => soma + i.quantidade, 0);
@@ -355,11 +365,11 @@ export async function calcularProgressoMissaoDoDia(userId: string, data: string,
     }
 
     case 'REFEICAO_SEM_ULTRAPROCESSADO': {
-      const { data: refeicoesDoDia } = await supabase
+      const { data: refeicoesDoDia } = lancarSeErroDeRede(await supabase
         .from('refeicoes')
         .select('id, refeicao_alimentos(alimentos(classificacao_nova)), registros_diarios!inner(user_id, data)')
         .eq('registros_diarios.user_id', userId)
-        .eq('registros_diarios.data', data);
+        .eq('registros_diarios.data', data));
       const boas = (refeicoesDoDia ?? []).filter((r: any) =>
         r.refeicao_alimentos.length > 0 &&
         r.refeicao_alimentos.every((i: any) => i.alimentos.classificacao_nova !== 'ULTRAPROCESSADO')
@@ -370,11 +380,11 @@ export async function calcularProgressoMissaoDoDia(userId: string, data: string,
     case 'NUTRIENTE_LACUNA': {
       const meta = META_SEMANAL[missao.parametros.nutriente as keyof typeof META_SEMANAL];
       if (!meta) return criarProgresso(0, 1, UNIDADES.porcao);
-      const { data: itens } = await supabase
+      const { data: itens } = lancarSeErroDeRede(await supabase
         .from('refeicao_alimentos')
         .select(`alimentos(grupos_alimentares, alimento_nutrientes(${meta.coluna})), refeicoes!inner(registros_diarios!inner(user_id, data))`)
         .eq('refeicoes.registros_diarios.user_id', userId)
-        .eq('refeicoes.registros_diarios.data', data);
+        .eq('refeicoes.registros_diarios.data', data));
       // alimentoEBoaFonte cai pra inferência por grupo quando o alimento não
       // tem linha em alimento_nutrientes (ex.: cadastrado pelo adolescente)
       const fontes = (itens ?? []).filter((i: any) => alimentoEBoaFonte(i.alimentos, meta.coluna as NutrienteChave)).length;
@@ -402,24 +412,24 @@ async function calcularProgressoVariante(
   const regra = variante.regra;
 
   if (regra.regra === 'AGUA_PCT_META') {
-    const { data: registros } = await supabase
+    const { data: registros } = lancarSeErroDeRede(await supabase
       .from('registros_agua')
       .select('quantidade_ml, registros_diarios!inner(user_id, data)')
       .eq('registros_diarios.user_id', userId)
-      .eq('registros_diarios.data', data);
+      .eq('registros_diarios.data', data));
     const total = (registros ?? []).reduce((soma, r: any) => soma + r.quantidade_ml, 0);
     // mesma meta personalizada por peso da missão de água padrão
-    const { data: perfil } = await supabase.from('profiles').select('peso_kg').eq('id', userId).single();
+    const { data: perfil } = lancarSeErroDeRede(await supabase.from('profiles').select('peso_kg').eq('id', userId).single());
     const metaMl = perfil?.peso_kg ? calcularMetaAguaMl(perfil.peso_kg) : (missao.criterio.alvo_ml ?? 2000);
     return criarProgresso(total, metaAguaDaVariante(regra, metaMl), UNIDADES.ml);
   }
 
   if (regra.regra === 'ATIVIDADE_MIN' || regra.regra === 'ATIVIDADE_PASSOS') {
-    const { data: registros } = await supabase
+    const { data: registros } = lancarSeErroDeRede(await supabase
       .from('registros_atividade_fisica')
       .select('duracao_minutos, quantidade_passos, registros_diarios!inner(user_id, data)')
       .eq('registros_diarios.user_id', userId)
-      .eq('registros_diarios.data', data);
+      .eq('registros_diarios.data', data));
     if (regra.regra === 'ATIVIDADE_MIN') {
       const total = (registros ?? []).reduce((soma, r: any) => soma + (r.duracao_minutos ?? 0), 0);
       return criarProgresso(total, regra.min, UNIDADES.min);
@@ -431,13 +441,13 @@ async function calcularProgressoVariante(
   // regras de comida: itens de refeição do dia (com classificação, grupos e,
   // só se a regra for de nutriente, a coluna do nutriente)
   const colunaNutriente = regra.regra === 'FONTE_NUTRIENTE' ? `, alimento_nutrientes(${regra.nutriente})` : '';
-  const { data: itens } = await supabase
+  const { data: itens } = lancarSeErroDeRede(await supabase
     .from('refeicao_alimentos')
     .select(
       `refeicao_id, quantidade, alimentos(classificacao_nova, grupos_alimentares${colunaNutriente}), refeicoes!inner(tipo, registros_diarios!inner(user_id, data))`
     )
     .eq('refeicoes.registros_diarios.user_id', userId)
-    .eq('refeicoes.registros_diarios.data', data);
+    .eq('refeicoes.registros_diarios.data', data));
 
   return calcularProgressoAlimentar(regra, (itens ?? []) as any[]) ?? criarProgresso(0, 1, UNIDADES.missao);
 }

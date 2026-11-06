@@ -13,6 +13,7 @@ import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
+import { AuthFormLayout } from '../../../shared/ui/AuthFormLayout';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
 import { validatePassword } from '../utils/signupValidators';
 import { supabase } from '../../../lib/supabase';
@@ -60,7 +61,7 @@ export default function RedefinirSenhaScreen() {
 
   return (
     <View style={[styles.outer, ehDesktop && styles.outerDesktop]}>
-      <View style={[styles.container, ehDesktop && styles.containerDesktop]}>
+      <AuthFormLayout desktop={ehDesktop} desktopStyle={[styles.container, styles.containerDesktop]}>
         <AppText style={styles.title}>Crie uma nova senha</AppText>
         <AppText style={styles.subtitle}>
           Escolha uma senha nova para a sua conta NutriTeens.
@@ -81,7 +82,7 @@ export default function RedefinirSenhaScreen() {
             onPress={handleConfirmar}
           />
         </View>
-      </View>
+      </AuthFormLayout>
     </View>
   );
 }
@@ -122,6 +123,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 22,
   },
-  messageContainer: { marginTop: -40, flex: 1, gap: 12 },
+  // flexGrow (e não flex:1): dentro do ScrollView o bloco precisa contar com a própria altura.
+  messageContainer: { marginTop: -40, flexGrow: 1, gap: 12 },
   spacer: { height: 60 },
 });

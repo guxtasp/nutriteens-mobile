@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { formatarDataISO } from '../../../../shared/utils/data';
+import { comCache } from '../../../../shared/offline/cacheLocal';
 import {
   calcularProgressoMissaoDoDia,
   concederPontosMissaoSeNecessario,
@@ -34,6 +35,11 @@ async function carregarHoje(userId: string): Promise<MissaoHoje> {
 }
 
 async function carregarHistorico(userId: string): Promise<DiaHistorico[]> {
+  // sem internet: o último histórico carregado (a chave leva o dia, que muda a janela)
+  return comCache(`missoes:historico:${userId}:${formatarDataISO(new Date())}`, () => carregarHistoricoOnline(userId));
+}
+
+async function carregarHistoricoOnline(userId: string): Promise<DiaHistorico[]> {
   const inicio = new Date();
   inicio.setDate(inicio.getDate() - 7);
   const ontem = new Date();

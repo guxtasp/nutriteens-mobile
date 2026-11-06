@@ -7,7 +7,7 @@
 // Grava profiles + consentimentos exatamente como o useSignup faz no
 // cadastro por e-mail (mesma etapa_onboarding: 'TRIAGEM').
 import React, { useState } from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../shared/theme/colors';
@@ -17,7 +17,7 @@ import { AppButton } from '../../../shared/ui/AppButton';
 import { BackButton } from '../../../shared/ui/BackButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
 import { DateInput } from '../../../shared/ui/DateInput';
-import { RadioGroup } from '../../../shared/ui/RadioGroup';
+import { CampoSelecao } from '../components/CampoSelecao';
 import { Checkbox } from '../../../shared/ui/Checkbox';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
@@ -114,7 +114,16 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
         onClose={clearMessage}
         style={[styles.topBanner, { top: insets.top + 12 }]}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* 'padding' nos dois sistemas: com edge-to-edge no Android a janela não é redimensionada pelo teclado */}
+      <KeyboardAvoidingView style={styles.container} behavior="padding">
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: Math.max(60, insets.top + 24), paddingBottom: 40 + insets.bottom },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <BackButton onPress={onSair} style={styles.BackButton} />
 
         <AppText style={styles.title}>Quase lá! Só faltam alguns dados =)</AppText>
@@ -128,10 +137,17 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
           value={nome}
           onChangeText={setNome}
         />
-        <RadioGroup label="Qual é o seu gênero?" options={GENERO_OPTIONS} value={genero} onChange={setGenero} />
+        <CampoSelecao
+          label="Qual é o seu gênero?"
+          placeholder="Selecione"
+          options={GENERO_OPTIONS}
+          value={genero}
+          onChange={setGenero}
+        />
         <DateInput label="Data de nascimento" value={dataNascimento} onChangeText={setDataNascimento} />
-        <RadioGroup
+        <CampoSelecao
           label="Em que tipo de escola você estuda?"
+          placeholder="Selecione"
           options={TIPO_ESCOLA_OPTIONS}
           value={tipoEscola}
           onChange={setTipoEscola}
@@ -167,12 +183,13 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
           onPress={handleConcluir}
         />
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.white, marginBottom: 70 },
+  root: { flex: 1, backgroundColor: colors.white },
   container: { flex: 1 },
   content: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 40 },
   topBanner: { position: 'absolute', width: '90%', alignSelf: 'center', zIndex: 20 },

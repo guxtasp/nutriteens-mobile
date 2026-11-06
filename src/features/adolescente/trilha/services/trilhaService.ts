@@ -1,6 +1,8 @@
 // src/features/adolescente/services/trilhaService.ts
 import { supabase } from '../../../../lib/supabase';
 import { concederXp } from '../../../../shared/services/xpService';
+import { comCache, lerCache, salvarCache } from '../../../../shared/offline/cacheLocal';
+import { aplicarConclusaoLocal } from '../utils/conclusaoLocal';
 import type { NoTrilha } from '../components/TrilhaPath';
 import { dataInicioJanela } from '../utils/janelaHabito';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
@@ -68,6 +70,22 @@ function gerarTituloModulo(posicaoTrilha: number, ordemModulo: number): string {
  * anterior termina. Já cruza com o progresso do usuário.
  */
 export async function buscarTrilhasComProgresso(usuarioId: string): Promise<TrilhasComProgresso> {
+  // sem internet: o último caminho carregado (com o progresso daquela hora)
+  return comCache(`trilha:caminho:${usuarioId}`, () => buscarTrilhasComProgressoOnline(usuarioId));
+}
+
+/**
+ * Lição concluída sem internet: marca no caminho guardado no aparelho para a próxima liberar.
+ * Só mexe na cópia local; o servidor recebe a conclusão pela fila e é quem decide de verdade.
+ */
+export async function marcarLicaoConcluidaLocalmente(usuarioId: string, licaoId: string): Promise<void> {
+  const chave = `trilha:caminho:${usuarioId}`;
+  const caminho = await lerCache<TrilhasComProgresso>(chave);
+  if (!caminho) return;
+  await salvarCache(chave, { ...caminho, nos: aplicarConclusaoLocal(caminho.nos, licaoId) });
+}
+
+async function buscarTrilhasComProgressoOnline(usuarioId: string): Promise<TrilhasComProgresso> {
   // 1. trilhas aprovadas
   const { data: trilhasData, error: erroTrilhas } = await supabase
     .from('trilhas')
@@ -245,6 +263,11 @@ export type DetalheLicao = {
 
 /** Busca todo o conteúdo de uma lição, incluindo quiz (com opções) quando for o caso. */
 export async function buscarDetalheLicao(licaoId: string): Promise<DetalheLicao> {
+  // o conteúdo da lição não depende do usuário: fica guardado depois da 1ª abertura
+  return comCache(`trilha:licao:${licaoId}`, () => buscarDetalheLicaoOnline(licaoId));
+}
+
+async function buscarDetalheLicaoOnline(licaoId: string): Promise<DetalheLicao> {
   const { data: licao, error: erroLicao } = await supabase
     .from('licoes')
     .select('id, modulo_id, titulo, tipo, xp_recompensa, conteudo, tipo_habito, criterio_conclusao')

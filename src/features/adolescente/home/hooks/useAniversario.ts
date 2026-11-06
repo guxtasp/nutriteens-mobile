@@ -12,7 +12,7 @@
 // (celebração da sequência, aviso de perda): a mensagem fica pendente e aparece quando
 // as outras terminarem, sem duas animações juntas.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '../../../../lib/supabase';
+import { buscarDataNascimento } from '../services/aniversarioService';
 import { analisarAniversario, montarMensagemAniversario, type MensagemAniversario } from '../utils/aniversario';
 import { jaCelebrouAniversario, marcarAniversarioCelebrado } from '../utils/aniversarioStorage';
 
@@ -46,21 +46,11 @@ export function useAniversario({ userId, hojeISO, primeiroNome, podeMostrar }: P
     if (!userId) return;
     let ativo = true;
 
-    supabase
-      .from('profiles')
-      .select('data_nascimento')
-      .eq('id', userId)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (!ativo) return;
-        if (error) {
-          // sem a data, simplesmente não há mensagem: nada a mostrar nem a quebrar
-          console.warn('Erro ao carregar data de nascimento:', error.message);
-          return;
-        }
-        console.log('[ANIV] data_nascimento lida:', data?.data_nascimento ?? null); // TEMP
-        setDataNascimento(data?.data_nascimento ?? null);
-      });
+    // com cópia local: sem internet a data continua disponível (sem ela, simplesmente não há mensagem)
+    buscarDataNascimento(userId).then((data) => {
+      if (!ativo) return;
+      setDataNascimento(data ?? null);
+    });
 
     return () => {
       ativo = false;
@@ -74,7 +64,6 @@ export function useAniversario({ userId, hojeISO, primeiroNome, podeMostrar }: P
   );
 
   useEffect(() => {
-    console.log('[ANIV] checagem', { userId: !!userId, hojeISO, dataNascimento, situacao, liberada, podeMostrar }); // TEMP
     if (!userId || !situacao.celebrar || liberada || emAndamentoRef.current) return;
 
     let cancelado = false;
@@ -83,7 +72,6 @@ export function useAniversario({ userId, hojeISO, primeiroNome, podeMostrar }: P
     (async () => {
       try {
         const jaFoi = await jaCelebrouAniversario(userId, situacao.ano);
-        console.log('[ANIV] gate já celebrou?', jaFoi); // TEMP
         if (jaFoi) return;
         if (cancelado) return;
 

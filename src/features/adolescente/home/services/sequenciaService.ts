@@ -2,6 +2,7 @@
 import { supabase } from '../../../../lib/supabase';
 import { obterOuAtribuirMissaoDoDia, avaliarMissaoDoDia, mapearMissao } from './missaoService';
 import { formatarDataISO } from '../../../../shared/utils/data';
+import { lancarSeErroDeRede } from '../../../../shared/offline/erroRede';
 
 export type StatusSequencia = {
   sequenciaAtual: number;
@@ -10,7 +11,7 @@ export type StatusSequencia = {
 };
 
 export async function existeRegistroNoDia(userId: string, data: string): Promise<boolean> {
-  const [{ count: agua }, { count: atividade }, { count: refeicao }] = await Promise.all([
+  const respostas = await Promise.all([
     supabase.from('registros_agua').select('id, registros_diarios!inner(user_id,data)', { count: 'exact', head: true })
       .eq('registros_diarios.user_id', userId).eq('registros_diarios.data', data),
     supabase.from('registros_atividade_fisica').select('id, registros_diarios!inner(user_id,data)', { count: 'exact', head: true })
@@ -18,6 +19,9 @@ export async function existeRegistroNoDia(userId: string, data: string): Promise
     supabase.from('refeicoes').select('id, registros_diarios!inner(user_id,data)', { count: 'exact', head: true })
       .eq('registros_diarios.user_id', userId).eq('registros_diarios.data', data),
   ]);
+  // falha de rede NÃO é "nenhum registro hoje": sobe o erro para a tela decidir
+  respostas.forEach((r) => lancarSeErroDeRede(r));
+  const [agua, atividade, refeicao] = respostas.map((r) => r.count);
   return (agua ?? 0) > 0 || (atividade ?? 0) > 0 || (refeicao ?? 0) > 0;
 }
 
@@ -69,6 +73,7 @@ async function existeRegistroEmDatas(userId: string, datas: string[]): Promise<S
 
   const dias = new Set<string>();
   for (const resultado of [agua, atividade, refeicao]) {
+    lancarSeErroDeRede(resultado);
     for (const linha of (resultado.data ?? []) as any[]) {
       const data = linha.registros_diarios?.data;
       if (data) dias.add(data);
@@ -84,7 +89,7 @@ async function existeRegistroEmDatas(userId: string, datas: string[]): Promise<S
 export async function obterDiasQueContaramParaSequencia(userId: string, datas: string[]): Promise<Set<string>> {
   if (datas.length === 0) return new Set();
 
-  const [{ data: missoesDoPeriodo }, diasMantidos] = await Promise.all([
+  const [{ data: missoesDoPeriodo, error: erroMissoes }, diasMantidos] = await Promise.all([
     supabase
       .from('missoes_diarias')
       .select('data, parametros, missoes_catalogo(tipo, titulo, descricao, icone, criterio)')
@@ -92,6 +97,7 @@ export async function obterDiasQueContaramParaSequencia(userId: string, datas: s
       .in('data', datas),
     existeRegistroEmDatas(userId, datas),
   ]);
+  if (erroMissoes) lancarSeErroDeRede({ error: erroMissoes });
 
   for (const row of (missoesDoPeriodo ?? []) as any[]) {
     if (diasMantidos.has(row.data)) continue; // já contou pelo registro, não precisa avaliar a missão

@@ -38,17 +38,6 @@ import { useTourPrimeiroAcesso } from '../../tour/useTourPrimeiroAcesso';
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'Home'>;
 
 export default function HomeScreen() {
-  // DIAGNÓSTICO TEMPORÁRIO — remover depois de confirmar a causa do "sempre
-  // recarrega". Se o número do id mudar no log toda vez que você volta pra
-  // Home trocando de aba, a tela está REMONTANDO (não é só um refetch).
-  // Se o id continuar o mesmo, não é remount — a causa é outra.
-  const instanciaId = useRef(Math.floor(Math.random() * 100000)).current;
-  console.log(`[HomeScreen] renderizou — instância #${instanciaId}`);
-  useEffect(() => {
-    console.log(`[HomeScreen] MONTOU — instância #${instanciaId}`);
-    return () => console.log(`[HomeScreen] DESMONTOU — instância #${instanciaId}`);
-  }, []);
-
   const navigation = useNavigation<NavigationProp>();
   const {
     dadosCarregados,
@@ -95,18 +84,34 @@ export default function HomeScreen() {
     return () => retomarRecompensas('sequencia');
   }, [celebracaoVisivel, verificandoCelebracao, pausarRecompensas, retomarRecompensas]);
 
+  // a Home desmontou? (o resultado de uma checagem assíncrona não deve mexer em tela que não existe)
+  const montadaRef = useRef(true);
+  useEffect(() => {
+    montadaRef.current = true;
+    return () => {
+      montadaRef.current = false;
+    };
+  }, []);
+
+  // aviso de moderação na tela: dois Modals ao mesmo tempo não funcionam (no iOS o segundo nem
+  // aparece e o som toca sem imagem), então a celebração espera o aviso ser dispensado
+  const avisoModeracaoAberto = !!situacaoModeracao.aviso;
+
   useEffect(() => {
     if (!diaDeHojeMantido || !userId || !hojeISO) return;
+    if (avisoModeracaoAberto) return;
     if (celebracaoEmAndamentoRef.current) return;
 
-    let cancelado = false;
+    // sem "cancelar quando a dependência muda": cancelar DEPOIS de marcar o gate como mostrado
+    // perdia a celebração para sempre (marcada como vista, nunca exibida), e a nova execução
+    // era barrada pela checagem acima. Só a desmontagem da tela interrompe a exibição.
     celebracaoEmAndamentoRef.current = true;
     setVerificandoCelebracao(true);
 
     (async () => {
       try {
         const jaMostrou = await jaMostrouCelebracaoHoje(userId, hojeISO);
-        if (jaMostrou || cancelado) return;
+        if (jaMostrou || !montadaRef.current) return;
 
         await marcarCelebracaoMostrada(userId, hojeISO);
 
@@ -121,17 +126,13 @@ export default function HomeScreen() {
           }
         }
 
-        if (!cancelado) setCelebracaoVisivel(true);
+        if (montadaRef.current) setCelebracaoVisivel(true);
       } finally {
         celebracaoEmAndamentoRef.current = false;
-        setVerificandoCelebracao(false);
+        if (montadaRef.current) setVerificandoCelebracao(false);
       }
     })();
-
-    return () => {
-      cancelado = true;
-    };
-  }, [diaDeHojeMantido, userId, hojeISO, sequenciaAtual]);
+  }, [diaDeHojeMantido, userId, hojeISO, sequenciaAtual, avisoModeracaoAberto]);
 
   // --- perda de sequência ---
   //
@@ -184,7 +185,7 @@ export default function HomeScreen() {
   // só para contas criadas há poucos dias). Mesma regra de fila das outras: espera a celebração
   // de sequência e o aviso de perda terminarem. Sem XP (ver useBoasVindas.ts).
   const podeMostrarAnimacaoCheia =
-    dadosCarregados && perdaVerificada && !celebracaoVisivel && !verificandoCelebracao && !perdaVisivel;
+    dadosCarregados && perdaVerificada && !celebracaoVisivel && !verificandoCelebracao && !perdaVisivel && !avisoModeracaoAberto;
   const boasVindas = useBoasVindas({
     userId,
     contaCriadaEm: session?.user.created_at,

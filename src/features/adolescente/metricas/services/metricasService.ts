@@ -14,6 +14,8 @@ import { valoresEbiaAceitaveis } from '../../triagem/ebia/utils/ordemEbia';
 import { restricaoRecursos } from '../utils/sugestoes';
 import { DIAS_DO_PERIODO, somarDias } from '../utils/periodos';
 import { montarDadosBrutos, type LinhasBrutas } from '../utils/montarDados';
+import { comCache } from '../../../../shared/offline/cacheLocal';
+import { lancarSeErroDeRede } from '../../../../shared/offline/erroRede';
 
 /** atual + anterior no maior período (28 + 28) */
 export const DIAS_CARREGADOS = DIAS_DO_PERIODO.mes * 2;
@@ -85,6 +87,11 @@ export function limparCacheMetricas(): void {
 
 /** `dias` menor serve a quem só precisa de uma janela curta (ex.: widget da Home). */
 export async function buscarDadosMetricas(userId: string, dias: number = DIAS_CARREGADOS): Promise<DadosBrutos> {
+  // sem internet: a última carga (os números são "até o dia em que foi carregada": `dados.hoje`)
+  return comCache(`metricas:dados:${userId}:${dias}`, () => buscarDadosMetricasOnline(userId, dias));
+}
+
+async function buscarDadosMetricasOnline(userId: string, dias: number): Promise<DadosBrutos> {
   const hoje = formatarDataISO(new Date());
   const inicio = somarDias(hoje, -(dias - 1));
   const inicioTs = new Date(`${inicio}T00:00:00`).toISOString(); // meia-noite local do 1º dia
@@ -186,23 +193,27 @@ export async function buscarGruposInfoMetricas(): Promise<GruposInfo> {
  */
 export async function buscarApoioDetalhes(userId: string): Promise<ApoioDetalhes> {
   try {
-    const { data: perfil } = await supabase.from('profiles').select('classificacao_ebia_atual').eq('id', userId).maybeSingle();
-    const classificacao = ((perfil as any)?.classificacao_ebia_atual ?? 'INSEGURANCA_GRAVE') as ClassificacaoEbia;
-    const linhas = await todas((de, ate) =>
-      supabase
-        .from('alimentos')
-        .select('id, nome, grupos_alimentares')
-        .eq('classificacao_nova', 'IN_NATURA')
-        .not('eh_prato_composto', 'is', true)
-        .is('criado_por', null)
-        .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
-        .order('id')
-        .range(de, ate),
-    );
-    return {
-      restricao: restricaoRecursos(classificacao),
-      alimentos: linhas.map((l: any) => ({ nome: String(l.nome), grupos: (l.grupos_alimentares ?? []) as string[] })),
-    };
+    return await comCache<ApoioDetalhes>(`metricas:apoio:${userId}`, async () => {
+      const { data: perfil } = lancarSeErroDeRede(
+        await supabase.from('profiles').select('classificacao_ebia_atual').eq('id', userId).maybeSingle(),
+      );
+      const classificacao = ((perfil as any)?.classificacao_ebia_atual ?? 'INSEGURANCA_GRAVE') as ClassificacaoEbia;
+      const linhas = await todas((de, ate) =>
+        supabase
+          .from('alimentos')
+          .select('id, nome, grupos_alimentares')
+          .eq('classificacao_nova', 'IN_NATURA')
+          .not('eh_prato_composto', 'is', true)
+          .is('criado_por', null)
+          .in('nivel_maximo_ebia', valoresEbiaAceitaveis(classificacao))
+          .order('id')
+          .range(de, ate),
+      );
+      return {
+        restricao: restricaoRecursos(classificacao),
+        alimentos: linhas.map((l: any) => ({ nome: String(l.nome), grupos: (l.grupos_alimentares ?? []) as string[] })),
+      };
+    });
   } catch (e) {
     console.warn('Métricas: sugestões indisponíveis:', e);
     return { restricao: true, alimentos: [] };

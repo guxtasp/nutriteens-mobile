@@ -2,14 +2,17 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { useMissoes } from '../hooks/useMissoes';
 import { MissaoProgressoCard } from '../components/MissaoProgressoCard';
 import { textoPrazo } from '../utils/periodos';
+import { destinoMissaoDiaria, destinoMissaoPeriodica, type DestinoMissao } from '../utils/destinoMissao';
 import type { MissoesDoPeriodo } from '../services/missoesPeriodicasService';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
 
@@ -22,7 +25,8 @@ const ABAS: { chave: Aba; rotulo: string }[] = [
 const FUNDO = '#F3F8EE';
 
 export default function MissoesScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<AdolescenteStackParamList>>();
+  const abrirDestino = useCallback((d: DestinoMissao) => navigation.navigate(d.rota), [navigation]);
   const [aba, setAba] = useState<Aba>('DIARIAS');
   const { hoje, historico, semana, mes, recarregar } = useMissoes();
 
@@ -34,11 +38,10 @@ export default function MissoesScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.header}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <AppText style={styles.titulo}>Missões</AppText>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader
+        titulo="Missões"
+        onVoltar={() => navigation.goBack()}
+      />
 
       <View style={styles.abas}>
         {ABAS.map((a) => (
@@ -65,6 +68,8 @@ export default function MissoesScreen() {
                 pontos={hoje.dados.missao.pontosRecompensa}
                 pontosCreditados={hoje.dados.progresso.concluida}
                 rodape="Vale até meia-noite"
+                destino={destinoMissaoDiaria(hoje.dados.missao.tipo)}
+                onAbrirDestino={abrirDestino}
               />
             )}
 
@@ -91,8 +96,8 @@ export default function MissoesScreen() {
           </>
         )}
 
-        {aba === 'SEMANAIS' && <ListaPeriodo secao={semana} periodo="SEMANAL" onTentar={recarregar} />}
-        {aba === 'MENSAIS' && <ListaPeriodo secao={mes} periodo="MENSAL" onTentar={recarregar} />}
+        {aba === 'SEMANAIS' && <ListaPeriodo secao={semana} periodo="SEMANAL" onTentar={recarregar} onAbrirDestino={abrirDestino} />}
+        {aba === 'MENSAIS' && <ListaPeriodo secao={mes} periodo="MENSAL" onTentar={recarregar} onAbrirDestino={abrirDestino} />}
       </ScrollView>
     </SafeAreaView>
   );
@@ -113,10 +118,12 @@ function ListaPeriodo({
   secao,
   periodo,
   onTentar,
+  onAbrirDestino,
 }: {
   secao: { dados: MissoesDoPeriodo | null; erro: boolean; carregando: boolean };
   periodo: 'SEMANAL' | 'MENSAL';
   onTentar: () => void;
+  onAbrirDestino: (d: DestinoMissao) => void;
 }) {
   const nome = periodo === 'SEMANAL' ? 'semanais' : 'mensais';
   if (secao.carregando) return <ActivityIndicator color={colors.primaryDark} style={{ marginTop: 40 }} />;
@@ -141,6 +148,8 @@ function ListaPeriodo({
           pontos={m.def.pontos}
           pontosCreditados={m.pontosCreditados}
           rodape={textoPrazo(dados.intervalo.diasRestantes, periodo)}
+          destino={destinoMissaoPeriodica(m.def.metrica)}
+          onAbrirDestino={onAbrirDestino}
         />
       ))}
     </>

@@ -89,7 +89,8 @@ export type AdolescenteStackParamList = {
     xpRecompensa: number;
   };
   // Lição comum — não fechou módulo nem trilha.
-  LicaoCompleta: { xpGanho: number };
+  /** `pendente`: concluída sem internet; o XP é creditado quando a lição for enviada */
+  LicaoCompleta: { xpGanho: number; pendente?: boolean };
   // Essa era a última lição pendente do módulo (a Revisão dele) — mostra
   // ACERTOS além do XP (decisão 3 do histórico de desenho).
   ModuloCompleta: { xpGanho: number; acertosPercentual: number };

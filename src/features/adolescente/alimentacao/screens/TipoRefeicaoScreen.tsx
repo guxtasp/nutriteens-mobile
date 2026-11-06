@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
@@ -47,13 +47,11 @@ export default function TipoRefeicaoScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo}>Alimentação</AppText>
-          <AppText style={styles.subtitulo}>Diga pra gente: o que comeu agora?</AppText>
-        </View>
-      </View>
+      <ScreenHeader
+        titulo="Alimentação"
+        subtitulo="Diga pra gente: o que comeu agora?"
+        onVoltar={() => navigation.goBack()}
+      />
 
       <View style={styles.corpo}>
         <View style={styles.perguntaLinha}>

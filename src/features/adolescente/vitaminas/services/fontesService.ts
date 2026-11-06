@@ -5,8 +5,14 @@ import { valoresEbiaAceitaveis } from '../../triagem/ebia/utils/ordemEbia';
 import type { NutrienteChave } from '../../alimentacao/utils/nutrientesPorGrupo';
 import { selecionarFontes, nutrientesComFonte, AlimentoCatalogo } from '../utils/fontesNutriente';
 import { NUTRIENTES_INFO } from '../data/nutrientesInfo';
+import { comCache } from '../../../../shared/offline/cacheLocal';
 
 export async function buscarFontes(userId: string, coluna: NutrienteChave, limite = 24): Promise<AlimentoCatalogo[]> {
+  // sem internet: as fontes já vistas desse nutriente
+  return comCache(`vitaminas:fontes:${userId}:${coluna}:${limite}`, () => buscarFontesOnline(userId, coluna, limite));
+}
+
+async function buscarFontesOnline(userId: string, coluna: NutrienteChave, limite: number): Promise<AlimentoCatalogo[]> {
   const { data: perfil } = await supabase.from('profiles').select('classificacao_ebia_atual').eq('id', userId).single();
   const classificacao = perfil?.classificacao_ebia_atual ?? null;
 
@@ -29,10 +35,14 @@ export async function buscarFontes(userId: string, coluna: NutrienteChave, limit
 /** Nutrientes que têm pelo menos uma fonte no catálogo. Uma consulta só; quem chama ignora falhas (a lista funciona sem isso). */
 export async function buscarNutrientesComFonte(): Promise<Set<NutrienteChave>> {
   const chaves = NUTRIENTES_INFO.map((n) => n.chave);
-  const { data, error } = await supabase
-    .from('alimentos')
-    .select(`id, nome, classificacao_nova, eh_prato_composto, grupos_alimentares, alimento_nutrientes ( fonte, ${chaves.join(', ')} )`)
-    .neq('classificacao_nova', 'ULTRAPROCESSADO');
-  if (error) throw error;
-  return nutrientesComFonte((data ?? []) as unknown as AlimentoCatalogo[], chaves);
+  // o cache é JSON: um Set viraria `{}`, então guarda como lista e remonta o Set
+  const lista = await comCache<NutrienteChave[]>('vitaminas:nutrientes-com-fonte', async () => {
+    const { data, error } = await supabase
+      .from('alimentos')
+      .select(`id, nome, classificacao_nova, eh_prato_composto, grupos_alimentares, alimento_nutrientes ( fonte, ${chaves.join(', ')} )`)
+      .neq('classificacao_nova', 'ULTRAPROCESSADO');
+    if (error) throw error;
+    return Array.from(nutrientesComFonte((data ?? []) as unknown as AlimentoCatalogo[], chaves));
+  });
+  return new Set(lista);
 }

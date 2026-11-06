@@ -6,7 +6,7 @@
 // de nós (TrilhaCaminho) logo abaixo. TODAS as trilhas aprovadas aparecem em sequência:
 // terminou uma, o caminho segue para a próxima. A tela abre já rolada até o nó atual.
 // A identidade visual (cores, aros, pontinhos) fica em ../ui/tema.ts.
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   LayoutChangeEvent,
@@ -29,6 +29,8 @@ import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { supabase } from '../../../../lib/supabase';
+import { comCache } from '../../../../shared/offline/cacheLocal';
+import { useOffline } from '../../../../shared/offline/OfflineContext';
 import { GrupoModuloTrilha, NoTrilha, TrilhaCaminho } from '../components/TrilhaPath';
 import { ItemSeletorTrilha, SeletorTrilhas } from '../components/SeletorTrilhas';
 import { statusDaTrilha } from '../utils/sequenciaTrilhas';
@@ -86,12 +88,16 @@ export default function TrilhaScreen() {
   const carregarEstatisticas = useCallback(async () => {
     if (!userId) return;
     try {
-      const [{ data: perfil, error: erroPerfil }, { data: xp, error: erroXp }] = await Promise.all([
-        supabase.from('profiles').select('sequencia_atual, ultimo_dia_mantido').eq('id', userId).single(),
-        supabase.from('xp_usuario').select('xp_total').eq('usuario_id', userId).maybeSingle(),
-      ]);
-      if (erroPerfil) throw erroPerfil;
-      if (erroXp) throw erroXp;
+      // com cópia local: sem internet o cabeçalho mostra o último valor conhecido
+      const { perfil, xp } = await comCache(`trilha:cabecalho:${userId}`, async () => {
+        const [{ data: perfil, error: erroPerfil }, { data: xp, error: erroXp }] = await Promise.all([
+          supabase.from('profiles').select('sequencia_atual, ultimo_dia_mantido').eq('id', userId).single(),
+          supabase.from('xp_usuario').select('xp_total').eq('usuario_id', userId).maybeSingle(),
+        ]);
+        if (erroPerfil) throw erroPerfil;
+        if (erroXp) throw erroXp;
+        return { perfil, xp };
+      });
 
       const hoje = formatarDataISO(new Date());
       const ontem = formatarDataISO(new Date(Date.now() - 86400000));
@@ -138,6 +144,12 @@ export default function TrilhaScreen() {
       carregar();
     }, [carregar])
   );
+
+  // lição concluída sem internet: quando a fila envia, o caminho vem do servidor de novo
+  const { versaoSync } = useOffline();
+  useEffect(() => {
+    if (versaoSync > 0) void carregar();
+  }, [versaoSync, carregar]);
 
   // Nó "atual" que também é uma Prática Real (ver seção 5 do
   // modelo-pedagogico-trilha.md) — usado só pro banner de lembrete abaixo

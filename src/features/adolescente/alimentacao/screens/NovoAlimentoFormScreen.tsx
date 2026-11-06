@@ -113,6 +113,9 @@ async function confirmarCategoria(categoriaEscolhida: string) {
       <FlatList
         data={CATEGORIAS}
         keyExtractor={(item) => item.valor}
+        // 1º toque com o teclado aberto não pode ser "engolido" só para fechar o teclado
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         contentContainerStyle={{ gap: 14, paddingBottom: 24 }}
         renderItem={({ item }) => (
           <Pressable

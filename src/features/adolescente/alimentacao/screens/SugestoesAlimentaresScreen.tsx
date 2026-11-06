@@ -9,7 +9,7 @@ import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navig
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import HomeBottomBar from '../../_shared/components/HomeBottomBar';
@@ -66,14 +66,11 @@ export default function SugestoesAlimentaresScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={voltar} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo}>{categoria ? ROTULO_CATEGORIA[categoria] : 'Sugestões alimentares'}</AppText>
-          <AppText style={styles.subtitulo}>{categoria ? 'Que tal estas opções?' : 'Escolha a categoria'}</AppText>
-        </View>
-        <View style={{ width: 48 }} />
-      </View>
+      <ScreenHeader
+        titulo={categoria ? ROTULO_CATEGORIA[categoria] : 'Sugestões alimentares'}
+        subtitulo={categoria ? 'Que tal estas opções?' : 'Escolha a categoria'}
+        onVoltar={voltar}
+      />
 
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         {!categoria ? (

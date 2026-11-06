@@ -16,7 +16,7 @@ import CarrinhoAtividadesSheet from '../components/CarrinhoAtividadesSheet';
 import CarrinhoBar from '../components/CarrinhoBar';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { useAtividadeFisica } from '../contexts/AtividadeFisicaContext';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import GuiaAtividadeSheet from '../components/GuiaAtividadeSheet';
 import SucessoRegistroModal from '../../_shared/components/SucessoRegistroModal';
 
@@ -57,13 +57,11 @@ async function handleRegistrar() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo}>Atividade Física</AppText>
-          <AppText style={styles.subtitulo}>Qual atividade física você praticou hoje?</AppText>
-        </View>
-      </View>
+      <ScreenHeader
+        titulo="Atividade Física"
+        subtitulo="Qual atividade física você praticou hoje?"
+        onVoltar={() => navigation.goBack()}
+      />
 
       <View style={styles.acoesLinha}>
         <Pressable style={styles.botaoAcaoVerde} onPress={() => setSheetRegistroRapido(true)}>

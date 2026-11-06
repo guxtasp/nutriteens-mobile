@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
+import { comCache } from '../../../../shared/offline/cacheLocal';
 
 interface PerfilUsuario {
   nome: string | null;
@@ -22,25 +23,31 @@ export function usePerfilUsuario() {
     let ativo = true;
     setCarregando(true);
 
-    supabase
-      .from('profiles')
-      .select('nome, data_nascimento, tipo_instituicao, instituicao_ensino, codigo_participante')
-      .eq('id', userId)
-      .single()
-      .then(({ data, error }) => {
+    // sem internet: o último perfil carregado (só erro de rede cai na cópia)
+    comCache(`perfil:dados:${userId}`, async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('nome, data_nascimento, tipo_instituicao, instituicao_ensino, codigo_participante')
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      return data;
+    })
+      .then((data) => {
         if (!ativo) return;
-        if (error) {
-          console.error('Erro ao carregar perfil:', error);
-          setPerfil(null);
-        } else {
-          setPerfil({
-            nome: data.nome,
-            dataNascimento: data.data_nascimento,
-            tipoInstituicao: mapTipoInstituicao(data.tipo_instituicao),
-            instituicaoEnsino: data.instituicao_ensino,
-            codigoParticipante: data.codigo_participante,
-          });
-        }
+        setPerfil({
+          nome: data.nome,
+          dataNascimento: data.data_nascimento,
+          tipoInstituicao: mapTipoInstituicao(data.tipo_instituicao),
+          instituicaoEnsino: data.instituicao_ensino,
+          codigoParticipante: data.codigo_participante,
+        });
+        setCarregando(false);
+      })
+      .catch((error) => {
+        if (!ativo) return;
+        console.error('Erro ao carregar perfil:', error);
+        setPerfil(null);
         setCarregando(false);
       });
 

@@ -101,11 +101,17 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
     brilhoOpacity.setValue(0.3);
     foguinhoScale.setValue(1);
 
+    // `ativo` e a lista de animações existem para o efeito poder ser DESFEITO: se a Home
+    // remontar, perder o foco ou o modal fechar no meio, nada continua rodando (nem o som
+    // da fanfarra, nem os loops infinitos) sem a tela correspondente.
+    let ativo = true;
+    const emExecucao: Animated.CompositeAnimation[] = [];
+
     // 1. surge com opacidade baixa
     // 2. aumenta (fade + scale)
     // 3. leve destaque (pulse)
     // 4. minimiza até sumir rápido
-    Animated.sequence([
+    const entrada = Animated.sequence([
       Animated.parallel([
         Animated.timing(heroOpacity, { toValue: 0.5, duration: 200, easing: Easing.out(Easing.ease), useNativeDriver: true }),
         Animated.timing(heroScale, { toValue: 0.7, duration: 200, easing: Easing.out(Easing.ease), useNativeDriver: true }),
@@ -122,13 +128,18 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
         Animated.timing(heroOpacity, { toValue: 0, duration: 220, easing: Easing.in(Easing.ease), useNativeDriver: true }),
         Animated.timing(heroScale, { toValue: 0.5, duration: 220, easing: Easing.in(Easing.ease), useNativeDriver: true }),
       ]),
-    ]).start(() => {
+    ]);
+    emExecucao.push(entrada);
+    entrada.start(({ finished }) => {
+      // animação interrompida (modal fechou/desmontou): sem fanfarra e sem revelar nada
+      if (!finished || !ativo) return;
+
       // fanfarra + vibração de sucesso quando a tela da celebração é revelada
       feedbackCelebracao();
 
       // 5. retorna para a tela original — badge, "X dias de sequência"
       // (fixo no lugar dele), mascote, texto, semana e botão, revelados agora
-      Animated.sequence([
+      const revelacao = Animated.sequence([
         Animated.parallel([
           Animated.timing(conteudoOpacity, { toValue: 1, duration: 260, easing: Easing.out(Easing.ease), useNativeDriver: true }),
           Animated.spring(badgeScale, { toValue: 1, friction: 6, tension: 100, useNativeDriver: true }),
@@ -143,18 +154,22 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
           Animated.timing(botaoOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
           Animated.timing(botaoTranslateY, { toValue: 0, duration: 280, useNativeDriver: true }),
         ]),
-      ]).start();
+      ]);
+      emExecucao.push(revelacao);
+      revelacao.start();
 
-      Animated.loop(
+      const loopBrilhoRotacao = Animated.loop(
         Animated.sequence([
           Animated.timing(sparkleRotate, { toValue: 1, duration: 1600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
           Animated.timing(sparkleRotate, { toValue: 0, duration: 1600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         ])
-      ).start();
+      );
+      emExecucao.push(loopBrilhoRotacao);
+      loopBrilhoRotacao.start();
 
       // pulso do brilho + leve "respiração" do foguinho já no lugar dele —
       // roda em loop, discreto, só um destaque a mais (não é o hero de novo)
-      Animated.loop(
+      const loopPulso = Animated.loop(
         Animated.sequence([
           Animated.parallel([
             Animated.timing(brilhoScale, { toValue: 1.35, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
@@ -167,9 +182,18 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
             Animated.timing(foguinhoScale, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
           ]),
         ])
-      ).start();
+      );
+      emExecucao.push(loopPulso);
+      loopPulso.start();
     });
-  }, [visivel, sequenciaAtual]);
+
+    return () => {
+      ativo = false;
+      emExecucao.forEach((a) => a.stop());
+    };
+    // só `visivel`: um recarregamento de dados (sequenciaAtual mudando) não pode reiniciar a
+    // animação nem tocar a fanfarra uma segunda vez
+  }, [visivel]);
 
   if (!visivel) return null;
 

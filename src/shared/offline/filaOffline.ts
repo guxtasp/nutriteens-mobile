@@ -2,9 +2,9 @@
 // Fila persistente (AsyncStorage) de registros feitos sem internet. Cada usuário
 // tem a sua fila, para que dois adolescentes no mesmo aparelho nunca misturem dados.
 //
-// Só entram aqui REGISTROS de hábito (água, atividade física, refeição): são as
-// ações do dia a dia que não podem se perder. Cadastros, amizades, login etc.
-// continuam exigindo internet.
+// Só entram aqui REGISTROS de hábito (água, atividade física, refeição) e a
+// conclusão de lição de conteúdo/quiz: são as ações do dia a dia que não podem se
+// perder. Cadastros, amizades, login etc. continuam exigindo internet.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { TipoRefeicao, Alimento } from '../../features/adolescente/alimentacao/services/alimentacaoService';
 
@@ -33,13 +33,23 @@ export type OperacaoRefeicao = Base & {
   payload: { dataISO: string; horario: string; tipoRefeicao: TipoRefeicao; itens: { alimento: Alimento; quantidade: number }[] };
 };
 
-export type OperacaoOffline = OperacaoAgua | OperacaoAtividade | OperacaoRefeicao;
+/**
+ * Lição de conteúdo ou quiz concluída sem internet. Reenviar é seguro: o servidor
+ * tem unicidade em progresso_licao (usuário + lição) e concede o XP uma vez só.
+ */
+export type OperacaoLicao = Base & {
+  tipo: 'LICAO';
+  payload: { licaoId: string; xpRecompensa: number; acertos: number | null; totalQuestoes: number | null };
+};
+
+export type OperacaoOffline = OperacaoAgua | OperacaoAtividade | OperacaoRefeicao | OperacaoLicao;
 
 /** Dados que o chamador informa; id/criadoEm/tentativas são da fila. */
 export type NovaOperacao =
   | Pick<OperacaoAgua, 'tipo' | 'payload'>
   | Pick<OperacaoAtividade, 'tipo' | 'payload'>
-  | Pick<OperacaoRefeicao, 'tipo' | 'payload'>;
+  | Pick<OperacaoRefeicao, 'tipo' | 'payload'>
+  | Pick<OperacaoLicao, 'tipo' | 'payload'>;
 
 const chaveDaFila = (userId: string) => `nt:offline:fila:${userId}`;
 

@@ -46,3 +46,18 @@ export async function comCache<T>(chave: string, buscar: () => Promise<T>): Prom
     throw erro;
   }
 }
+
+/**
+ * Apaga todas as cópias locais (ao sair da conta). As chaves levam o id do usuário,
+ * então nada vazaria para outra conta, mas dados de saúde não devem ficar no
+ * aparelho depois do logout.
+ */
+export async function limparCacheLocal(): Promise<void> {
+  try {
+    const chaves = await AsyncStorage.getAllKeys();
+    const nossas = chaves.filter((c) => c.startsWith(PREFIXO));
+    if (nossas.length > 0) await AsyncStorage.multiRemove(nossas);
+  } catch {
+    // limpeza é melhor-esforço
+  }
+}

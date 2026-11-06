@@ -9,9 +9,9 @@ import { LabeledInput } from '../../../shared/ui/LabeledInput';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { Divider } from '../../../shared/ui/Divider';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
+import { AuthFormLayout } from '../../../shared/ui/AuthFormLayout';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
 import { supabase } from '../../../lib/supabase';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { mensagemErroLogin } from '../utils/loginErros';
@@ -51,7 +51,7 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={[styles.outer, ehDesktop && styles.outerDesktop]}>
-    <View style={[styles.container, ehDesktop && styles.containerDesktop]}>
+    <AuthFormLayout desktop={ehDesktop} desktopStyle={[styles.container, styles.containerDesktop]}>
       <BackButton onPress={() => navigation.goBack()} style={styles.BackButton} />
 
       <AppText style={styles.title}>Olha você! Seja bem-vindo(a) novamente ;)</AppText>
@@ -70,6 +70,20 @@ export default function LoginScreen({ navigation }: any) {
         </Pressable>
       )}
 
+      {/* login social primeiro: o caminho mais curto, sem digitar nada */}
+      <AppButton
+        label={carregandoGoogle ? 'ABRINDO O GOOGLE...' : 'G  ENTRAR COM O GOOGLE'}
+        backgroundColor={colors.white}
+        fullWidth
+        borderWidth={0.5}
+        outlineColor="#000000"
+        textColor={colors.primaryDark}
+        shadowColor={colors.primaryDark}
+        onPress={continuarComGoogle}
+      />
+
+      <Divider />
+
       <LabeledInput
         label="Email"
         autoCapitalize="none"
@@ -84,19 +98,6 @@ export default function LoginScreen({ navigation }: any) {
         <AppText style={styles.forgotPassword}>Esqueci minha senha</AppText>
       </Pressable>
 
-      <Divider />
-
-      <AppButton
-        label={carregandoGoogle ? 'ABRINDO O GOOGLE...' : 'G  ENTRAR COM O GOOGLE'}
-        backgroundColor={colors.white}
-        fullWidth
-        borderWidth={0.5}
-        outlineColor="#000000"
-        textColor={colors.primaryDark}
-        shadowColor={colors.primaryDark}
-        onPress={continuarComGoogle}
-      />
-
       <View style={styles.spacer} />
       <View style={styles.messageContainer}>
         <MessageBanner message={message} type={type} onClose={clearMessage} />
@@ -109,7 +110,7 @@ export default function LoginScreen({ navigation }: any) {
         />
       </View>
 
-    </View>
+    </AuthFormLayout>
     </View>
   );
 }
@@ -180,9 +181,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 24 
   },
+  // flexGrow (e não flex:1): dentro do ScrollView o bloco precisa contar com a
+  // própria altura, senão o botão ficaria fora da área rolável.
   messageContainer: { 
     marginTop: -40,
-    flex:1,
+    flexGrow: 1,
     gap: 12, 
   },
   spacer: { 

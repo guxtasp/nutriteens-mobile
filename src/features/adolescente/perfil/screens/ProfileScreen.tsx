@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { LogoutButton } from '../../../../shared/ui/LogoutButton';
 import { ProgressBar } from '../../../../shared/ui/ProgressBar';
 import ChatFab from '../../_shared/components/ChatFab';
@@ -53,11 +53,11 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.tela}>
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <BackButton onPress={() => navigation.goBack()} />
-          <AppText style={styles.titulo}>Perfil</AppText>
-          <View style={{ width: 44 }} />
-        </View>
+        <ScreenHeader
+          titulo="Perfil"
+          onVoltar={() => navigation.goBack()}
+          style={{ paddingHorizontal: 0 }}
+        />
 
         {/* Herói: mascote na fase atual + nome + barras */}
         <View style={styles.heroi}>

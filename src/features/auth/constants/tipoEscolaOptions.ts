@@ -1,6 +1,6 @@
 // src/features/auth/constants/tipoEscolaOptions.ts
 export const TIPO_ESCOLA_OPTIONS = [
-  { label: 'Pública', value: 'PUBLICA' },
-  { label: 'Privada', value: 'PRIVADA' },
-  { label: 'Filantrópica', value: 'FILANTROPICA' },
+  { label: 'Escola pública', value: 'PUBLICA' },
+  { label: 'Escola privada', value: 'PRIVADA' },
+  { label: 'Escola filantrópica', value: 'FILANTROPICA' },
 ];

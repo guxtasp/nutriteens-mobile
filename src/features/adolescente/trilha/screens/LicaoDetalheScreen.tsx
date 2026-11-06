@@ -18,13 +18,16 @@ import { useAuth } from '../../../../shared/contexts/AuthContext';
 import {
   buscarDetalheLicao,
   concluirLicaoComProgresso,
+  marcarLicaoConcluidaLocalmente,
   verificarHabitoRecente,
   DetalheLicao,
   NivelConclusao,
+  ResultadoConclusao,
 } from '../services/trilhaService';
 import ExercicioQuizContainer from '../components/exercicios/ExercicioQuizContainer';
 import { configPraticaReal } from '../utils/praticaReal';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { useOffline } from '../../../../shared/offline/OfflineContext';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'LicaoDetalhe'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'LicaoDetalhe'>;
@@ -33,6 +36,7 @@ export default function LicaoDetalheScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { userId } = useAuth();
+  const { executarOuGuardar } = useOffline();
   const { message, type, showMessage, clearMessage } = useMessageBanner();
 
   const { licaoId, titulo, xpRecompensa } = route.params;
@@ -124,9 +128,24 @@ export default function LicaoDetalheScreen() {
     concluindoRef.current = true;
     setConcluindo(true);
     try {
-      const resultado = await concluirLicaoComProgresso(userId, licaoId, xpRecompensa, acertos, total);
+      // Lição de prática real precisa confirmar o hábito no servidor: só online.
+      // Conteúdo e quiz, sem internet, vão para a fila (envio automático depois, sem duplicar XP).
+      const podeGuardar = detalhe?.tipo !== 'atividade_rastreavel';
+      const resultados: ResultadoConclusao[] = [];
+      const executarOnline = async () => {
+        resultados.push(await concluirLicaoComProgresso(userId, licaoId, xpRecompensa, acertos, total));
+      };
+      const guardada = podeGuardar
+        ? await executarOuGuardar({ tipo: 'LICAO', payload: { licaoId, xpRecompensa, acertos, totalQuestoes: total } }, executarOnline)
+        : (await executarOnline(), false);
       concluidaRef.current = true;
-      navegarParaConclusao(resultado.nivel, resultado.xpGanhoLicao + resultado.xpGanhoBonus, resultado.acertosPercentual);
+      if (guardada) {
+        await marcarLicaoConcluidaLocalmente(userId, licaoId);
+        navigation.replace('LicaoCompleta', { xpGanho: 0, pendente: true });
+      } else {
+        const r = resultados[0];
+        navegarParaConclusao(r.nivel, r.xpGanhoLicao + r.xpGanhoBonus, r.acertosPercentual);
+      }
     } catch (erro) {
       console.error('Erro ao concluir lição:', erro);
       showMessage('Não foi possível salvar sua conclusão. Tenta de novo.', 'error');

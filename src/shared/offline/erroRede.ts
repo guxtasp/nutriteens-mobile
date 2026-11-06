@@ -16,3 +16,14 @@ export function ehErroDeRede(erro: unknown): boolean {
 
   return textos.some((t) => typeof t === 'string' && PADROES_REDE.test(t));
 }
+
+/**
+ * O supabase-js NÃO lança em falha de rede: devolve `{ data: null, error }`. Quem lê só
+ * `data` acaba tratando "sem internet" como "sem registros" (progresso 0, dia vazio).
+ * Passe o resultado por aqui para que erro de rede vire exceção (e o cache/aviso offline
+ * entre em ação); erros de regra (RLS, constraint) continuam seguindo o fluxo de sempre.
+ */
+export function lancarSeErroDeRede<T extends { error?: unknown }>(resultado: T): T {
+  if (resultado.error && ehErroDeRede(resultado.error)) throw resultado.error;
+  return resultado;
+}

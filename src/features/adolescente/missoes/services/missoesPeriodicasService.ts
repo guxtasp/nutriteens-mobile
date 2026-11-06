@@ -1,5 +1,7 @@
 import { supabase } from '../../../../lib/supabase';
 import { concederXp } from '../../../../shared/services/xpService';
+import { comCache } from '../../../../shared/offline/cacheLocal';
+import { lancarSeErroDeRede } from '../../../../shared/offline/erroRede';
 import { calcularMetaAguaMl } from '../../../../shared/utils/calcularMetaAgua';
 import { META_SEMANAL } from '../../alimentacao/services/nutrienteService';
 import { intervaloDoPeriodo, IntervaloPeriodo, Periodo } from '../utils/periodos';
@@ -87,6 +89,8 @@ async function buscarContexto(userId: string, inicio: string, fim: string): Prom
       .lte('data', fim),
   ]);
 
+  [perfil, catalogo, licoes, missoes].forEach((r) => lancarSeErroDeRede(r));
+
   const criterio = (tipo: string) => (catalogo.data ?? []).find((c: any) => c.tipo === tipo)?.criterio ?? {};
   const pesoKg = perfil.data?.peso_kg as number | null | undefined;
 
@@ -106,6 +110,13 @@ async function buscarContexto(userId: string, inicio: string, fim: string): Prom
  */
 export async function buscarMissoesDoPeriodo(userId: string, periodo: Periodo): Promise<MissoesDoPeriodo> {
   const intervalo = intervaloDoPeriodo(periodo);
+  // sem internet: último estado do período atual (a chave leva o início do período)
+  return comCache(`missoes:periodo:${userId}:${periodo}:${intervalo.inicio}`, () =>
+    buscarMissoesDoPeriodoOnline(userId, periodo, intervalo),
+  );
+}
+
+async function buscarMissoesDoPeriodoOnline(userId: string, periodo: Periodo, intervalo: IntervaloPeriodo): Promise<MissoesDoPeriodo> {
   const [catalogo, dias, ctx, resgates] = await Promise.all([
     buscarCatalogo(periodo),
     buscarDias(userId, intervalo.inicio, intervalo.fim),

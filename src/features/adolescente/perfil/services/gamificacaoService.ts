@@ -1,5 +1,6 @@
 import { supabase } from '../../../../lib/supabase';
 import { FASES_PADRAO, FaseMascote, FaseId } from '../utils/fasesMascote';
+import { comCache } from '../../../../shared/offline/cacheLocal';
 
 export type CategoriaReconhecimento = 'conquista' | 'marco' | 'insignia';
 
@@ -17,26 +18,40 @@ export type Insignia = {
 };
 
 export async function buscarFases(): Promise<FaseMascote[]> {
-  const { data, error } = await supabase
-    .from('fases_mascote')
-    .select('fase, titulo, xp_minimo')
-    .order('xp_minimo');
-  if (error || !data?.length) return FASES_PADRAO;
-  return data.map((f) => ({ fase: f.fase as FaseId, titulo: f.titulo, xpMinimo: f.xp_minimo }));
+  try {
+    return await comCache<FaseMascote[]>('fases_mascote', async () => {
+      const { data, error } = await supabase
+        .from('fases_mascote')
+        .select('fase, titulo, xp_minimo')
+        .order('xp_minimo');
+      if (error) throw error;
+      if (!data?.length) return FASES_PADRAO;
+      return data.map((f) => ({ fase: f.fase as FaseId, titulo: f.titulo, xpMinimo: f.xp_minimo }));
+    });
+  } catch {
+    // sem internet e sem cópia (ou erro de regra): as fases embutidas no app
+    return FASES_PADRAO;
+  }
 }
 
 export async function buscarXpTotal(userId: string): Promise<number> {
-  const { data, error } = await supabase
-    .from('xp_usuario')
-    .select('xp_total')
-    .eq('usuario_id', userId)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.xp_total ?? 0;
+  return comCache(`xp:total:${userId}`, async () => {
+    const { data, error } = await supabase
+      .from('xp_usuario')
+      .select('xp_total')
+      .eq('usuario_id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.xp_total ?? 0;
+  });
 }
 
 /** Reavalia no servidor (concede o que faltava) e devolve catálogo + status do usuário. */
 export async function buscarInsignias(userId: string): Promise<Insignia[]> {
+  return comCache(`insignias:${userId}`, () => buscarInsigniasOnline(userId));
+}
+
+async function buscarInsigniasOnline(userId: string): Promise<Insignia[]> {
   // falha na avaliação não deve esconder as insígnias já ganhas
   await supabase.rpc('avaliar_minhas_insignias');
 

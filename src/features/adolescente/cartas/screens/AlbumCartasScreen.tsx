@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View, useWindowDi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { ProgressBar } from '../../../../shared/ui/ProgressBar';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -37,11 +37,11 @@ export default function AlbumCartasScreen() {
   return (
     <SafeAreaView style={styles.tela}>
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <BackButton onPress={() => navigation.goBack()} />
-          <AppText style={styles.titulo}>Álbum do Guia</AppText>
-          <View style={{ width: 48 }} />
-        </View>
+        <ScreenHeader
+          titulo="Álbum do Guia"
+          onVoltar={() => navigation.goBack()}
+          style={{ paddingHorizontal: 0 }}
+        />
 
         <View style={styles.resumo}>
           <View style={styles.resumoLinha}>

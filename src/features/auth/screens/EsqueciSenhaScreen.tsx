@@ -16,6 +16,7 @@ import { AppButton } from '../../../shared/ui/AppButton';
 import { BackButton } from '../../../shared/ui/BackButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
+import { AuthFormLayout } from '../../../shared/ui/AuthFormLayout';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
 import { validateEmail } from '../utils/signupValidators';
 import { supabase } from '../../../lib/supabase';
@@ -69,7 +70,7 @@ export default function EsqueciSenhaScreen({ navigation }: any) {
   if (enviado) {
     return (
       <View style={[styles.outer, ehDesktop && styles.outerDesktop]}>
-        <View style={[styles.container, ehDesktop && styles.containerDesktop]}>
+        <AuthFormLayout desktop={ehDesktop} desktopStyle={[styles.container, styles.containerDesktop]}>
           <BackButton onPress={() => navigation.navigate('Login')} style={styles.BackButton} />
           <Image
             source={require('../../../../assets/img/feedback/supercontente.png')}
@@ -90,7 +91,7 @@ export default function EsqueciSenhaScreen({ navigation }: any) {
             style={styles.botaoCentral}
             onPress={() => navigation.navigate('Login')}
           />
-        </View>
+        </AuthFormLayout>
       </View>
     );
   }
@@ -103,7 +104,7 @@ export default function EsqueciSenhaScreen({ navigation }: any) {
         onClose={clearMessage}
         style={[styles.topBanner, { top: insets.top + 12 }]}
       />
-      <View style={[styles.container, ehDesktop && styles.containerDesktop]}>
+      <AuthFormLayout desktop={ehDesktop} desktopStyle={[styles.container, styles.containerDesktop]}>
         <BackButton onPress={() => navigation.goBack()} style={styles.BackButton} />
 
         <AppText style={[styles.title, styles.centralizado]}>Putz... Esqueceu a senha?</AppText>
@@ -136,7 +137,7 @@ export default function EsqueciSenhaScreen({ navigation }: any) {
           style={styles.ilustracao}
           resizeMode="contain"
         />
-      </View>
+      </AuthFormLayout>
     </View>
   );
 }

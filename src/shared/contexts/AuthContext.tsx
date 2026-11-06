@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { registrarEvento } from '../analytics/analytics';
+import { limparCacheLocal } from '../offline/cacheLocal';
 
 // Extrai access_token/refresh_token/type de um hash de URL no formato
 // "#access_token=...&refresh_token=...&type=recovery" — mesmo formato usado
@@ -200,6 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Erro ao sair:', error);
       throw error;
     }
+    // saiu de verdade (não é perda de rede): as cópias locais de dados do usuário não ficam no aparelho
+    void limparCacheLocal();
   }
 
   return (

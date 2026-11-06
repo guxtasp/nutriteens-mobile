@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import CartaoJogo from '../components/CartaoJogo';
@@ -35,13 +35,11 @@ export default function JogosScreen() {
   const navigation = useNavigation<Nav>();
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo}>Jogos</AppText>
-          <AppText style={styles.subtitulo}>Aprenda jogando, sem pressa e sem nota</AppText>
-        </View>
-      </View>
+      <ScreenHeader
+        titulo="Jogos"
+        subtitulo="Aprenda jogando, sem pressa e sem nota"
+        onVoltar={() => navigation.goBack()}
+      />
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         {JOGOS.map((j, i) => (
           <CartaoJogo

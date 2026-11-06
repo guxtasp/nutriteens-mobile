@@ -344,6 +344,8 @@ export default function BuscaAlimentoScreen() {
           <FlatList
             data={resultadosFiltrados}
             keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             contentContainerStyle={{ gap: 12, paddingTop: 4, paddingBottom: carrinho.length > 0 ? 100 : 20 }}
             ListHeaderComponent={
               mostrarSecaoMeusAlimentos ? (
@@ -387,6 +389,8 @@ export default function BuscaAlimentoScreen() {
           <FlatList
             data={receitasFiltradas}
             keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             contentContainerStyle={{ gap: 12, paddingTop: 4, paddingBottom: carrinho.length > 0 ? 100 : 20 }}
             ListEmptyComponent={
               <AppText style={styles.vazioTexto}>

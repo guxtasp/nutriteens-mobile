@@ -12,7 +12,13 @@ interface BackButtonProps {
 // Esse componente é um botão de voltar, que recebe uma função onPress como prop. Ele utiliza o ícone "arrow-left" da biblioteca Feather e tem um estilo definido no arquivo de estilos.
 export function BackButton({ onPress, style }: BackButtonProps) {
   return (
-    <Pressable style={[styles.backButton, style]} onPress={onPress}>
+    <Pressable
+      style={[styles.backButton, style]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Voltar"
+      hitSlop={6}
+    >
       <Feather name="arrow-left" size={22} color={colors.white} />
     </Pressable>
   );

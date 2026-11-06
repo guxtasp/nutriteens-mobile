@@ -1,6 +1,7 @@
 // src/features/adolescente/perfil/services/extratoXpService.ts
 import { supabase } from '../../../../lib/supabase';
 import type { LancamentoXp } from '../utils/extratoXp';
+import { comCache } from '../../../../shared/offline/cacheLocal';
 
 export const TAMANHO_PAGINA_EXTRATO = 30;
 
@@ -19,6 +20,12 @@ export async function buscarExtratoXp(
   antesDe?: string,
   limite: number = TAMANHO_PAGINA_EXTRATO,
 ): Promise<PaginaExtrato> {
+  // só a 1ª página fica guardada: "carregar mais" exige internet de verdade
+  if (antesDe) return buscarExtratoXpOnline(userId, antesDe, limite);
+  return comCache(`xp:extrato:${userId}:${limite}`, () => buscarExtratoXpOnline(userId, undefined, limite));
+}
+
+async function buscarExtratoXpOnline(userId: string, antesDe: string | undefined, limite: number): Promise<PaginaExtrato> {
   let consulta = supabase
     .from('xp_lancamentos')
     .select('id, origem, quantidade, descricao, criado_em')

@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { useNotificacoesApp } from '../hooks/useNotificacoesApp';
@@ -49,17 +49,14 @@ export default function NotificacoesScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.header}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <AppText style={styles.titulo}>Notificações</AppText>
-        <View style={styles.direita}>
-          {naoLidas > 0 && (
-            <TouchableOpacity onPress={marcarTodasLidas} accessibilityRole="button" hitSlop={8}>
-              <AppText style={styles.marcarTodas}>Marcar todas como lidas</AppText>
-            </TouchableOpacity>
-          )}
+      <ScreenHeader titulo="Notificações" onVoltar={() => navigation.goBack()} />
+      {naoLidas > 0 && (
+        <View style={styles.acaoLinha}>
+          <TouchableOpacity onPress={marcarTodasLidas} accessibilityRole="button" hitSlop={8} style={styles.marcarTodasBotao}>
+            <AppText style={styles.marcarTodas}>Marcar todas como lidas</AppText>
+          </TouchableOpacity>
         </View>
-      </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         {carregando && notificacoes.length === 0 ? (
@@ -105,7 +102,8 @@ const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#F3F8EE' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginTop: 30, marginBottom: 8 },
   titulo: { fontSize: 18, fontFamily: typography.bold, color: colors.primaryDark, marginLeft: 8 },
-  direita: { flex: 1, alignItems: 'flex-end' },
+  acaoLinha: { paddingHorizontal: 20, alignItems: 'flex-end' },
+  marcarTodasBotao: { minHeight: 44, justifyContent: 'center' },
   marcarTodas: { fontSize: 12, fontFamily: typography.semiBold, color: colors.primaryDark, textAlign: 'right' },
   conteudo: { paddingHorizontal: 20, paddingBottom: 60, gap: 10 },
   centro: { paddingVertical: 60, alignItems: 'center' },

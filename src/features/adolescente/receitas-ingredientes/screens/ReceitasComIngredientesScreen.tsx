@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
 import { FiltroChips } from '../../../../shared/ui/FiltroChips';
 import { colors } from '../../../../shared/theme/colors';
@@ -343,13 +343,11 @@ export default function ReceitasComIngredientesScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo}>Receitas com o que tenho</AppText>
-          <AppText style={styles.subtitulo}>Cozinhe com o que já tem em casa</AppText>
-        </View>
-      </View>
+      <ScreenHeader
+        titulo="Receitas com o que tenho"
+        subtitulo="Cozinhe com o que já tem em casa"
+        onVoltar={() => navigation.goBack()}
+      />
 
       {carregando ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />

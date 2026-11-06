@@ -8,11 +8,13 @@ import { AppText } from './AppText';
 interface PasswordInputProps extends TextInputProps {
   label: string;
   hasError?: boolean;
+  /** dica curta abaixo do campo (ex.: "Use pelo menos 8 caracteres.") */
+  hint?: string;
 }
 
 const ERROR_COLOR = colors.error ?? '#C0392B';
 
-export function PasswordInput({ label, style, hasError, ...inputProps }: PasswordInputProps) {
+export function PasswordInput({ label, style, hasError, hint, ...inputProps }: PasswordInputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -24,7 +26,13 @@ export function PasswordInput({ label, style, hasError, ...inputProps }: Passwor
           secureTextEntry={!showPassword}
           {...inputProps}
         />
-        <Pressable style={styles.eyeIcon} onPress={() => setShowPassword((prev) => !prev)}>
+        <Pressable
+          style={styles.eyeIcon}
+          onPress={() => setShowPassword((prev) => !prev)}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+          hitSlop={8}
+        >
           <Feather
             name={showPassword ? 'eye-off' : 'eye'}
             size={20}
@@ -32,6 +40,7 @@ export function PasswordInput({ label, style, hasError, ...inputProps }: Passwor
           />
         </Pressable>
       </View>
+      {!!hint && <AppText style={styles.hint}>{hint}</AppText>}
     </View>
   );
 }
@@ -60,6 +69,12 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: ERROR_COLOR,
+  },
+  hint: {
+    fontFamily: typography.regular,
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 6,
   },
   eyeIcon: {
     position: 'absolute',

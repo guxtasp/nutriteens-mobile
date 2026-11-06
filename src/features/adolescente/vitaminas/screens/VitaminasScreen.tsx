@@ -9,7 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { useAcoesRapidas, AcaoRapida } from '../../_shared/hooks/useAcoesRapidas';
@@ -87,14 +87,11 @@ export default function VitaminasScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo} accessibilityRole="header">Vitaminas e minerais</AppText>
-          <AppText style={styles.subtitulo}>Escolha uma para saber mais</AppText>
-        </View>
-        <View style={{ width: 48 }} />
-      </View>
+      <ScreenHeader
+        titulo="Vitaminas e minerais"
+        subtitulo="Escolha uma para saber mais"
+        onVoltar={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         {SECOES.map((secao) => (
