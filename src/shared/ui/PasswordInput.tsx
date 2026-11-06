@@ -24,6 +24,7 @@ export function PasswordInput({ label, style, hasError, hint, ...inputProps }: P
         <TextInput
           style={[styles.input, hasError && styles.inputError, style]}
           secureTextEntry={!showPassword}
+          accessibilityLabel={label}
           {...inputProps}
         />
         <Pressable

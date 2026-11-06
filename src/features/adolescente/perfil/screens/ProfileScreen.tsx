@@ -207,7 +207,6 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: FUNDO },
   conteudo: { paddingHorizontal: 20, paddingBottom: 120 },
-  header: { flexDirection: 'row', alignItems: 'center', marginTop: 30, marginBottom: 8 },
   titulo: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: typography.bold, color: colors.primaryDark },
   heroi: { alignItems: 'center', marginBottom: 12 },
   nomeLinha: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },

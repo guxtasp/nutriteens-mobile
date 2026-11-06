@@ -6,6 +6,8 @@
 //  - celular:          barra superior + menu em gaveta (alvos de toque >= 48px)
 // Cada tela renderiza <PainelLayout> por dentro; o navigator usa animation:'none'
 // para a troca de tela não "piscar" o menu.
+import { confirmar } from '../ui/dialogo';
+import { mensagemSairDaConta } from '../utils/confirmarSaida';
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -150,8 +152,10 @@ export function PainelLayout({ config, titulo, subtitulo, acao, voltar, rolagem 
     setGavetaAberta(false);
     if (rota !== route.name) navigation.navigate(rota);
   }
-  function sair() {
+  async function sair() {
     setGavetaAberta(false);
+    const ok = await confirmar('Sair da conta?', mensagemSairDaConta(0), { confirmar: 'Sair', destrutivo: true });
+    if (!ok) return;
     signOut().catch((e) => console.error('Erro ao sair:', e));
   }
   function aoVoltar() {

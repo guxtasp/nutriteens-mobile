@@ -380,7 +380,6 @@ export default function ReceitasComIngredientesScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
-  cabecalho: { flexDirection: 'row', marginTop: 30, alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 12 },
   tituloBloco: { flex: 1, alignItems: 'center' },
   titulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark, textAlign: 'center' },
   subtitulo: { fontFamily: typography.regular, fontSize: 12, color: '#7A8B94', textAlign: 'center', marginTop: 2 },

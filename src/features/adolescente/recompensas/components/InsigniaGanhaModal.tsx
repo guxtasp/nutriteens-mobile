@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../../../shared/audio/haptics';
 import { AppText } from '../../../../shared/ui/AppText';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { colors } from '../../../../shared/theme/colors';

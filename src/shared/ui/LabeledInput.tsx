@@ -22,6 +22,7 @@ export function LabeledInput({ label, placeholder, style, hasError, ...inputProp
         style={[styles.input, hasError && styles.inputError, style]}
         placeholder={placeholder}
         placeholderTextColor={colors.placeholder ?? '#9AA5A0'}
+        accessibilityLabel={label}
         {...inputProps}
       />
     </View>

@@ -2,7 +2,7 @@
 import React, { ReactNode, useMemo, useState } from 'react';
 import { Pressable, View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { MotiView } from 'moti';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../../../../shared/audio/haptics';
 import { AppText } from '../../../../../shared/ui/AppText';
 import { colors } from '../../../../../shared/theme/colors';
 import { typography } from '../../../../../shared/theme/typography';

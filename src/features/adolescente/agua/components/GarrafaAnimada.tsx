@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 import { colors } from '../../../../shared/theme/colors';
+import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
 
 type Props = { progresso: number }; // 0 a 1
 
@@ -24,6 +25,7 @@ export default function GarrafaAnimada({ progresso }: Props) {
   const bolha2 = useRef(new Animated.Value(0)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
   const bounce = useRef(new Animated.Value(1)).current;
+  const reduzir = useReduzirMovimento();
 
   useEffect(() => {
     Animated.spring(nivel, { toValue: progresso, friction: 8, tension: 40, useNativeDriver: true }).start();
@@ -35,6 +37,7 @@ export default function GarrafaAnimada({ progresso }: Props) {
   }, [progresso, nivel, bounce]);
 
   useEffect(() => {
+    if (reduzir) return; // sem brilho nem bolhas em loop
     const loopShimmer = Animated.loop(
       Animated.sequence([
         Animated.timing(shimmer, { toValue: 1, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
@@ -64,7 +67,7 @@ export default function GarrafaAnimada({ progresso }: Props) {
       loopBolha1.stop();
       loopBolha2.stop();
     };
-  }, [shimmer, bolha1, bolha2]);
+  }, [reduzir, shimmer, bolha1, bolha2]);
 
   // 0 → água quase embaixo; 1 → água quase na tampa
   const aguaTranslateY = nivel.interpolate({

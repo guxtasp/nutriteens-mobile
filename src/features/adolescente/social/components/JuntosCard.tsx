@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../../../shared/audio/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';

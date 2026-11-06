@@ -36,6 +36,7 @@ import JardimDetalheScreen from '../features/adolescente/social/screens/JardimDe
 import NovoJardimScreen from '../features/adolescente/social/screens/NovoJardimScreen';
 import PerfilAmigoScreen from '../features/adolescente/social/screens/PerfilAmigoScreen';
 import MaisScreen from '../features/adolescente/_shared/screens/MaisScreen';
+import AcessibilidadeScreen from '../features/adolescente/_shared/screens/AcessibilidadeScreen';
 import AtividadeFisicaScreen from '../features/adolescente/atividade-fisica/screens/AtividadeFisicaScreen';
 import BuscaAtividadeScreen from '../features/adolescente/atividade-fisica/screens/BuscaAtividadeScreen';
 import ProfileScreen from '../features/adolescente/perfil/screens/ProfileScreen';
@@ -108,6 +109,7 @@ export type AdolescenteStackParamList = {
   NovoDesafio: undefined;
   Mais: undefined;
   Lembretes: undefined;
+  Acessibilidade: undefined;
   Notificacoes: undefined;
   ReceitaCompartilhada: { receitaId: string };
   AtividadeFisica: undefined;
@@ -189,6 +191,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="NovoDesafio" component={NovoDesafioScreen} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Lembretes" component={LembretesScreen} />
+                    <Stack.Screen name="Acessibilidade" component={AcessibilidadeScreen} />
                     <Stack.Screen name="Notificacoes" component={NotificacoesScreen} />
                     <Stack.Screen name="ReceitaCompartilhada" component={ReceitaCompartilhadaScreen} />
                     <Stack.Screen name="AtividadeFisica" component={AtividadeFisicaScreen} />
@@ -235,6 +238,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="NovoDesafio" component={NovoDesafioScreen} />
                     <Stack.Screen name="Mais" component={MaisScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="Lembretes" component={LembretesScreen} />
+                    <Stack.Screen name="Acessibilidade" component={AcessibilidadeScreen} />
                     <Stack.Screen name="Notificacoes" component={NotificacoesScreen} />
                     <Stack.Screen name="ReceitaCompartilhada" component={ReceitaCompartilhadaScreen} />
                     <Stack.Screen name="Missoes" component={MissoesScreen} />

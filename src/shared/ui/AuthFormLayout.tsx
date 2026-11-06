@@ -22,15 +22,22 @@ type Props = {
   desktop?: boolean;
   /** estilo do container no modo desktop (o mesmo que a tela já usava). */
   desktopStyle?: StyleProp<ViewStyle>;
+  /** cabeçalho de largura total (ex.: topo verde). Rola junto com o conteúdo. */
+  header?: React.ReactNode;
 };
 
 const PADDING_VERTICAL_EXTRA = 24;
 
-export function AuthFormLayout({ children, desktop = false, desktopStyle }: Props) {
+export function AuthFormLayout({ children, desktop = false, desktopStyle, header }: Props) {
   const insets = useSafeAreaInsets();
 
   if (desktop) {
-    return <View style={desktopStyle}>{children}</View>;
+    return (
+      <View style={desktopStyle}>
+        {header}
+        {header ? <View style={styles.corpo}>{children}</View> : children}
+      </View>
+    );
   }
 
   return (
@@ -42,15 +49,15 @@ export function AuthFormLayout({ children, desktop = false, desktopStyle }: Prop
         style={styles.fill}
         contentContainerStyle={[
           styles.conteudo,
-          {
-            paddingTop: insets.top + PADDING_VERTICAL_EXTRA,
-            paddingBottom: insets.bottom + PADDING_VERTICAL_EXTRA,
-          },
+          header ? styles.conteudoComHeader : null,
+          !header && { paddingTop: insets.top + PADDING_VERTICAL_EXTRA },
+          { paddingBottom: insets.bottom + PADDING_VERTICAL_EXTRA },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {children}
+        {header}
+        {header ? <View style={styles.corpo}>{children}</View> : children}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -61,4 +68,7 @@ const styles = StyleSheet.create({
   // flexGrow:1 mantém o rodapé (spacer + botão) colado embaixo quando o
   // conteúdo é curto, e deixa rolar quando é maior que a tela.
   conteudo: { flexGrow: 1, paddingHorizontal: 24 },
+  // com cabeçalho de largura total: o padding lateral passa para o corpo
+  conteudoComHeader: { paddingHorizontal: 0 },
+  corpo: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24 },
 });

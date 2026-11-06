@@ -23,8 +23,22 @@ export function limiteParaUrl(url: string): number {
   return url.includes('/storage/v1/') ? TIMEOUT_STORAGE_MS : TIMEOUT_PADRAO_MS;
 }
 
-export function criarFetchComTimeout(base: typeof fetch = (input, init) => fetch(input, init)): typeof fetch {
+export type OpcoesFetch = {
+  /** true = já sabemos que está sem internet: falha na hora em vez de esperar o timeout (20 s) */
+  semConexao?: () => boolean;
+  /** chamado quando uma requisição falha por rede (ex.: para re-testar a conexão) */
+  aoFalharRede?: () => void;
+};
+
+export function criarFetchComTimeout(
+  base: typeof fetch = (input, init) => fetch(input, init),
+  opcoes: OpcoesFetch = {}
+): typeof fetch {
   return ((input: Entrada, init?: RequestInit) => {
+    if (opcoes.semConexao?.()) {
+      // mesma mensagem que o ehErroDeRede() reconhece: cai na fila offline / cache na hora
+      return Promise.reject(new TypeError('Network request failed'));
+    }
     const limite = limiteParaUrl(urlDe(input));
     const controle = new AbortController();
     let estourou = false;
@@ -46,7 +60,11 @@ export function criarFetchComTimeout(base: typeof fetch = (input, init) => fetch
         // Troca o "AbortError" genérico por uma mensagem que o ehErroDeRede()
         // (src/shared/offline/erroRede.ts) reconhece — assim o estouro de tempo
         // também cai na fila offline / cache em vez de virar "erro inesperado".
-        if (estourou) throw new TypeError('Network request timed out');
+        if (estourou) {
+          opcoes.aoFalharRede?.();
+          throw new TypeError('Network request timed out');
+        }
+        if (erro instanceof TypeError) opcoes.aoFalharRede?.();
         throw erro;
       })
       .finally(() => clearTimeout(temporizador));

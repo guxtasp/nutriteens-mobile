@@ -20,7 +20,7 @@ import { buscarNutrientesComFonte } from '../services/fontesService';
 import type { NutrienteChave } from '../../alimentacao/utils/nutrientesPorGrupo';
 import { vit } from '../ui/tokens';
 import { SimboloLista } from '../components/SimboloAnimado';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../../../shared/audio/haptics';
 
 type Nav = NativeStackNavigationProp<AdolescenteStackParamList, 'Vitaminas'>;
 
@@ -122,7 +122,6 @@ export default function VitaminasScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
-  cabecalho: { marginTop: 30, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 12 },
   tituloBloco: { flex: 1, alignItems: 'center' },
   titulo: { fontFamily: typography.bold, fontSize: 20, color: colors.primaryDark, textAlign: 'center' },
   subtitulo: { fontFamily: typography.regular, fontSize: 13, color: vit.textoSuave, textAlign: 'center', marginTop: 2 },

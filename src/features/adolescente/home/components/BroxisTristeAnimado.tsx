@@ -10,6 +10,7 @@
 // com outro enquadramento, ajuste as constantes de posição abaixo.
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
+import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
 
 const ARTE = 148; // lado do PNG original, em px
 const PELE = '#FFD65C'; // amarelo da pele/fundo ao redor dos olhos
@@ -32,9 +33,10 @@ export function BroxisTristeAnimado({ tamanho, ativo }: Props) {
   const brilho = useRef(new Animated.Value(0)).current;
   const lagrimaE = useRef(new Animated.Value(0)).current;
   const lagrimaD = useRef(new Animated.Value(0)).current;
+  const reduzir = useReduzirMovimento();
 
   useEffect(() => {
-    if (!ativo) return;
+    if (!ativo || reduzir) return;
     piscar.setValue(0);
     brilho.setValue(0);
     lagrimaE.setValue(0);
@@ -67,7 +69,7 @@ export function BroxisTristeAnimado({ tamanho, ativo }: Props) {
     ];
     loops.forEach((l) => l.start());
     return () => loops.forEach((l) => l.stop());
-  }, [ativo, piscar, brilho, lagrimaE, lagrimaD]);
+  }, [ativo, reduzir, piscar, brilho, lagrimaE, lagrimaD]);
 
   const lagrima = (valor: Animated.Value, x: number) => (
     <Animated.View

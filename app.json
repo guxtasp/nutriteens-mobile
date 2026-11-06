@@ -13,7 +13,7 @@
       "backgroundColor": "#FCCB28"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.nutriteens.nutriteens",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -44,7 +44,13 @@
           "recordAudioAndroid": false
         }
       ],
-      ["expo-notifications", { "color": "#8BCF4A" }]
+      [
+        "expo-notifications",
+        {
+          "color": "#8BCF4A"
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

@@ -22,6 +22,7 @@ import { IMAGENS_STATUS_DIA, DiaSemana } from '../types/statusDia';
 import { obterConteudoCelebracao } from '../utils/celebracaoSequencia';
 import { feedbackCelebracao } from '../../../../shared/audio/feedback';
 import { Dimensions } from 'react-native';
+import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
 
 const CORES_STATUS_MANTIDO = new Set(['mantido', 'hoje_mantido']);
 const ROSA_SEQUENCIA = '#E9578F';
@@ -77,6 +78,10 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
   const botaoOpacity = useRef(new Animated.Value(0)).current;
   const botaoTranslateY = useRef(new Animated.Value(16)).current;
   const sparkleRotate = useRef(new Animated.Value(0)).current;
+  // ref: o efeito de abertura depende só de `visivel` e não pode reiniciar por causa disso
+  const reduzir = useReduzirMovimento();
+  const reduzirRef = useRef(reduzir);
+  reduzirRef.current = reduzir;
   // brilho pulsante atrás do foguinho pequeno (já no lugar dele) — sutil,
   // continua rodando em loop depois que a tela original é revelada
   const brilhoScale = useRef(new Animated.Value(1)).current;
@@ -164,8 +169,10 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
           Animated.timing(sparkleRotate, { toValue: 0, duration: 1600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         ])
       );
-      emExecucao.push(loopBrilhoRotacao);
-      loopBrilhoRotacao.start();
+      if (!reduzirRef.current) {
+        emExecucao.push(loopBrilhoRotacao);
+        loopBrilhoRotacao.start();
+      }
 
       // pulso do brilho + leve "respiração" do foguinho já no lugar dele —
       // roda em loop, discreto, só um destaque a mais (não é o hero de novo)
@@ -183,8 +190,10 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
           ]),
         ])
       );
-      emExecucao.push(loopPulso);
-      loopPulso.start();
+      if (!reduzirRef.current) {
+        emExecucao.push(loopPulso);
+        loopPulso.start();
+      }
     });
 
     return () => {

@@ -7,7 +7,7 @@
 // Grava profiles + consentimentos exatamente como o useSignup faz no
 // cadastro por e-mail (mesma etapa_onboarding: 'TRIAGEM').
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, View, StyleSheet } from 'react-native';
+import { Animated, KeyboardAvoidingView, ScrollView, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../shared/theme/colors';
@@ -21,6 +21,7 @@ import { CampoSelecao } from '../components/CampoSelecao';
 import { Checkbox } from '../../../shared/ui/Checkbox';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
+import { useEntradaSuave } from '../../../shared/hooks/useEntradaSuave';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { TIPO_ESCOLA_OPTIONS } from '../constants/tipoEscolaOptions';
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export default function CompletarCadastroScreen({ userId, nomeSugerido, onConcluido, onSair }: Props) {
+  const estiloEntrada = useEntradaSuave();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { definirNomeCompleto } = useAuth();
@@ -126,6 +128,7 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
       >
         <BackButton onPress={onSair} style={styles.BackButton} />
 
+        <Animated.View style={estiloEntrada}>
         <AppText style={styles.title}>Quase lá! Só faltam alguns dados =)</AppText>
         <AppText style={styles.subtitle}>
           Sua conta Google foi confirmada. Complete o cadastro para começar a sua jornada.
@@ -182,6 +185,7 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
           fullWidth
           onPress={handleConcluir}
         />
+        </Animated.View>
       </ScrollView>
       </KeyboardAvoidingView>
     </View>

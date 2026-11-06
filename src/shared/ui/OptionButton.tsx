@@ -13,7 +13,13 @@ interface OptionButtonProps {
 
 export function OptionButton({ label, ativo, onPress, style }: OptionButtonProps) {
   return (
-    <Pressable onPress={onPress} style={[styles.botao, ativo && styles.botaoAtivo, style]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.botao, ativo && styles.botaoAtivo, style]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: ativo }}
+    >
       <AppText style={[styles.texto, ativo && styles.textoAtivo]}>{label.toUpperCase()}</AppText>
     </Pressable>
   );

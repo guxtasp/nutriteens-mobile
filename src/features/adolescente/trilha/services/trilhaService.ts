@@ -410,6 +410,46 @@ function emitirEventosDeLicao(usuarioId: string, licaoId: string, trilhaId?: str
     );
 }
 
+type RespostaConcluirLicao = {
+  ja_concluida: boolean;
+  nivel: NivelConclusao;
+  trilha_id: string | null;
+  xp_licao: number;
+  xp_bonus: number;
+};
+
+/** null = a função do servidor não existe (usar o fluxo antigo). Outros erros sobem normalmente. */
+async function tentarConcluirLicaoAtomica(
+  usuarioId: string,
+  licaoId: string,
+  acertos: number | null,
+  totalQuestoes: number | null
+): Promise<ResultadoConclusao | null> {
+  const { data, error } = await supabase.rpc('concluir_licao', { p_licao_id: licaoId });
+  if (error) {
+    const codigo = (error as { code?: string }).code;
+    // PGRST202 = PostgREST não achou a função; 42883 = undefined_function
+    if (codigo === 'PGRST202' || codigo === '42883') return null;
+    throw error;
+  }
+  const r = data as RespostaConcluirLicao;
+  const acertosPercentualDaQuestao =
+    acertos != null && totalQuestoes ? Math.round((100 * acertos) / totalQuestoes) : null;
+  const resultado: ResultadoConclusao = {
+    nivel: r.nivel,
+    xpGanhoLicao: r.xp_licao ?? 0,
+    xpGanhoBonus: r.xp_bonus ?? 0,
+    acertosPercentual: r.nivel === 'licao' ? null : acertosPercentualDaQuestao,
+  };
+  if (!r.ja_concluida) {
+    emitirEventosDeLicao(usuarioId, licaoId, r.trilha_id ?? undefined);
+    if (r.nivel === 'trilha' && r.trilha_id) {
+      registrarEvento('trilha_concluida', { trilha_id: r.trilha_id }, { userId: usuarioId });
+    }
+  }
+  return resultado;
+}
+
 export async function concluirLicaoComProgresso(
   usuarioId: string,
   licaoId: string,
@@ -426,6 +466,12 @@ export async function concluirLicaoComProgresso(
   if (!noDaLicao || noDaLicao.status === 'bloqueada') {
     throw new Error('Esta lição ainda está bloqueada. Conclua a etapa atual para liberá-la.');
   }
+
+  // Caminho preferido: UMA função no servidor grava o progresso e concede o XP na mesma
+  // transação (migration_concluir_licao_atomica.sql). Se ela ainda não existe no banco
+  // (app novo antes da migração), cai no fluxo antigo abaixo.
+  const atomico = await tentarConcluirLicaoAtomica(usuarioId, licaoId, acertos, totalQuestoes);
+  if (atomico) return atomico;
 
   // 1. já tinha progresso antes desta chamada?
   const { data: progressoExistente, error: erroCheck } = await supabase

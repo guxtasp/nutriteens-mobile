@@ -163,7 +163,6 @@ function formatarDia(iso: string): string {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: FUNDO },
-  header: { flexDirection: 'row', alignItems: 'center', marginTop: 30, marginBottom: 8, paddingHorizontal: 20 },
   titulo: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: typography.bold, color: colors.primaryDark },
   abas: { flexDirection: 'row', marginHorizontal: 20, backgroundColor: '#E3E8E5', borderRadius: 14, padding: 4 },
   aba: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 11 },

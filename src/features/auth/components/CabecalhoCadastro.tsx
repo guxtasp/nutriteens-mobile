@@ -3,7 +3,7 @@
 // Topo verde do cadastro em etapas: voltar, "Passo X de Y", barra de progresso,
 // título/subtítulo e o mascote Bróxis da etapa.
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
+import { Animated, Easing, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
@@ -17,6 +17,8 @@ interface CabecalhoCadastroProps {
   titulo: string;
   subtitulo: string;
   mascote: ImageSourcePropType;
+  /** "reduzir movimento" do aparelho: o mascote só aparece, sem pular */
+  reduzirMovimento?: boolean;
   onVoltar: () => void;
 }
 
@@ -26,6 +28,7 @@ export function CabecalhoCadastro({
   titulo,
   subtitulo,
   mascote,
+  reduzirMovimento = false,
   onVoltar,
 }: CabecalhoCadastroProps) {
   const insets = useSafeAreaInsets();
@@ -41,6 +44,19 @@ export function CabecalhoCadastro({
     anim.start();
     return () => anim.stop(); // limpeza no unmount
   }, [etapa, progresso]);
+
+  // mascote: entra com um pulinho (mola) ao abrir a tela e a cada troca de etapa
+  const pulo = useRef(new Animated.Value(reduzirMovimento ? 1 : 0)).current;
+  useEffect(() => {
+    if (reduzirMovimento) {
+      pulo.setValue(1);
+      return;
+    }
+    pulo.setValue(0);
+    const anim = Animated.spring(pulo, { toValue: 1, friction: 4, tension: 90, useNativeDriver: true });
+    anim.start();
+    return () => anim.stop();
+  }, [etapa, reduzirMovimento, pulo]);
 
   const largura = progresso.interpolate({
     inputRange: [0, 1],
@@ -73,7 +89,22 @@ export function CabecalhoCadastro({
           </AppText>
           <AppText style={styles.subtitulo}>{subtitulo}</AppText>
         </View>
-        <Image source={mascote} style={styles.mascote} resizeMode="contain" accessibilityElementsHidden importantForAccessibility="no" />
+        <Animated.Image
+          source={mascote}
+          style={[
+            styles.mascote,
+            {
+              opacity: pulo.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 1, 1] }),
+              transform: [
+                { scale: pulo.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) },
+                { rotate: pulo.interpolate({ inputRange: [0, 1], outputRange: ['-12deg', '0deg'] }) },
+              ],
+            },
+          ]}
+          resizeMode="contain"
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
       </View>
     </View>
   );

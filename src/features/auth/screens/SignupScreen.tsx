@@ -5,9 +5,11 @@
 // toda no useSignup (inalterado).
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -22,6 +24,7 @@ import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { DateInput } from '../../../shared/ui/DateInput';
 import { Checkbox } from '../../../shared/ui/Checkbox';
 import { Divider } from '../../../shared/ui/Divider';
+import { GoogleButton } from '../../../shared/ui/GoogleButton';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { CabecalhoCadastro } from '../components/CabecalhoCadastro';
 import { CampoSelecao } from '../components/CampoSelecao';
@@ -29,7 +32,9 @@ import { SairDoCadastroModal } from '../components/SairDoCadastroModal';
 import { TIPO_ESCOLA_OPTIONS } from '../constants/tipoEscolaOptions';
 import { GENERO_OPTIONS } from '../constants/generoOptions';
 import { useSignup } from '../hooks/useSignup';
+import { irParaTelaAuth } from '../utils/navegacaoAuth';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
+import { useAnimacaoEtapa } from '../hooks/useAnimacaoEtapa';
 import {
   validateNome,
   validateDataNascimento,
@@ -64,6 +69,7 @@ export default function SignupScreen({ navigation }: any) {
   const { loading, message, type, showMessage, clearMessage, handleSignup } = useSignup();
   const { carregandoGoogle, continuarComGoogle } = useGoogleAuth(showMessage);
 
+  const { estiloFormulario, reduzirMovimento } = useAnimacaoEtapa(etapa);
   const scrollRef = useRef<ScrollView>(null);
   // refs lidos pelo listener de navegação (assim ele não precisa ser recriado a cada tecla)
   const dados: DadosCadastro = { nome, dataNascimento, genero, tipoEscola, email, password, aceitouTermos };
@@ -203,23 +209,31 @@ export default function SignupScreen({ navigation }: any) {
             titulo={titulo}
             subtitulo={subtitulo}
             mascote={mascote}
+            reduzirMovimento={reduzirMovimento}
             onVoltar={onVoltar}
           />
 
-          <View style={styles.formulario}>
+          <Animated.View style={[styles.formulario, estiloFormulario]}>
             {etapa === 1 ? (
               <>
                 {/* cadastro com Google primeiro: evita o formulário para quem prefere a conta Google */}
-                <AppButton
-                  label={carregandoGoogle ? 'ABRINDO O GOOGLE...' : 'G  CADASTRAR COM O GOOGLE'}
-                  backgroundColor={colors.white}
-                  fullWidth
-                  borderWidth={0.5}
-                  outlineColor="#000000"
-                  textColor={colors.primaryDark}
-                  shadowColor={colors.primaryDark}
+                <GoogleButton
+                  label="Cadastrar com o Google"
+                  loading={carregandoGoogle}
                   onPress={continuarComGoogle}
                 />
+
+                {/* quem tocou em "cadastrar" sem querer volta para o login sem usar a seta */}
+                <Pressable
+                  onPress={() => irParaTelaAuth(navigation, 'Login')}
+                  accessibilityRole="link"
+                  accessibilityLabel="Já tenho conta. Entrar"
+                  style={styles.linkConta}
+                >
+                  <AppText style={styles.textoConta}>
+                    Já tenho conta · <AppText style={styles.link}>Entrar</AppText>
+                  </AppText>
+                </Pressable>
 
                 <Divider label="ou preencha os dados" />
 
@@ -309,7 +323,7 @@ export default function SignupScreen({ navigation }: any) {
                 />
               </>
             )}
-          </View>
+          </Animated.View>
         </ScrollView>
 
         {/* rodapé fixo: o botão principal fica sempre alcançável, inclusive com o teclado aberto */}
@@ -386,6 +400,13 @@ const styles = StyleSheet.create({
     fontFamily: typography.bold,
     textDecorationLine: 'underline',
     color: colors.background,
+  },
+  linkConta: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  textoConta: {
+    fontFamily: typography.regular,
+    fontSize: 14,
+    color: colors.primaryDark,
+    textAlign: 'center',
   },
   termsText: {
     fontFamily: typography.regular,

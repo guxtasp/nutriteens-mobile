@@ -13,7 +13,7 @@ import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-n
 
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { ProgressBar } from '../../../../shared/ui/ProgressBar';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -103,11 +103,8 @@ export default function PerfilAmigoScreen() {
   return (
     <SafeAreaView style={styles.tela}>
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <BackButton onPress={() => navigation.goBack()} />
-          <AppText style={styles.titulo}>Perfil do amigo</AppText>
-          <View style={{ width: 44 }} />
-        </View>
+        {/* o conteúdo desta tela já tem 20 de margem lateral; o cabeçalho tem a própria */}
+        <ScreenHeader titulo="Perfil do amigo" onVoltar={() => navigation.goBack()} style={{ marginHorizontal: -20 }} />
 
         {/* Herói: avatar escolhido pelo amigo + apelido (aparecem mesmo durante o carregamento) */}
         <View style={styles.heroi}>
@@ -326,8 +323,6 @@ function Numero({
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: FUNDO },
   conteudo: { paddingHorizontal: 20, paddingBottom: 60 },
-  header: { flexDirection: 'row', alignItems: 'center', marginTop: 30, marginBottom: 8 },
-  titulo: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: typography.bold, color: colors.primaryDark },
   heroi: { alignItems: 'center', marginTop: 8, marginBottom: 16 },
   nomeLinha: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
   nome: { fontSize: 24, fontFamily: typography.bold, color: colors.primaryDark },

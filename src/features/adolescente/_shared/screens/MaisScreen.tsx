@@ -13,6 +13,7 @@ import { definirSomAtivo, diagnosticarSom, somEstaAtivo, tocarSom } from '../../
 import HomeBottomBar from '../components/HomeBottomBar';
 import QuickActionsMenu from '../components/QuickActionsMenu';
 import { useTour } from '../../tour/TourContext';
+import { useSairDaConta } from '../../../../shared/hooks/useSairDaConta';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;
 
@@ -22,6 +23,7 @@ export default function MaisScreen() {
   const [somLigado, setSomLigado] = useState(somEstaAtivo());
   const [testando, setTestando] = useState(false);
   const { iniciar: iniciarTour } = useTour();
+  const { sair, saindo: saindoDaConta } = useSairDaConta();
 
   // o tour começa na Home: volta para ela e dá um instante para a tela assentar
   function handleReverTour() {
@@ -90,6 +92,24 @@ export default function MaisScreen() {
 
           <View style={styles.divisor} />
 
+          <Pressable
+            style={styles.linha}
+            onPress={() => navigation.navigate('Acessibilidade')}
+            accessibilityRole="button"
+            accessibilityLabel="Acessibilidade"
+          >
+            <View style={styles.iconeCirculo}>
+              <Ionicons name="accessibility" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.textos}>
+              <AppText style={styles.linhaTitulo}>Acessibilidade</AppText>
+              <AppText style={styles.linhaSub}>Menos animações, sons e vibração</AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9AA5A0" />
+          </Pressable>
+
+          <View style={styles.divisor} />
+
           <View style={styles.linha}>
             <View style={styles.iconeCirculo}>
               <Ionicons name={somLigado ? 'volume-high' : 'volume-mute'} size={20} color={colors.primary} />
@@ -133,6 +153,25 @@ export default function MaisScreen() {
           </Pressable>
         </View>
 
+        <View style={{ height: 16 }} />
+        <View style={styles.cartao}>
+          <Pressable
+            style={styles.linha}
+            onPress={sair}
+            disabled={saindoDaConta}
+            accessibilityRole="button"
+            accessibilityLabel="Sair da conta"
+          >
+            <View style={[styles.iconeCirculo, styles.iconeSair]}>
+              <Ionicons name="log-out-outline" size={20} color="#D14343" />
+            </View>
+            <View style={styles.textos}>
+              <AppText style={[styles.linhaTitulo, styles.textoSair]}>{saindoDaConta ? 'Saindo...' : 'Sair da conta'}</AppText>
+              <AppText style={styles.linhaSub}>Você vai precisar entrar de novo depois</AppText>
+            </View>
+          </Pressable>
+        </View>
+
         <AppText style={styles.aviso}>
           Se não ouvir nada, confira se o iPhone não está no modo silencioso (botão na lateral do aparelho) e se o
           volume está ligado.
@@ -169,6 +208,8 @@ const styles = StyleSheet.create({
   textos: { flex: 1 },
   linhaTitulo: { fontFamily: typography.semiBold, fontSize: 15, color: colors.primaryDark },
   linhaSub: { fontFamily: typography.regular, fontSize: 12, color: '#7A8B94', marginTop: 2 },
+  iconeSair: { backgroundColor: '#FBE9E9' },
+  textoSair: { color: '#D14343' },
   divisor: { height: 1, backgroundColor: '#E1EBD6' },
   aviso: {
     fontFamily: typography.regular,

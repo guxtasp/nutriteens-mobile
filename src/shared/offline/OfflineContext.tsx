@@ -10,6 +10,9 @@ import { enfileirar, lerFila, pendentesParaEnviar, comProblema, type NovaOperaca
 import { sincronizarFila } from './sincronizador';
 import { criarExecutores } from './executoresOffline';
 import { ehErroDeRede } from './erroRede';
+import { verificarConexao } from './conexao';
+import { iniciarMonitorConexao } from './monitorConexao';
+import { useConexao } from './useConexao';
 
 const INTERVALO_SYNC_MS = 30_000;
 
@@ -39,6 +42,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const [sincronizando, setSincronizando] = useState(false);
   const [versaoSync, setVersaoSync] = useState(0);
   const montado = useRef(true);
+  const online = useConexao();
 
   useEffect(() => {
     montado.current = true;
@@ -81,6 +85,14 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     void atualizarContagem().then(sincronizarAgora);
   }, [atualizarContagem, sincronizarAgora]);
 
+  // monitor de conexão (alimenta o chip "Sem internet" e o modo de falha rápida)
+  useEffect(() => iniciarMonitorConexao(), []);
+
+  // a internet voltou: envia o que ficou guardado na hora, sem esperar os 30 s
+  useEffect(() => {
+    if (online) void sincronizarAgora();
+  }, [online, sincronizarAgora]);
+
   // ao voltar para o app e a cada 30 s
   useEffect(() => {
     if (!userId) return;
@@ -101,6 +113,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
         return false;
       } catch (erro) {
         if (!userId || !ehErroDeRede(erro)) throw erro;
+        void verificarConexao();
         await enfileirar(userId, nova);
         await atualizarContagem();
         return true;

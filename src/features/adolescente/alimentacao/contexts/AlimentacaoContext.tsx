@@ -19,6 +19,9 @@ interface AlimentacaoContextValue {
   limparCarrinho: () => void;
   registrarCarrinho: (tipo: TipoRefeicao) => Promise<ResultadoRegistro | null>;
   enviando: boolean;
+  /** dia escolhido no calendário do carrinho (AAAA-MM-DD); null = hoje */
+  diaRegistro: string | null;
+  setDiaRegistro: (iso: string | null) => void;
 }
 
 /** Registro feito com internet: traz o feedback da refeição na hora. */
@@ -34,6 +37,7 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
   const { guardar } = useOffline();
   const [carrinho, setCarrinho] = useState<ItemCarrinhoAlimento[]>([]);
   const [enviando, setEnviando] = useState(false);
+  const [diaRegistro, setDiaRegistro] = useState<string | null>(null);
 
   // toca em "+" num alimento já no carrinho -> incrementa em vez de duplicar linha
   const adicionarAoCarrinho = useCallback((alimento: Alimento) => {
@@ -75,7 +79,7 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
     async (tipo: TipoRefeicao) => {
       if (carrinho.length === 0 || enviando || !userId) return null;
       setEnviando(true);
-      const dataISO = formatarDataISO(new Date());
+      const dataISO = diaRegistro ?? formatarDataISO(new Date());
       const horario = new Date().toTimeString().slice(0, 8);
       try {
         let resultado;
@@ -87,11 +91,13 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
           await guardar({ tipo: 'REFEICAO', payload: { dataISO, horario, tipoRefeicao: tipo, itens: carrinho } });
           const quantidade = carrinho.length;
           setCarrinho([]);
+          setDiaRegistro(null);
           tocarSom('registro');
           return { offline: true as const, quantidade };
         }
         const quantidade = carrinho.length;
         setCarrinho([]);
+        setDiaRegistro(null);
         tocarSom('registro');
         const { refeicaoId, ...feedback } = resultado;
         return { quantidade, ...feedback };
@@ -99,7 +105,7 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
         setEnviando(false);
       }
     },
-    [carrinho, enviando, userId, guardar]
+    [carrinho, enviando, userId, guardar, diaRegistro]
   );
 
   return (
@@ -113,6 +119,8 @@ export function AlimentacaoProvider({ children }: { children: ReactNode }) {
         limparCarrinho,
         registrarCarrinho,
         enviando,
+        diaRegistro,
+        setDiaRegistro,
       }}
     >
       {children}

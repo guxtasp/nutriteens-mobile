@@ -13,11 +13,11 @@ import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { BackButton } from '../../../shared/ui/BackButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { AuthFormLayout } from '../../../shared/ui/AuthFormLayout';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
+import { CabecalhoAuth } from '../components/CabecalhoAuth';
 import { validateEmail } from '../utils/signupValidators';
 import { supabase } from '../../../lib/supabase';
 
@@ -70,14 +70,18 @@ export default function EsqueciSenhaScreen({ navigation }: any) {
   if (enviado) {
     return (
       <View style={[styles.outer, ehDesktop && styles.outerDesktop]}>
-        <AuthFormLayout desktop={ehDesktop} desktopStyle={[styles.container, styles.containerDesktop]}>
-          <BackButton onPress={() => navigation.navigate('Login')} style={styles.BackButton} />
-          <Image
-            source={require('../../../../assets/img/feedback/supercontente.png')}
-            style={styles.mascoteConfirmacao}
-            resizeMode="contain"
-          />
-          <AppText style={[styles.title, styles.tituloConfirmacao]}>Verifique seu e-mail</AppText>
+        <AuthFormLayout
+          desktop={ehDesktop}
+          desktopStyle={[styles.container, styles.containerDesktop]}
+          header={
+            <CabecalhoAuth
+              titulo="Verifique seu e-mail"
+              subtitulo="Enviamos as instruções para você."
+              mascote={require('../../../../assets/img/feedback/supercontente.png')}
+              onVoltar={() => navigation.navigate('Login')}
+            />
+          }
+        >
           <AppText style={[styles.subtitle, styles.textoJustificado]}>
             Se {email.trim()} tiver uma conta no NutriTeens, você vai receber um link pra
             criar uma nova senha em alguns instantes. Não esqueça de olhar a caixa de spam.
@@ -104,13 +108,18 @@ export default function EsqueciSenhaScreen({ navigation }: any) {
         onClose={clearMessage}
         style={[styles.topBanner, { top: insets.top + 12 }]}
       />
-      <AuthFormLayout desktop={ehDesktop} desktopStyle={[styles.container, styles.containerDesktop]}>
-        <BackButton onPress={() => navigation.goBack()} style={styles.BackButton} />
-
-        <AppText style={[styles.title, styles.centralizado]}>Putz... Esqueceu a senha?</AppText>
-        <AppText style={[styles.subtitle, styles.centralizado]}>
-          Tudo bem! Vamos lá: informe o seu e-mail para recuperar a senha.
-        </AppText>
+      <AuthFormLayout
+        desktop={ehDesktop}
+        desktopStyle={[styles.container, styles.containerDesktop]}
+        header={
+          <CabecalhoAuth
+            titulo="Putz... Esqueceu a senha?"
+            subtitulo="Tudo bem! Informe o seu e-mail para recuperar a senha."
+            mascote={require('../../../../assets/img/cadastro/curioso.png')}
+            onVoltar={() => navigation.goBack()}
+          />
+        }
+      >
 
         <LabeledInput
           label="E-mail"
@@ -148,16 +157,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.white,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 40,
   },
   containerDesktop: {
     flex: undefined,
     width: '100%',
     maxWidth: 420,
-    paddingTop: 40,
-    paddingBottom: 40,
+    overflow: 'hidden',
+    paddingBottom: 24,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7E5',

@@ -362,12 +362,18 @@ export default function TrilhaScreen() {
         titulo="Trilhas"
         direita={
           <>
-            <EstatisticaPill
-              icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
-              valor={xpTotal}
-              sufixo="XP"
-              cor={COR_XP}
-            />
+            <Pressable
+              onPress={() => navigation.navigate('ExtratoXp')}
+              accessibilityRole="button"
+              accessibilityLabel={`${xpTotal} pontos de experiência. Ver extrato`}
+            >
+              <EstatisticaPill
+                icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
+                valor={xpTotal}
+                sufixo="XP"
+                cor={COR_XP}
+              />
+            </Pressable>
             {sequencia > 0 && (
               <Pressable
                 onPress={() => navigation.navigate('Sequencia')}

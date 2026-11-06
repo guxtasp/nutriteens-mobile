@@ -10,11 +10,12 @@ type Props = {
   quantidade: number;
   onFechar: () => void;
   mensagem?: string; // se não vier, usa a mensagem padrão de atividade física
+  titulo?: string; // se não vier, "Parabéns! 🎉"
 };
 
 const DURACAO_AUTO_FECHAR = 2200;
 
-export default function SucessoRegistroModal({ visivel, quantidade, onFechar, mensagem }: Props) {
+export default function SucessoRegistroModal({ visivel, quantidade, onFechar, mensagem, titulo }: Props) {
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const iconeScale = useRef(new Animated.Value(0)).current;
   const textoOpacity = useRef(new Animated.Value(0)).current;
@@ -87,7 +88,7 @@ const mensagemFinal =
             <Ionicons name="checkmark" size={56} color="#fff" />
           </Animated.View>
           <Animated.View style={{ opacity: textoOpacity, transform: [{ translateY: textoTranslateY }] }}>
-            <AppText style={styles.titulo}>Parabéns! 🎉</AppText>
+            <AppText style={styles.titulo}>{titulo ?? 'Parabéns! 🎉'}</AppText>
             <AppText style={styles.subtitulo}>{mensagemFinal}</AppText>
           </Animated.View>
         </View>

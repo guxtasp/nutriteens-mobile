@@ -20,6 +20,7 @@ import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { feedbackPerda } from '../../../../shared/audio/feedback';
 import { BroxisTristeAnimado } from './BroxisTristeAnimado';
+import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
 
 type Props = {
   visivel: boolean;
@@ -57,15 +58,16 @@ const GOTAS = [
 
 function Gota({ x, atraso, dur, altura, ativa }: { x: number; atraso: number; dur: number; altura: number; ativa: boolean }) {
   const t = useRef(new Animated.Value(0)).current;
+  const reduzir = useReduzirMovimento();
   useEffect(() => {
-    if (!ativa) return;
+    if (!ativa || reduzir) return;
     t.setValue(0);
     const loop = Animated.loop(
       Animated.timing(t, { toValue: 1, duration: dur, delay: atraso, easing: Easing.in(Easing.quad), useNativeDriver: true })
     );
     loop.start();
     return () => loop.stop();
-  }, [ativa, atraso, dur, t]);
+  }, [ativa, reduzir, atraso, dur, t]);
   return (
     <Animated.View
       pointerEvents="none"

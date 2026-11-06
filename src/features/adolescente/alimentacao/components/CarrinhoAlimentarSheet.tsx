@@ -6,6 +6,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { ItemCarrinhoAlimento } from '../types/alimentacao';
+import SeletorDiaRegistro from '../../_shared/components/SeletorDiaRegistro';
 
 type Props = {
   visivel: boolean;
@@ -16,10 +17,13 @@ type Props = {
   onRemover: (alimentoId: string) => void;
   onRegistrar: () => void;
   registrando: boolean;
+  /** dia do registro: null = hoje */
+  diaRegistro?: string | null;
+  onMudarDia?: (iso: string | null) => void;
 };
 
 export default function CarrinhoAlimentosSheet({
-  visivel, itens, onFechar, onIncrementar, onDecrementar, onRemover, onRegistrar, registrando,
+  visivel, itens, onFechar, onIncrementar, onDecrementar, onRemover, onRegistrar, registrando, diaRegistro, onMudarDia,
 }: Props) {
   const [montado, setMontado] = useState(visivel);
 
@@ -63,10 +67,7 @@ export default function CarrinhoAlimentosSheet({
                 <AppText style={styles.contadorTexto}>{itens.length}</AppText>
               </View>
             </View>
-            <View style={styles.hoje}>
-              <AppText style={styles.hojeTexto}>Hoje</AppText>
-              <Ionicons name="calendar-outline" size={18} color={colors.primaryDark} />
-            </View>
+            <SeletorDiaRegistro dia={diaRegistro ?? null} onMudar={onMudarDia} />
           </View>
 
           <ScrollView style={{ maxHeight: 280 }}>
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
   sheetWrapper: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   sheet: { backgroundColor: colors.white ?? '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32 },
   puxador: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D9E2E8', alignSelf: 'center', marginBottom: 16 },
-  cabecalho: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  cabecalho: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   badgeTexto: { fontFamily: typography.bold, fontSize: 16, color: colors.primaryDark },
   contador: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#8BC34A', alignItems: 'center', justifyContent: 'center' },

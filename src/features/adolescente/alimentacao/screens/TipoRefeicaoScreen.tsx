@@ -97,7 +97,6 @@ export default function TipoRefeicaoScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white ?? '#fff' },
-  cabecalho: { marginTop: 30, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 12 },
   tituloBloco: { flex: 1, alignItems: 'center' },
   titulo: { fontFamily: typography.bold, fontSize: 20, color: colors.primaryDark, textAlign: 'center' },
   subtitulo: { fontFamily: typography.regular, fontSize: 12, color: '#7A8B94', textAlign: 'center', marginTop: 2 },

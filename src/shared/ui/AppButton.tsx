@@ -64,6 +64,9 @@ export function AppButton({
             },
         style,
       ]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!props.disabled }}
       {...props}
     >
       <AppText

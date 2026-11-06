@@ -14,7 +14,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
 import { AppButton } from '../../../../shared/ui/AppButton';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { AlternativasLista } from '../../trocas/components/TrocaLista';
@@ -52,11 +52,7 @@ export default function ResultadoScannerScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={novaLeitura} />
-        <AppText style={styles.titulo}>Resultado</AppText>
-        <View style={{ width: 48 }} />
-      </View>
+      <ScreenHeader titulo="Resultado" onVoltar={novaLeitura} />
 
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         {res === null && <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 48 }} />}
@@ -227,8 +223,6 @@ function Alternativas({ categoria }: { categoria: NonNullable<ProdutoScanner['ca
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
-  cabecalho: { marginTop: 30, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 12 },
-  titulo: { flex: 1, textAlign: 'center', fontFamily: typography.bold, fontSize: 20, color: colors.primaryDark },
   conteudo: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120 },
   rodape: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 20, backgroundColor: colors.white },
   bloco: { alignItems: 'center', gap: 14, marginTop: 24 },

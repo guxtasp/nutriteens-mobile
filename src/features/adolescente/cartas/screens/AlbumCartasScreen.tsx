@@ -95,7 +95,6 @@ export default function AlbumCartasScreen() {
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: FUNDO },
   conteudo: { paddingHorizontal: MARGEM, paddingBottom: 60 },
-  header: { flexDirection: 'row', alignItems: 'center', marginTop: 30, marginBottom: 16 },
   titulo: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: typography.bold, color: colors.primaryDark },
   resumo: { backgroundColor: '#fff', borderRadius: 20, padding: 16, gap: 10 },
   resumoLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

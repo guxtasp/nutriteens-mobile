@@ -13,7 +13,12 @@ interface CheckboxProps {
 
 export function Checkbox({ checked, onChange, label }: CheckboxProps) {
   return (
-    <Pressable style={styles.row} onPress={() => onChange(!checked)}>
+    <Pressable
+      style={styles.row}
+      onPress={() => onChange(!checked)}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+    >
       <View style={[styles.box, checked && styles.boxChecked]}>
         {checked && <Feather name="check" size={14} color={colors.white} />}
       </View>

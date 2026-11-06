@@ -22,9 +22,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../../../shared/ui/AppText';
 import { ProgressBar } from '../../../../shared/ui/ProgressBar';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import { feedbackLeve, feedbackSelecao, feedbackToque } from '../../../../shared/audio/feedback';
+import { feedbackLeve, feedbackSelecao } from '../../../../shared/audio/feedback';
+import { ComoGanharPontos } from '../components/ComoGanharPontos';
 import { useExtratoXp } from '../hooks/useExtratoXp';
 import { useGamificacao } from '../hooks/useGamificacao';
 import {
@@ -35,6 +37,7 @@ import {
   tituloLancamento,
   type LancamentoXp,
 } from '../utils/extratoXp';
+import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
 
 const COR_XP = '#8BCF4A';
 const CINZA_FUNDO = '#F2F4F3';
@@ -107,6 +110,7 @@ export default function ExtratoXpScreen() {
   const numeroAnimado = useRef(new Animated.Value(0)).current;
   const brilhoEscala = useRef(new Animated.Value(1)).current;
   const brilhoOpacity = useRef(new Animated.Value(0.35)).current;
+  const reduzir = useReduzirMovimento();
   const [numeroTexto, setNumeroTexto] = useState(0);
 
   useEffect(() => {
@@ -117,7 +121,7 @@ export default function ExtratoXpScreen() {
     ]);
     entrada.start();
 
-    const loopBrilho = Animated.loop(
+    const loopBrilho = reduzir ? null : Animated.loop(
       Animated.sequence([
         Animated.parallel([
           Animated.timing(brilhoEscala, { toValue: 1.15, duration: 1000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
@@ -129,14 +133,14 @@ export default function ExtratoXpScreen() {
         ]),
       ]),
     );
-    loopBrilho.start();
+    loopBrilho?.start();
 
     // sem isso o loop continua rodando depois que a tela fecha
     return () => {
       entrada.stop();
-      loopBrilho.stop();
+      loopBrilho?.stop();
     };
-  }, []);
+  }, [reduzir]);
 
   // conta até o saldo sempre que ele mudar (inclusive quando o valor real chega do servidor)
   useEffect(() => {
@@ -172,21 +176,7 @@ export default function ExtratoXpScreen() {
         pointerEvents="none"
       />
 
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            feedbackToque();
-            navigation.goBack();
-          }}
-          style={styles.fechar}
-          accessibilityRole="button"
-          accessibilityLabel="Fechar"
-        >
-          <Ionicons name="close" size={22} color={colors.primaryDark} />
-        </Pressable>
-        <AppText style={styles.tituloHeader}>Extrato de pontos</AppText>
-        <View style={styles.fecharEspaco} />
-      </View>
+      <ScreenHeader titulo="Extrato de pontos" onVoltar={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={styles.conteudo}
@@ -231,6 +221,8 @@ export default function ExtratoXpScreen() {
             <AppText style={styles.resumoLabel}>Últimos 7 dias</AppText>
           </View>
         </Animated.View>
+
+        <ComoGanharPontos />
 
         {/* --- filtros + lista --- */}
         <Animated.View style={subida(entradaLista)}>
@@ -337,22 +329,6 @@ const sombra = {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12 },
-  fechar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  fecharEspaco: { width: 36 },
-  tituloHeader: { flex: 1, textAlign: 'center', fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark },
   conteudo: { paddingHorizontal: 20, paddingBottom: 50, marginTop: 12 },
 
   blocoSaldo: { alignItems: 'center', marginTop: 8, marginBottom: 22 },

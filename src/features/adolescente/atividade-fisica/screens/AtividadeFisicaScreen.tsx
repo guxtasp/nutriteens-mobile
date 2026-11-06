@@ -9,7 +9,8 @@ import type { AdolescenteStackParamList } from '../../../../navigation/Adolescen
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import { buscarAtividades, registrarAtividades, AtividadeCatalogo } from '../services/atividadeService';
+import { buscarAtividades, registrarAtividades, buscarContextoAtividadeHoje, AtividadeCatalogo } from '../services/atividadeService';
+import { feedbackAtividade, type FeedbackRegistro } from '../../_shared/utils/feedbackRegistro';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import RegistroRapidoSheet from '../components/RegistroRapidoSheet';
 import CarrinhoAtividadesSheet from '../components/CarrinhoAtividadesSheet';
@@ -34,6 +35,7 @@ export default function AtividadeFisicaScreen() {
   const [sheetGuia, setSheetGuia] = useState(false);
   const [sucessoVisivel, setSucessoVisivel] = useState(false);
   const [quantidadeRegistrada, setQuantidadeRegistrada] = useState(0);
+  const [feedback, setFeedback] = useState<FeedbackRegistro | null>(null);
   
   // busca com termo virou a BuscaAtividadeScreen — aqui carrega o catálogo completo uma vez
   useEffect(() => {
@@ -43,17 +45,23 @@ export default function AtividadeFisicaScreen() {
   }, []);
 
 
-async function handleRegistrar() {
-  try {
-    const quantidade = await registrarCarrinho();
-    if (quantidade === 0) return;
-    setQuantidadeRegistrada(quantidade);
-    setSheetCarrinho(false);
-    setTimeout(() => setSucessoVisivel(true), 350);
-  } catch (erro) {
-    console.error('Erro ao registrar atividades:', erro);
+  async function handleRegistrar() {
+    try {
+      const minutosRegistrados = carrinho.reduce((soma, item) => soma + item.duracaoMinutos, 0);
+      const quantidade = await registrarCarrinho();
+      if (quantidade === 0) return;
+      // com internet traz o total do dia e a meta; sem internet fica só o que foi registrado agora
+      const contexto = userId
+        ? await buscarContextoAtividadeHoje(userId, formatarDataISO(new Date()))
+        : { totalHojeMin: null, alvoMin: null };
+      setFeedback(feedbackAtividade({ quantidade, minutosRegistrados, ...contexto }));
+      setQuantidadeRegistrada(quantidade);
+      setSheetCarrinho(false);
+      setTimeout(() => setSucessoVisivel(true), 350);
+    } catch (erro) {
+      console.error('Erro ao registrar atividades:', erro);
+    }
   }
-}
 
   return (
     <SafeAreaView style={styles.tela}>
@@ -115,6 +123,8 @@ async function handleRegistrar() {
         <SucessoRegistroModal
                 visivel={sucessoVisivel}
                 quantidade={quantidadeRegistrada}
+                titulo={feedback?.titulo}
+                mensagem={feedback?.mensagem}
                 onFechar={() => {
                     setSucessoVisivel(false);
                     onVoltar();

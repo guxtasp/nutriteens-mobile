@@ -17,8 +17,9 @@ export default function AlimentoCadastradoScreen() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      // volta pra tela de busca já com o alimento recém-criado disponível
-      navigation.navigate('BuscaAlimento', {
+      // volta pra tela de busca JÁ EXISTENTE na pilha (React Navigation 7: `navigate`
+      // empilharia uma 2ª busca, e o voltar passaria por Origem/Form/Cadastrado)
+      navigation.popTo('BuscaAlimento', {
         tipo: params.tipo,
         nomeRefeicao: params.nomeRefeicao,
         alimentoRecemCriado: params.alimento,

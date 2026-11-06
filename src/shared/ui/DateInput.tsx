@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, TextInput, StyleSheet, Pressable, Keyboard } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { AppText } from './AppText';
+import { SeletorDataNativo } from './SeletorDataNativo';
 
 interface DateInputProps {
   label: string;
@@ -25,6 +26,8 @@ function applyDateMask(raw: string): string {
 }
 
 export function DateInput({ label, value, onChangeText, onBlur }: DateInputProps) {
+  const [calendarioAberto, setCalendarioAberto] = useState(false);
+
   return (
     <View style={styles.wrapper}>
       <AppText style={styles.label}>{label}</AppText>
@@ -38,14 +41,31 @@ export function DateInput({ label, value, onChangeText, onBlur }: DateInputProps
           onChangeText={(text) => onChangeText(applyDateMask(text))}
           onBlur={onBlur}
           maxLength={10}
+          accessibilityLabel={`${label}, formato dia, mês e ano`}
         />
-        <Feather
-          name="calendar"
-          size={18}
-          color={colors.primaryDark}
-          style={styles.icon}
-        />
+        <Pressable
+          onPress={() => {
+            Keyboard.dismiss();
+            setCalendarioAberto(true);
+          }}
+          style={styles.iconeBotao}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir calendário para escolher a data"
+        >
+          <Feather name="calendar" size={20} color={colors.primaryDark} />
+        </Pressable>
       </View>
+
+      <SeletorDataNativo
+        visivel={calendarioAberto}
+        valor={value}
+        onFechar={() => setCalendarioAberto(false)}
+        onEscolher={(data) => {
+          onChangeText(data);
+          onBlur?.();
+        }}
+      />
     </View>
   );
 }
@@ -72,9 +92,13 @@ const styles = StyleSheet.create({
     fontFamily: typography.regular,
     color: colors.primaryDark,
   },
-  icon: {
+  iconeBotao: {
     position: 'absolute',
-    right: 14,
-    top: 15,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

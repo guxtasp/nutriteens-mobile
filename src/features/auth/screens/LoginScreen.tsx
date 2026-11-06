@@ -4,15 +4,17 @@ import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { BackButton } from '../../../shared/ui/BackButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { Divider } from '../../../shared/ui/Divider';
+import { GoogleButton } from '../../../shared/ui/GoogleButton';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { AuthFormLayout } from '../../../shared/ui/AuthFormLayout';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
 import { supabase } from '../../../lib/supabase';
 
+import { CabecalhoAuth } from '../components/CabecalhoAuth';
+import { irParaTelaAuth } from '../utils/navegacaoAuth';
 import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { mensagemErroLogin } from '../utils/loginErros';
 import { acessoProfissionalDisponivel } from '../utils/acessoProfissional';
@@ -51,66 +53,72 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={[styles.outer, ehDesktop && styles.outerDesktop]}>
-    <AuthFormLayout desktop={ehDesktop} desktopStyle={[styles.container, styles.containerDesktop]}>
-      <BackButton onPress={() => navigation.goBack()} style={styles.BackButton} />
-
-      <AppText style={styles.title}>Olha você! Seja bem-vindo(a) novamente ;)</AppText>
-
-      <AppText style={styles.subtitle}>
-        Faça login ou{' '}
-        <AppText style={styles.link} onPress={() => navigation.navigate('AppPresentation')}>
-          crie uma conta aqui
-        </AppText>
-      </AppText>
-
-      {/* só no computador (ver acessoProfissional.ts) */}
-      {acessoProfissionalDisponivel(Platform.OS, width) && (
-        <Pressable onPress={() => navigation.navigate('LoginProfissional')} accessibilityRole="link" style={styles.linkProfissional}>
-          <AppText style={styles.link}>Sou nutricionista ou administrador</AppText>
-        </Pressable>
-      )}
-
-      {/* login social primeiro: o caminho mais curto, sem digitar nada */}
-      <AppButton
-        label={carregandoGoogle ? 'ABRINDO O GOOGLE...' : 'G  ENTRAR COM O GOOGLE'}
-        backgroundColor={colors.white}
-        fullWidth
-        borderWidth={0.5}
-        outlineColor="#000000"
-        textColor={colors.primaryDark}
-        shadowColor={colors.primaryDark}
-        onPress={continuarComGoogle}
-      />
-
-      <Divider />
-
-      <LabeledInput
-        label="Email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <PasswordInput label="Senha" value={password} onChangeText={setPassword} />
-
-      <Pressable onPress={() => navigation.navigate('EsqueciSenha')}>
-        <AppText style={styles.forgotPassword}>Esqueci minha senha</AppText>
-      </Pressable>
-
-      <View style={styles.spacer} />
-      <View style={styles.messageContainer}>
-        <MessageBanner message={message} type={type} onClose={clearMessage} />
-        <AppButton
-          label={loading ? 'ENTRANDO...' : 'VAMOS LÁ'}
-          backgroundColor={colors.primaryDark}
-          textColor={colors.white}
-          shadowColor="#123024"
-          onPress={handleLogin}
+      <AuthFormLayout
+        desktop={ehDesktop}
+        desktopStyle={[styles.container, styles.containerDesktop]}
+        header={
+          <CabecalhoAuth
+            titulo="Olha você! Seja bem-vindo(a) novamente ;)"
+            subtitulo="Entre para continuar a sua jornada."
+            mascote={require('../../../../assets/img/cadastro/supercontente.png')}
+            onVoltar={() => navigation.goBack()}
+          />
+        }
+      >
+        {/* login social primeiro: o caminho mais curto, sem digitar nada */}
+        <GoogleButton
+          label="Entrar com o Google"
+          loading={carregandoGoogle}
+          onPress={continuarComGoogle}
         />
-      </View>
 
-    </AuthFormLayout>
+        <Divider label="ou entre com o e-mail" />
+
+        <LabeledInput
+          label="Email"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+
+        <PasswordInput label="Senha" value={password} onChangeText={setPassword} />
+
+        <Pressable onPress={() => navigation.navigate('EsqueciSenha')} accessibilityRole="link">
+          <AppText style={styles.forgotPassword}>Esqueci minha senha</AppText>
+        </Pressable>
+
+        <View style={styles.acoes}>
+          <MessageBanner message={message} type={type} onClose={clearMessage} />
+          <AppButton
+            label={loading ? 'ENTRANDO...' : 'VAMOS LÁ'}
+            backgroundColor={colors.primaryDark}
+            textColor={colors.white}
+            shadowColor="#123024"
+            disabled={loading}
+            onPress={handleLogin}
+          />
+        </View>
+
+        {/* caminho claro para quem ainda não tem conta */}
+        <Pressable
+          onPress={() => irParaTelaAuth(navigation, 'Signup')}
+          accessibilityRole="link"
+          accessibilityLabel="Ainda não tenho conta. Cadastrar"
+          style={styles.linkConta}
+        >
+          <AppText style={styles.textoConta}>
+            Ainda não tenho conta · <AppText style={styles.link}>Cadastrar</AppText>
+          </AppText>
+        </Pressable>
+
+        {/* só no computador (ver acessoProfissional.ts) */}
+        {acessoProfissionalDisponivel(Platform.OS, width) && (
+          <Pressable onPress={() => navigation.navigate('LoginProfissional')} accessibilityRole="link" style={styles.linkProfissional}>
+            <AppText style={styles.link}>Sou nutricionista ou administrador</AppText>
+          </Pressable>
+        )}
+      </AuthFormLayout>
     </View>
   );
 }
@@ -127,68 +135,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  container: { 
-    flex: 1, 
-    backgroundColor: colors.white, 
-    paddingHorizontal: 24, 
-    paddingTop: 60,
-    paddingBottom: 70, // espaço pro botão de navegação do Android
-  },
+  container: { flex: 1, backgroundColor: colors.white },
   containerDesktop: {
     flex: undefined,
     width: '100%',
     maxWidth: 420,
-    paddingTop: 40,
-    paddingBottom: 40,
+    overflow: 'hidden',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7E5',
+    paddingBottom: 24,
     // @ts-ignore — boxShadow só existe no web (react-native-web aceita)
     boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.06)',
   },
-  BackButton: {
-    marginBottom: 32,
+  link: {
+    fontFamily: typography.bold,
+    textDecorationLine: 'underline',
+    color: colors.primaryDark,
   },
-  title: { 
-    fontFamily: typography.bold, 
-    fontSize: 24, 
-    color: colors.primaryDark, 
-    lineHeight: 32, 
-    marginBottom: 8 
+  forgotPassword: {
+    fontFamily: typography.regular,
+    color: colors.primaryDark,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+    paddingVertical: 12,
+    marginBottom: 12,
   },
-  subtitle: { 
-    fontFamily: typography.regular, 
-    fontSize: 16, 
-    color: colors.primaryDark, 
-    marginBottom: 24 
+  acoes: { gap: 12 },
+  linkConta: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
   },
-  link: { 
-    fontFamily: typography.bold, 
-    textDecorationLine: 'underline' 
+  textoConta: {
+    fontFamily: typography.regular,
+    fontSize: 15,
+    color: colors.primaryDark,
+    textAlign: 'center',
   },
   linkProfissional: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     minHeight: 44,
     justifyContent: 'center',
-    marginTop: -16,
-    marginBottom: 8,
-  },
-  forgotPassword: { 
-    fontFamily: typography.regular, 
-    color: colors.primaryDark, 
-    textAlign: 'center', 
-    textDecorationLine: 'underline', 
-    marginTop: 10,
-    marginBottom: 24 
-  },
-  // flexGrow (e não flex:1): dentro do ScrollView o bloco precisa contar com a
-  // própria altura, senão o botão ficaria fora da área rolável.
-  messageContainer: { 
-    marginTop: -40,
-    flexGrow: 1,
-    gap: 12, 
-  },
-  spacer: { 
-    height: 60 
   },
 });

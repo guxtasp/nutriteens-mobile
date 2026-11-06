@@ -17,6 +17,7 @@ import AguaSlider from '../../agua/components/AguaSlider';
 import PesoAlturaModal from '../../perfil/components/PesoAlturaModal';
 import GuiaAguaSheet from '../../agua/components/GuiaAguaSheet';
 import SucessoRegistroModal from '../../_shared/components/SucessoRegistroModal';
+import { feedbackAgua, type FeedbackRegistro } from '../../_shared/utils/feedbackRegistro';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'ConsumoAgua'>;
 
@@ -37,7 +38,7 @@ export default function ConsumoAguaScreen() {
   const [quantidadeSelecionada, setQuantidadeSelecionada] = useState(200);
   const [sheetGuia, setSheetGuia] = useState(false);
   const [sucessoVisivel, setSucessoVisivel] = useState(false);
-  const [metaAtingidaAgora, setMetaAtingidaAgora] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackRegistro | null>(null);
   // "Agora não" no modal de peso: a tela segue usável com a meta padrão
   const [pesoDispensado, setPesoDispensado] = useState(false);
   // iOS: um Modal que tenta abrir no meio da transição de entrada da tela (ou com o menu "+" ainda
@@ -63,7 +64,9 @@ export default function ConsumoAguaScreen() {
     try {
       const novoTotal = await registrar(quantidadeSelecionada);
       if (novoTotal == null) return;
-      setMetaAtingidaAgora(novoTotal >= metaMl);
+      setFeedback(
+        feedbackAgua({ registradoMl: quantidadeSelecionada, totalAntesMl: mlHoje, totalDepoisMl: novoTotal, metaMl })
+      );
       // fanfarra só na hora em que a meta é batida; nos outros registros, a gota
       const cruzouAMeta = mlHoje < metaMl && novoTotal >= metaMl;
       tocarSom(cruzouAMeta ? 'fanfarra' : 'gota');
@@ -141,11 +144,8 @@ export default function ConsumoAguaScreen() {
       <SucessoRegistroModal
         visivel={sucessoVisivel}
         quantidade={quantidadeSelecionada}
-        mensagem={
-          metaAtingidaAgora
-            ? 'Parabéns! Você atingiu sua meta diária de água! 🎉'
-            : `Você registrou ${quantidadeSelecionada}ml de água agora!`
-        }
+        titulo={feedback?.titulo}
+        mensagem={feedback?.mensagem ?? `Você registrou ${quantidadeSelecionada}ml de água agora!`}
         onFechar={() => setSucessoVisivel(false)}
       />
     </SafeAreaView>

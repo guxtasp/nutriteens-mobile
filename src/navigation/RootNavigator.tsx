@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { confirmar } from '../shared/ui/dialogo';
 import { NavigationContainer } from '@react-navigation/native';
 import type { User } from '@supabase/supabase-js';
 
@@ -281,8 +282,13 @@ export default function RootNavigator() {
                 onConcluido={async () => {
                   await carregarPerfil(user);
                 }}
-                onSair={() => {
-                  supabase.auth.signOut();
+                onSair={async () => {
+                  const ok = await confirmar(
+                    'Sair do cadastro?',
+                    'Sua conta Google ainda não está completa. Você pode entrar de novo depois para terminar.',
+                    { confirmar: 'Sair', destrutivo: true },
+                  );
+                  if (ok) supabase.auth.signOut();
                 }}
               />
             )}
@@ -310,7 +316,14 @@ export default function RootNavigator() {
         tentando={tentandoNovamente}
         onTentarNovamente={() => void tentarNovamente()}
         // scope 'local': sair não depende de internet (só limpa o aparelho)
-        onSair={() => void supabase.auth.signOut({ scope: 'local' })}
+        onSair={async () => {
+          const ok = await confirmar(
+            'Sair da conta?',
+            'Registros guardados neste aparelho que ainda não foram enviados podem ser perdidos. Quer sair mesmo assim?',
+            { confirmar: 'Sair', destrutivo: true },
+          );
+          if (ok) void supabase.auth.signOut({ scope: 'local' });
+        }}
       />
     );
   }

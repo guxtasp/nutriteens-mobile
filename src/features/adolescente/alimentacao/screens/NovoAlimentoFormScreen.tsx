@@ -8,7 +8,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
 import { typography } from '../../../../shared/theme/typography';
-import { criarAlimento } from '../services/alimentacaoService';
+import { criarAlimento, NomeAlimentoInvalidoError } from '../services/alimentacaoService';
+import { ehErroDeRede } from '../../../../shared/offline/erroRede';
+import { validarNomeAlimento, NOME_ALIMENTO_MAX } from '../utils/nomeAlimento';
 import type { ClassificacaoNova } from '../utils/regraFeedbackRefeicao';
 import type { OrigemAlimento } from './NovoAlimentoOrigemScreen';
 import { InfoButton } from '../../../../shared/ui/InfoButton';
@@ -60,6 +62,11 @@ export default function NovoAlimentoFormScreen() {
 
 async function confirmarCategoria(categoriaEscolhida: string) {
     if (!nome.trim() || salvando || !userId) return;
+    const erroNome = validarNomeAlimento(nome);
+    if (erroNome) {
+      Alert.alert('Confira o nome', erroNome);
+      return;
+    }
     setCategoria(categoriaEscolhida);
     setSalvando(true);
     try {
@@ -75,12 +82,16 @@ async function confirmarCategoria(categoriaEscolhida: string) {
         alimento,
       });
     } catch (erro) {
-      // se a policy de INSERT em `alimentos` pra usuário comum não existir
-      // (ver SQL sugerido), isso cai aqui como RLS 42501 — agora pelo menos
-      // aparece pra pessoa, em vez de sumir com o toque no card
       console.error('Erro ao cadastrar alimento:', erro);
       setSalvando(false);
-      Alert.alert('Não deu pra cadastrar', 'Algo deu errado ao salvar esse alimento. Tenta de novo em instantes.');
+      if (erro instanceof NomeAlimentoInvalidoError) {
+        Alert.alert('Confira o nome', erro.message);
+      } else if (ehErroDeRede(erro)) {
+        // cadastro de alimento novo exige internet (não entra na fila offline)
+        Alert.alert('Sem internet', 'Para cadastrar um alimento novo é preciso estar com internet. Tente de novo quando a conexão voltar.');
+      } else {
+        Alert.alert('Não deu pra cadastrar', 'Algo deu errado ao salvar esse alimento. Tenta de novo em instantes.');
+      }
     }
   }
 
@@ -99,6 +110,7 @@ async function confirmarCategoria(categoriaEscolhida: string) {
       </View>
 
       <AppText style={styles.titulo}>O que é?</AppText>
+      <AppText style={styles.privado}>Esse alimento fica só no seu app, ninguém mais vê.</AppText>
 
       <TextInput
         style={styles.input}
@@ -106,6 +118,9 @@ async function confirmarCategoria(categoriaEscolhida: string) {
         placeholderTextColor="#6E9C7F"
         value={nome}
         onChangeText={setNome}
+        maxLength={NOME_ALIMENTO_MAX}
+        autoCapitalize="sentences"
+        accessibilityLabel="Nome do alimento"
       />
 
       <AppText style={styles.subtitulo}>Escolha uma categoria:</AppText>
@@ -166,7 +181,8 @@ const styles = StyleSheet.create({
   botaoCircular: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#8BC34A', alignItems: 'center', justifyContent: 'center' },
   topoDireita: { flexDirection: 'row', gap: 10 },
   botaoCircularPequeno: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#8BC34A', alignItems: 'center', justifyContent: 'center' },
-  titulo: { fontFamily: typography.bold, fontSize: 24, color: '#8BC34A', marginBottom: 16 },
+  titulo: { fontFamily: typography.bold, fontSize: 24, color: '#8BC34A', marginBottom: 4 },
+  privado: { fontFamily: typography.regular, fontSize: 13, color: '#B7D9A0', marginBottom: 16 },
   input: {
     borderBottomWidth: 1.5, borderBottomColor: '#8BC34A', color: '#fff',
     fontFamily: typography.regular, fontSize: 15, paddingBottom: 8, marginBottom: 24,

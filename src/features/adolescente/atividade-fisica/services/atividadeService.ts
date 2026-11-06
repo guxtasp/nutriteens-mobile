@@ -95,6 +95,36 @@ async function buscarAlvoMinDiarioAtividade(): Promise<number | null> {
   return data.criterio.alvo_min as number;
 }
 
+/**
+ * Total de minutos de atividade do dia + meta diária, para o feedback ao registrar.
+ * Nunca lança: sem internet (ou sem meta cadastrada) devolve null nos campos e o
+ * feedback fala só do que acabou de ser registrado.
+ */
+export async function buscarContextoAtividadeHoje(
+  userId: string,
+  data: string
+): Promise<{ totalHojeMin: number | null; alvoMin: number | null }> {
+  try {
+    const [alvoMin, { data: dia, error }] = await Promise.all([
+      buscarAlvoMinDiarioAtividade(),
+      supabase
+        .from('registros_diarios')
+        .select('registros_atividade_fisica ( duracao_minutos )')
+        .eq('user_id', userId)
+        .eq('data', data)
+        .maybeSingle(),
+    ]);
+    if (error) return { totalHojeMin: null, alvoMin };
+    const totalHojeMin = ((dia as any)?.registros_atividade_fisica ?? []).reduce(
+      (soma: number, r: any) => soma + r.duracao_minutos,
+      0
+    );
+    return { totalHojeMin, alvoMin };
+  } catch {
+    return { totalHojeMin: null, alvoMin: null };
+  }
+}
+
 /** Conta em quantos dos últimos 7 dias o total de minutos de atividade bateu a meta diária. */
 export async function diasComAtividadeSuficienteNaSemana(userId: string, alvoMinPorDia: number): Promise<number> {
   const hoje = new Date();

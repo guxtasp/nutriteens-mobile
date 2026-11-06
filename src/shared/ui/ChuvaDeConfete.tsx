@@ -6,6 +6,7 @@
 // sortear de novo a cada render. Não captura toques.
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useReduzirMovimento } from '../hooks/useReduzirMovimento';
 
 type Props = {
   /** quantidade de peças */
@@ -38,8 +39,10 @@ function gerador(semente: number) {
 
 function PecaAnimada({ peca, altura }: { peca: Peca; altura: number }) {
   const progresso = useRef(new Animated.Value(0)).current;
+  const reduzir = useReduzirMovimento();
 
   useEffect(() => {
+    if (reduzir) return;
     const animacao = Animated.loop(
       Animated.timing(progresso, {
         toValue: 1,
@@ -51,7 +54,10 @@ function PecaAnimada({ peca, altura }: { peca: Peca; altura: number }) {
     );
     animacao.start();
     return () => animacao.stop();
-  }, [peca, progresso]);
+  }, [peca, progresso, reduzir]);
+
+  // "reduzir movimento": sem peças caindo
+  if (reduzir) return null;
 
   const translateY = progresso.interpolate({ inputRange: [0, 1], outputRange: [-40, altura + 40] });
   const translateX = progresso.interpolate({

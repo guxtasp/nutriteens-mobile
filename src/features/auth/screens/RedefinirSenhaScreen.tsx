@@ -15,6 +15,7 @@ import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { AuthFormLayout } from '../../../shared/ui/AuthFormLayout';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
+import { CabecalhoAuth } from '../components/CabecalhoAuth';
 import { validatePassword } from '../utils/signupValidators';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../shared/contexts/AuthContext';
@@ -61,16 +62,21 @@ export default function RedefinirSenhaScreen() {
 
   return (
     <View style={[styles.outer, ehDesktop && styles.outerDesktop]}>
-      <AuthFormLayout desktop={ehDesktop} desktopStyle={[styles.container, styles.containerDesktop]}>
-        <AppText style={styles.title}>Crie uma nova senha</AppText>
-        <AppText style={styles.subtitle}>
-          Escolha uma senha nova para a sua conta NutriTeens.
-        </AppText>
+      <AuthFormLayout
+        desktop={ehDesktop}
+        desktopStyle={[styles.container, styles.containerDesktop]}
+        header={
+          <CabecalhoAuth
+            titulo="Crie uma nova senha"
+            subtitulo="Escolha uma senha nova para a sua conta NutriTeens."
+            mascote={require('../../../../assets/img/cadastro/acolhedor.png')}
+          />
+        }
+      >
 
         <PasswordInput label="Nova senha" value={novaSenha} onChangeText={setNovaSenha} />
         <PasswordInput label="Confirme a nova senha" value={confirmacao} onChangeText={setConfirmacao} />
 
-        <View style={styles.spacer} />
         <View style={styles.messageContainer}>
           <MessageBanner message={message} type={type} onClose={clearMessage} />
           <AppButton
@@ -93,16 +99,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.white,
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 70,
   },
   containerDesktop: {
     flex: undefined,
     width: '100%',
     maxWidth: 420,
-    paddingTop: 40,
-    paddingBottom: 40,
+    overflow: 'hidden',
+    paddingBottom: 24,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7E5',
@@ -124,6 +127,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   // flexGrow (e não flex:1): dentro do ScrollView o bloco precisa contar com a própria altura.
-  messageContainer: { marginTop: -40, flexGrow: 1, gap: 12 },
-  spacer: { height: 60 },
+  messageContainer: { marginTop: 24, gap: 12 },
 });

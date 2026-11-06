@@ -9,7 +9,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -62,11 +62,7 @@ export default function NutrienteDetalheScreen() {
   if (!info) {
     return (
       <SafeAreaView style={styles.tela}>
-        <View style={styles.cabecalho}>
-          <BackButton onPress={() => navigation.goBack()} />
-          <View style={styles.tituloBloco}><AppText style={styles.titulo}>Nutriente</AppText></View>
-          <View style={{ width: 48 }} />
-        </View>
+        <ScreenHeader titulo="Nutriente" onVoltar={() => navigation.goBack()} />
         <View style={styles.estado}>
           <AppText style={styles.estadoTitulo}>Não encontramos esse nutriente</AppText>
           <AppText style={styles.estadoTexto}>Volte para a lista e escolha outro.</AppText>
@@ -77,14 +73,7 @@ export default function NutrienteDetalheScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo} accessibilityRole="header">{info.nome}</AppText>
-          <AppText style={styles.subtitulo}>{info.tipo === 'VITAMINA' ? 'Vitamina' : 'Mineral'}</AppText>
-        </View>
-        <View style={{ width: 48 }} />
-      </View>
+      <ScreenHeader titulo={info.nome} subtitulo={info.tipo === 'VITAMINA' ? 'Vitamina' : 'Mineral'} onVoltar={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         <HeroNutriente simbolo={info.simbolo} />
@@ -154,10 +143,6 @@ export default function NutrienteDetalheScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
-  cabecalho: { marginTop: 30, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 12 },
-  tituloBloco: { flex: 1, alignItems: 'center' },
-  titulo: { fontFamily: typography.bold, fontSize: 20, color: vit.texto, textAlign: 'center' },
-  subtitulo: { fontFamily: typography.regular, fontSize: 13, color: vit.textoSuave, textAlign: 'center', marginTop: 2 },
   conteudo: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120, gap: 20 },
   secaoTitulo: { fontFamily: typography.bold, fontSize: 16, color: vit.texto, marginBottom: 10 },
   card: { borderWidth: 1.5, borderColor: vit.borda, borderRadius: 16, padding: 16 },

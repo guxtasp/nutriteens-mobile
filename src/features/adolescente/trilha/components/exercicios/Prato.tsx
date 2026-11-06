@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLarguraTela } from '../../../../../shared/ui/LarguraTela';
 import { AnimatePresence, MotiView } from 'moti';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../../../../shared/audio/haptics';
 import { AppText } from '../../../../../shared/ui/AppText';
 import { colors } from '../../../../../shared/theme/colors';
 import { layout } from '../../../../../shared/theme/layout';

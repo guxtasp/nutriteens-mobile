@@ -6,10 +6,9 @@ import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
 import { SpeechBubble } from '../../../../shared/ui/SpeechBubble';
-import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import type { EstadoMetricas, GruposInfo } from '../types/estado';
 import type { MetricasCompletas, TipoPeriodo } from '../types/metricas';
@@ -59,11 +58,7 @@ export function MetricasView({ estado, periodo, onMudarPeriodo, onVoltar, onTent
   const [aba, setAba] = useState<AbaId>(abaInicial ?? ABA_INICIAL);
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.header}>
-        <BackButton onPress={onVoltar} />
-        <AppText style={styles.titulo} accessibilityRole="header">Minha jornada</AppText>
-        <View style={{ width: 48 }} />
-      </View>
+      <ScreenHeader titulo="Minha jornada" onVoltar={onVoltar} />
 
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
         <SeletorPeriodo valor={periodo} onChange={onMudarPeriodo} />
@@ -217,8 +212,6 @@ function Cartoes({ aba, onMudarAba, metricas: m, mistura, feedbacks: f, gruposIn
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: FUNDO },
-  header: { flexDirection: 'row', alignItems: 'center', marginTop: 30, marginBottom: 8, paddingHorizontal: 20 },
-  titulo: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: typography.bold, color: colors.primaryDark },
   conteudo: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 60 },
   intro: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   aviso: { fontFamily: typography.regular, fontSize: 12, lineHeight: 17, color: '#4B4B4B', textAlign: 'center', marginTop: 8 },

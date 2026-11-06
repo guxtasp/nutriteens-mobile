@@ -6,6 +6,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { ItemCarrinho } from '../types/atividadeFisica';
+import SeletorDiaRegistro from '../../_shared/components/SeletorDiaRegistro';
 
 type Props = {
   visivel: boolean;
@@ -13,9 +14,12 @@ type Props = {
   onFechar: () => void;
   onRemover: (idLocal: string) => void;
   onRegistrar: () => void;
+  /** dia do registro: null = hoje */
+  diaRegistro?: string | null;
+  onMudarDia?: (iso: string | null) => void;
 };
 
-export default function CarrinhoAtividadesSheet({ visivel, itens, onFechar, onRemover, onRegistrar }: Props) {
+export default function CarrinhoAtividadesSheet({ visivel, itens, onFechar, onRemover, onRegistrar, diaRegistro, onMudarDia }: Props) {
   const [montado, setMontado] = useState(visivel);
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -80,10 +84,7 @@ export default function CarrinhoAtividadesSheet({ visivel, itens, onFechar, onRe
                 <AppText style={styles.contadorTexto}>{itens.length}</AppText>
               </View>
             </View>
-            <View style={styles.hoje}>
-              <AppText style={styles.hojeTexto}>Hoje</AppText>
-              <Ionicons name="calendar-outline" size={18} color={colors.primaryDark} />
-            </View>
+            <SeletorDiaRegistro dia={diaRegistro ?? null} onMudar={onMudarDia} />
           </View>
 
           <ScrollView style={{ maxHeight: 280 }}>
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   cabecalho: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 6 },

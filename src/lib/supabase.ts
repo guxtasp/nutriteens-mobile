@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 import { criarFetchComTimeout } from './fetchComTimeout'; // fetch com tempo máximo de espera (ver o arquivo)
+import { estaOnline, verificarConexao } from '../shared/offline/conexao'; // sabe se estamos sem internet
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!; // Usa a variável de ambiente para obter a URL do Supabase
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!; // Usa a variável de ambiente para obter a chave anônima do Supabase
@@ -21,7 +22,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, { // Cria o c
     detectSessionInUrl: false, // Desabilita a detecção da sessão na URL
   },
   global: {
-    fetch: criarFetchComTimeout(),
+    // sem internet conhecida, falha na hora (antes esperava 20 s por chamada: o app parecia travado)
+    fetch: criarFetchComTimeout(undefined, {
+      semConexao: () => !estaOnline(),
+      aoFalharRede: () => void verificarConexao(),
+    }),
   },
 });
 

@@ -16,6 +16,9 @@ interface AtividadeFisicaContextValue {
   registrarBuscaRecente: (termo: string) => void;
   registrarCarrinho: () => Promise<number>;
   enviando: boolean;
+  /** dia escolhido no calendário do carrinho (AAAA-MM-DD); null = hoje */
+  diaRegistro: string | null;
+  setDiaRegistro: (iso: string | null) => void;
 }
 
 const AtividadeFisicaContext = createContext<AtividadeFisicaContextValue | undefined>(undefined);
@@ -26,6 +29,7 @@ export function AtividadeFisicaProvider({ children }: { children: ReactNode }) {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [buscasRecentes, setBuscasRecentes] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
+  const [diaRegistro, setDiaRegistro] = useState<string | null>(null);
 
   const adicionarAoCarrinho = useCallback((nome: string, duracaoMinutos: number) => {
     const novoItem: ItemCarrinho = {
@@ -56,7 +60,7 @@ export function AtividadeFisicaProvider({ children }: { children: ReactNode }) {
     if (carrinho.length === 0 || enviando || !userId) return 0;
     setEnviando(true);
     try {
-      const dataISO = formatarDataISO(new Date());
+      const dataISO = diaRegistro ?? formatarDataISO(new Date());
       const itens = carrinho.map((item) => ({
         nomeAtividade: item.nomeAtividade,
         duracaoMinutos: item.duracaoMinutos,
@@ -68,11 +72,12 @@ export function AtividadeFisicaProvider({ children }: { children: ReactNode }) {
       );
       const quantidade = carrinho.length;
       setCarrinho([]);
+      setDiaRegistro(null);
       return quantidade;
     } finally {
       setEnviando(false);
     }
-  }, [carrinho, enviando, userId, executarOuGuardar]);
+  }, [carrinho, enviando, userId, executarOuGuardar, diaRegistro]);
 
   return (
     <AtividadeFisicaContext.Provider
@@ -85,6 +90,8 @@ export function AtividadeFisicaProvider({ children }: { children: ReactNode }) {
         registrarBuscaRecente,
         registrarCarrinho,
         enviando,
+        diaRegistro,
+        setDiaRegistro,
       }}
     >
       {children}

@@ -3,7 +3,7 @@
 // Feedback combinado (som + vibração) pra não repetir o par em cada tela.
 // Nunca lança erro: sem áudio ou sem motor de vibração, simplesmente não faz nada.
 // O som respeita a preferência "sons ligados" (ver tocarSom em ./sons).
-import * as Haptics from 'expo-haptics';
+import * as Haptics from './haptics';
 import { tocarSom } from './sons';
 
 function vibrar(acao: () => Promise<void>): void {

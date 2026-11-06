@@ -11,7 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
 import { AppButton } from '../../../../shared/ui/AppButton';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { LabeledInput } from '../../../../shared/ui/LabeledInput';
 import { MessageBanner } from '../../../../shared/ui/MessageBanner';
 import { colors } from '../../../../shared/theme/colors';
@@ -74,11 +74,7 @@ export default function CadastroProdutoScannerScreen() {
   if (enviado) {
     return (
       <SafeAreaView style={styles.tela}>
-        <View style={styles.cabecalho}>
-          <View style={{ width: 48 }} />
-          <AppText style={styles.titulo}>Pedido enviado</AppText>
-          <View style={{ width: 48 }} />
-        </View>
+        <ScreenHeader titulo="Pedido enviado" onVoltar={() => navigation.goBack()} />
         <View style={styles.sucesso}>
           <MaterialCommunityIcons name="check-circle-outline" size={52} color={colors.primaryDark} />
           <AppText style={styles.secao}>
@@ -99,11 +95,7 @@ export default function CadastroProdutoScannerScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <AppText style={styles.titulo}>{incompleta ? 'Avisar a equipe' : 'Pedir cadastro'}</AppText>
-        <View style={{ width: 48 }} />
-      </View>
+      <ScreenHeader titulo={incompleta ? 'Avisar a equipe' : 'Pedir cadastro'} onVoltar={() => navigation.goBack()} />
       <MessageBanner message={erro} onClose={() => setErro(null)} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -152,8 +144,6 @@ export default function CadastroProdutoScannerScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
-  cabecalho: { marginTop: 30, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 12 },
-  titulo: { flex: 1, textAlign: 'center', fontFamily: typography.bold, fontSize: 20, color: colors.primaryDark },
   conteudo: { paddingHorizontal: 20, paddingBottom: 60, gap: 14 },
   texto: { fontFamily: typography.regular, fontSize: 13, color: '#7A8B94' },
   secao: { fontFamily: typography.bold, fontSize: 15, color: colors.primaryDark, marginTop: 6 },

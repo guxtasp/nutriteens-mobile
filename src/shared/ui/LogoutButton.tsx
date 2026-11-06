@@ -1,28 +1,14 @@
 // src/shared/ui/LogoutButton.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { AppText } from './AppText';
-import { useAuth } from '../contexts/AuthContext';
-import { colors } from '../theme/colors';
+import { useSairDaConta } from '../hooks/useSairDaConta';
 
 export function LogoutButton() {
-  const { signOut } = useAuth();
-  const [saindo, setSaindo] = useState(false);
-
-  async function handleSair() {
-    if (saindo) return;
-    setSaindo(true);
-    try {
-      await signOut();
-      // RootNavigator detecta a sessão nula e troca a stack sozinho
-    } catch (err) {
-      console.error('Erro ao sair:', err);
-      setSaindo(false);
-    }
-  }
+  const { sair: handleSair, saindo } = useSairDaConta();
 
   return (
-    <Pressable style={styles.botao} onPress={handleSair} disabled={saindo}>
+    <Pressable style={styles.botao} onPress={handleSair} disabled={saindo} accessibilityRole="button" accessibilityLabel="Sair da conta">
       {saindo ? (
         <ActivityIndicator color="#ffff" />
       ) : (

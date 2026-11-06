@@ -14,6 +14,7 @@ import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { colors } from '../../../../shared/theme/colors';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import EstatisticaPill from '../../home/components/EstatisticaPill';
+import ChipSemInternet from '../../home/components/ChipSemInternet';
 import { SinoNotificacoes } from '../../notificacoes/components/SinoNotificacoes';
 
 const COR_XP = colors.primary;
@@ -56,12 +57,18 @@ export default function EstatisticasCabecalho() {
 
   return (
     <>
-      <EstatisticaPill
-        icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
-        valor={xp}
-        sufixo="XP"
-        cor={COR_XP}
-      />
+      <Pressable
+        onPress={() => navigation.navigate('ExtratoXp')}
+        accessibilityRole="button"
+        accessibilityLabel={`${xp} pontos de experiência. Ver extrato`}
+      >
+        <EstatisticaPill
+          icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
+          valor={xp}
+          sufixo="XP"
+          cor={COR_XP}
+        />
+      </Pressable>
       {sequencia > 0 && (
         <Pressable
           onPress={() => navigation.navigate('Sequencia')}
@@ -75,6 +82,7 @@ export default function EstatisticasCabecalho() {
           />
         </Pressable>
       )}
+      <ChipSemInternet />
       <SinoNotificacoes />
     </>
   );

@@ -100,7 +100,6 @@ export default function NotificacoesScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#F3F8EE' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginTop: 30, marginBottom: 8 },
   titulo: { fontSize: 18, fontFamily: typography.bold, color: colors.primaryDark, marginLeft: 8 },
   acaoLinha: { paddingHorizontal: 20, alignItems: 'flex-end' },
   marcarTodasBotao: { minHeight: 44, justifyContent: 'center' },

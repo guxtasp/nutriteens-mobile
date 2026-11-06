@@ -23,6 +23,7 @@ import { useHomeData } from '../hooks/useHomeData';
 import { calcularDesafioBroxis } from '../utils/desafioBroxis';
 import { marcosDaSequencia, numerarSemana, rotuloNivel, type MarcoSequencia } from '../utils/marcosSequencia';
 import ConquistaModal from '../components/ConquistaModal';
+import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
 
 // sombra única dos cartões (mesma do Extrato de pontos)
 const sombra = {
@@ -111,6 +112,7 @@ export default function SequenciaScreen() {
   const brilhoOpacity = useRef(new Animated.Value(0.35)).current;
   // pulso do badge "você está aqui" na barra do desafio
   const badgePulso = useRef(new Animated.Value(1)).current;
+  const reduzir = useReduzirMovimento();
 
   // cascata de entrada: só começa quando os dados chegam (até lá a tela mostra o carregando,
   // em vez de piscar uma sequência "0" cinza e depois trocar)
@@ -127,6 +129,7 @@ export default function SequenciaScreen() {
   }, [dadosCarregados]);
 
   useEffect(() => {
+    if (reduzir) return; // sem pulsos em loop
     const loopBrilho = Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -154,7 +157,7 @@ export default function SequenciaScreen() {
       loopBrilho.stop();
       loopBadge.stop();
     };
-  }, []);
+  }, [reduzir]);
 
   // contagem do número sempre que a sequência mudar (ex.: quando o valor real chega)
   useEffect(() => {

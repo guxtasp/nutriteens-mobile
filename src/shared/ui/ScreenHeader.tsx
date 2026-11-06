@@ -17,20 +17,24 @@ type Props = {
   onVoltar: () => void;
   /** ação à direita (ícone pequeno); sem isso fica um espaço do tamanho do botão, para o título ficar centrado */
   direita?: React.ReactNode;
+  /** largura dos dois lados (voltar e ação); aumente só se a ação da direita tiver 2 botões. Padrão 48 */
+  larguraLateral?: number;
   style?: StyleProp<ViewStyle>;
 };
 
-export function ScreenHeader({ titulo, subtitulo, onVoltar, direita, style }: Props) {
+export function ScreenHeader({ titulo, subtitulo, onVoltar, direita, larguraLateral = 48, style }: Props) {
   return (
     <View style={[styles.linha, style]}>
-      <BackButton onPress={onVoltar} />
+      <View style={[styles.lateral, { width: larguraLateral, alignItems: 'flex-start' }]}>
+        <BackButton onPress={onVoltar} />
+      </View>
       <View style={styles.centro}>
         <AppText style={styles.titulo} accessibilityRole="header" numberOfLines={2}>
           {titulo}
         </AppText>
         {!!subtitulo && <AppText style={styles.subtitulo}>{subtitulo}</AppText>}
       </View>
-      <View style={styles.lateral}>{direita}</View>
+      <View style={[styles.lateral, { width: larguraLateral, alignItems: 'flex-end' }]}>{direita}</View>
     </View>
   );
 }

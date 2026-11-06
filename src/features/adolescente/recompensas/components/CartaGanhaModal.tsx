@@ -13,7 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../../../shared/audio/haptics';
 import { AppText } from '../../../../shared/ui/AppText';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { colors } from '../../../../shared/theme/colors';

@@ -8,6 +8,7 @@ import { typography } from '../../../../shared/theme/typography';
 import { layout } from '../../../../shared/theme/layout';
 import { useSaudacao } from '../hooks/useSaudacao';
 import EstatisticaPill from './EstatisticaPill';
+import ChipSemInternet from './ChipSemInternet';
 import { SinoNotificacoes } from '../../notificacoes/components/SinoNotificacoes';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -69,12 +70,18 @@ export default function HomeHeader({ nome, pontos, sequenciaAtual, onAbrirPerfil
       {/* linha 2: XP, sequência e sino — fora da linha da saudação para não espremê-la */}
       <View ref={refEstatisticas} collapsable={false} style={styles.estatisticas}>
         {/* XP: sempre visível, mesmo em 0 — é um contador persistente, diferente da sequência */}
-        <EstatisticaPill
-          icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
-          valor={pontos}
-          sufixo="XP"
-          cor={COR_XP}
-        />
+        <Pressable
+          onPress={() => navigation.navigate('ExtratoXp')}
+          accessibilityRole="button"
+          accessibilityLabel={`${pontos} pontos de experiência. Ver extrato`}
+        >
+          <EstatisticaPill
+            icone={<MaterialCommunityIcons name="gift" size={18} color={COR_XP} />}
+            valor={pontos}
+            sufixo="XP"
+            cor={COR_XP}
+          />
+        </Pressable>
 
         {sequenciaAtual > 0 && (
           <Pressable
@@ -89,6 +96,8 @@ export default function HomeHeader({ nome, pontos, sequenciaAtual, onAbrirPerfil
             />
           </Pressable>
         )}
+
+        <ChipSemInternet />
 
         <SinoNotificacoes />
       </View>

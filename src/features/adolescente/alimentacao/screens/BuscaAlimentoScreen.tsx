@@ -6,7 +6,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { BackButton } from '../../../../shared/ui/BackButton';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import {
@@ -234,13 +234,11 @@ export default function BuscaAlimentoScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.cabecalho}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.tituloBloco}>
-          <AppText style={styles.titulo}>{params.nomeRefeicao}</AppText>
-          <AppText style={styles.subtitulo}>Diga pra gente: o que comeu agora?</AppText>
-        </View>
-      </View>
+      <ScreenHeader
+        titulo={params.nomeRefeicao}
+        subtitulo="Diga pra gente: o que comeu agora?"
+        onVoltar={() => navigation.goBack()}
+      />
 
       <View style={styles.corpo}>
         <View style={styles.buscaLinha}>
@@ -435,10 +433,6 @@ export default function BuscaAlimentoScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white ?? '#fff' },
-  cabecalho: { flexDirection: 'row', marginTop: 30, alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 12 },
-  tituloBloco: { flex: 1, alignItems: 'center' },
-  titulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark, textAlign: 'center' },
-  subtitulo: { fontFamily: typography.regular, fontSize: 12, color: '#7A8B94', textAlign: 'center', marginTop: 2 },
   corpo: { flex: 1, paddingHorizontal: 24, paddingTop: 8 },
   buscaLinha: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
   buscaCaixa: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: '#D9E2E8', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10 },

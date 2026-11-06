@@ -10,6 +10,7 @@ import { buscarTrocaDaRefeicao, TrocaSugerida } from '../../trocas/services/troc
 import { comCache, lerCache } from '../../../../shared/offline/cacheLocal';
 import { ehErroDeRede } from '../../../../shared/offline/erroRede';
 import { normalizarTexto } from '../utils/filtrosAlimento';
+import { normalizarNomeAlimento, validarNomeAlimento, escaparCuringasIlike } from '../utils/nomeAlimento';
 
 export type TipoRefeicao = 'CAFE_DA_MANHA' | 'LANCHE_MANHA' | 'ALMOCO' | 'LANCHE_TARDE' | 'JANTAR' | 'CEIA';
 
@@ -52,16 +53,38 @@ async function obterClassificacaoEbiaAtual(userId: string): Promise<Classificaca
   }
 }
 
+/** Erro de validação do nome (mensagem já pronta para mostrar à pessoa). */
+export class NomeAlimentoInvalidoError extends Error {}
+
+async function buscarAlimentoPorNomeExato(nome: string): Promise<Alimento | null> {
+  const { data, error } = await supabase
+    .from('alimentos')
+    .select(COLUNAS_ALIMENTO)
+    .ilike('nome', escaparCuringasIlike(nome))
+    .limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
 export async function criarAlimento(params: {
   nome: string;
   classificacaoNova: ClassificacaoNova;
   grupoAlimentar: string;
   userId: string; // obrigatório agora — a RLS exige auth.uid() = criado_por
 }): Promise<Alimento> {
+  const nome = normalizarNomeAlimento(params.nome);
+  const erroNome = validarNomeAlimento(nome);
+  if (erroNome) throw new NomeAlimentoInvalidoError(erroNome);
+
+  // `alimentos.nome` é UNIQUE: se já existe (do catálogo ou de outra pessoa,
+  // com qualquer caixa), usa o que existe em vez de falhar com "já existe".
+  const existente = await buscarAlimentoPorNomeExato(nome);
+  if (existente) return existente;
+
   const { data, error } = await supabase
     .from('alimentos')
     .insert({
-      nome: params.nome.trim(),
+      nome,
       classificacao_nova: params.classificacaoNova,
       grupos_alimentares: [params.grupoAlimentar],
       eh_prato_composto: false,
@@ -70,6 +93,11 @@ export async function criarAlimento(params: {
     .select(COLUNAS_ALIMENTO)
     .single();
 
+  // corrida: outro cadastro do mesmo nome entrou entre a checagem e o insert
+  if (error && (error as { code?: string }).code === '23505') {
+    const jaExiste = await buscarAlimentoPorNomeExato(nome);
+    if (jaExiste) return jaExiste;
+  }
   if (error) throw error;
 
   // alimento cadastrado pelo próprio adolescente não passa por curadoria de

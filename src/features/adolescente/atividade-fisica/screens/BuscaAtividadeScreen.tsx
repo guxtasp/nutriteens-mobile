@@ -8,7 +8,10 @@ import type { AdolescenteStackParamList } from '../../../../navigation/Adolescen
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import { buscarAtividades, AtividadeCatalogo } from '../services/atividadeService';
+import { buscarAtividades, buscarContextoAtividadeHoje, AtividadeCatalogo } from '../services/atividadeService';
+import { useAuth } from '../../../../shared/contexts/AuthContext';
+import { formatarDataISO } from '../../../../shared/utils/data';
+import { feedbackAtividade, type FeedbackRegistro } from '../../_shared/utils/feedbackRegistro';
 import { useAtividadeFisica } from '../contexts/AtividadeFisicaContext';
 import CarrinhoBar from '../components/CarrinhoBar';
 import CarrinhoAtividadesSheet from '../components/CarrinhoAtividadesSheet';
@@ -30,6 +33,7 @@ const MASCOTE_BROXIS = require('../../../../../assets/img/mascot/broxis-neutro2.
 
 export default function BuscaAtividadeScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { userId } = useAuth();
   const {
     carrinho,
     adicionarAoCarrinho,
@@ -47,6 +51,7 @@ export default function BuscaAtividadeScreen() {
   const [sheetCarrinho, setSheetCarrinho] = useState(false);
   const [sucessoVisivel, setSucessoVisivel] = useState(false);
   const [quantidadeRegistrada, setQuantidadeRegistrada] = useState(0);
+  const [feedback, setFeedback] = useState<FeedbackRegistro | null>(null);
 
   // catálogo completo para navegar sem digitar (e para filtrar por duração)
   useEffect(() => {
@@ -89,8 +94,14 @@ export default function BuscaAtividadeScreen() {
 
   async function handleRegistrar() {
     try {
+      const minutosRegistrados = carrinho.reduce((soma, item) => soma + item.duracaoMinutos, 0);
       const quantidade = await registrarCarrinho();
       if (quantidade === 0) return;
+      // com internet traz o total do dia e a meta; sem internet fica só o que foi registrado agora
+      const contexto = userId
+        ? await buscarContextoAtividadeHoje(userId, formatarDataISO(new Date()))
+        : { totalHojeMin: null, alvoMin: null };
+      setFeedback(feedbackAtividade({ quantidade, minutosRegistrados, ...contexto }));
       setQuantidadeRegistrada(quantidade);
       setSheetCarrinho(false);
       setTimeout(() => setSucessoVisivel(true), 350);
@@ -217,6 +228,8 @@ export default function BuscaAtividadeScreen() {
       <SucessoRegistroModal
         visivel={sucessoVisivel}
         quantidade={quantidadeRegistrada}
+        titulo={feedback?.titulo}
+        mensagem={feedback?.mensagem}
         onFechar={() => {
           setSucessoVisivel(false);
           navigation.goBack();

@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useLarguraTela } from '../../../../../shared/ui/LarguraTela';
 import { MotiView } from 'moti';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../../../../shared/audio/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../../shared/ui/AppText';
 import { colors } from '../../../../../shared/theme/colors';
