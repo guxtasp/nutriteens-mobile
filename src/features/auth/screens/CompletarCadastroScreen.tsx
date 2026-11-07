@@ -125,6 +125,9 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
           { paddingTop: Math.max(60, insets.top + 24), paddingBottom: 40 + insets.bottom },
         ]}
         keyboardShouldPersistTaps="handled"
+        bounces={false}
+        alwaysBounceVertical={false}
+        overScrollMode="never"
       >
         <BackButton onPress={onSair} style={styles.BackButton} />
 

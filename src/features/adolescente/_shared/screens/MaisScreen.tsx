@@ -1,7 +1,7 @@
 // src/features/adolescente/_shared/screens/MaisScreen.tsx
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,9 @@ import QuickActionsMenu from '../components/QuickActionsMenu';
 import { useTour } from '../../tour/TourContext';
 import { useSairDaConta } from '../../../../shared/hooks/useSairDaConta';
 
+// altura aproximada da barra de abas flutuante (barra + respiro + botão central)
+const BARRA_ABAS_ALTURA = 130;
+
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList>;
 
 export default function MaisScreen() {
@@ -24,6 +27,7 @@ export default function MaisScreen() {
   const [testando, setTestando] = useState(false);
   const { iniciar: iniciarTour } = useTour();
   const { sair, saindo: saindoDaConta } = useSairDaConta();
+  const insets = useSafeAreaInsets();
 
   // o tour começa na Home: volta para ela e dá um instante para a tela assentar
   function handleReverTour() {
@@ -59,7 +63,13 @@ export default function MaisScreen() {
         <AppText style={styles.titulo}>Mais</AppText>
       </View>
 
-      <View style={styles.conteudo}>
+      {/* rola: a barra de abas é flutuante e cobria o "Sair da conta" em telas curtas;
+          o respiro no fim deixa o último item acima da barra */}
+      <ScrollView
+        style={styles.rolagem}
+        contentContainerStyle={[styles.conteudo, { paddingBottom: BARRA_ABAS_ALTURA + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
         <AppText style={styles.secao}>Minha jornada</AppText>
 
         <View style={styles.cartao}>
@@ -176,7 +186,7 @@ export default function MaisScreen() {
           Se não ouvir nada, confira se o iPhone não está no modo silencioso (botão na lateral do aparelho) e se o
           volume está ligado.
         </AppText>
-      </View>
+      </ScrollView>
 
       <QuickActionsMenu aberto={menuAberto} onFechar={() => setMenuAberto(false)} onSelecionar={handleSelecionarAcao} />
       <HomeBottomBar activeTab="mais" menuAberto={menuAberto} onAbrirMenu={() => setMenuAberto((v) => !v)} />
@@ -188,7 +198,8 @@ const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white ?? '#fff' },
   cabecalho: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   titulo: { fontFamily: typography.bold, fontSize: 22, color: colors.primaryDark },
-  conteudo: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
+  rolagem: { flex: 1 },
+  conteudo: { paddingHorizontal: 16, paddingTop: 12 },
   secao: { fontFamily: typography.semiBold, fontSize: 13, color: '#7A8B94', marginBottom: 10 },
   cartao: {
     backgroundColor: '#F4F9EE',

@@ -11,8 +11,20 @@
 //
 // No web desktop o visual de "cartão centralizado" é preservado exatamente como
 // era: lá não há teclado virtual nem insets, então o container fixo continua.
+
+ // src/shared/ui/AuthFormLayout.tsx
+
 import React from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+  Platform,
+} from 'react-native';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 
@@ -20,55 +32,127 @@ type Props = {
   children: React.ReactNode;
   /** true só no web com janela larga (cartão centralizado). */
   desktop?: boolean;
-  /** estilo do container no modo desktop (o mesmo que a tela já usava). */
+  /** estilo do container no modo desktop. */
   desktopStyle?: StyleProp<ViewStyle>;
-  /** cabeçalho de largura total (ex.: topo verde). Rola junto com o conteúdo. */
+  /** cabeçalho de largura total. */
   header?: React.ReactNode;
+  /** rodapé fixo, como o botão principal. */
+  footer?: React.ReactNode;
 };
 
 const PADDING_VERTICAL_EXTRA = 24;
 
-export function AuthFormLayout({ children, desktop = false, desktopStyle, header }: Props) {
+export function AuthFormLayout({
+  children,
+  desktop = false,
+  desktopStyle,
+  header,
+  footer,
+}: Props) {
   const insets = useSafeAreaInsets();
 
+  // layout desktop
   if (desktop) {
     return (
       <View style={desktopStyle}>
         {header}
-        {header ? <View style={styles.corpo}>{children}</View> : children}
+
+        {header ? (
+          <View style={styles.corpo}>{children}</View>
+        ) : (
+          children
+        )}
+
+        {footer ? (
+          <View style={styles.rodapeDesktop}>{footer}</View>
+        ) : null}
       </View>
     );
   }
 
+  // layout mobile
   return (
-    // 'padding' nos dois sistemas: com edge-to-edge ligado no Android
-    // (app.json -> edgeToEdgeEnabled) a janela não é redimensionada pelo teclado,
-    // então o ajuste precisa vir daqui. Validar em aparelho (ver roteiro de testes).
-    <KeyboardAvoidingView style={styles.fill} behavior="padding">
-      <ScrollView
-        style={styles.fill}
-        contentContainerStyle={[
-          styles.conteudo,
-          header ? styles.conteudoComHeader : null,
-          !header && { paddingTop: insets.top + PADDING_VERTICAL_EXTRA },
-          { paddingBottom: insets.bottom + PADDING_VERTICAL_EXTRA },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {header}
-        {header ? <View style={styles.corpo}>{children}</View> : children}
-      </ScrollView>
+    <KeyboardAvoidingView
+      style={styles.fill}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={0}
+    >
+      <View style={styles.fill}>
+        <ScrollView
+          style={styles.fill}
+          contentContainerStyle={[
+            styles.conteudo,
+            header ? styles.conteudoComHeader : null,
+            !header && {
+              paddingTop: insets.top + PADDING_VERTICAL_EXTRA,
+            },
+            {
+              paddingBottom: footer
+                ? 16
+                : insets.bottom + PADDING_VERTICAL_EXTRA,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          alwaysBounceVertical={false}
+          overScrollMode="never"
+        >
+          {header}
+
+          {header ? (
+            <View style={styles.corpo}>{children}</View>
+          ) : (
+            children
+          )}
+        </ScrollView>
+
+        {footer ? (
+          <View
+            style={[
+              styles.rodape,
+              { paddingBottom: Math.max(insets.bottom, 12) },
+            ]}
+          >
+            {footer}
+          </View>
+        ) : null}
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: colors.white },
-  // flexGrow:1 mantém o rodapé (spacer + botão) colado embaixo quando o
-  // conteúdo é curto, e deixa rolar quando é maior que a tela.
-  conteudo: { flexGrow: 1, paddingHorizontal: 24 },
-  // com cabeçalho de largura total: o padding lateral passa para o corpo
-  conteudoComHeader: { paddingHorizontal: 0 },
-  corpo: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24 },
+  fill: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+
+  conteudo: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+  },
+
+  conteudoComHeader: {
+    paddingHorizontal: 0,
+  },
+
+  corpo: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+  },
+
+  rodape: {
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2EC',
+  },
+
+  rodapeDesktop: {
+    paddingHorizontal: 24,
+    paddingTop: 4,
+  },
 });

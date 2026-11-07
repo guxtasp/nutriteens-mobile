@@ -201,6 +201,10 @@ export default function SignupScreen({ navigation }: any) {
           style={styles.container}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          // "preso": sem quique/overscroll (mostrava o branco acima do cabeçalho verde)
+          bounces={false}
+          alwaysBounceVertical={false}
+          overScrollMode="never"
         >
           {/* o cabeçalho rola junto: em telas pequenas/fonte grande com o teclado aberto sobra espaço para os campos */}
           <CabecalhoCadastro

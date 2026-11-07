@@ -56,6 +56,33 @@ export default function LoginScreen({ navigation }: any) {
       <AuthFormLayout
         desktop={ehDesktop}
         desktopStyle={[styles.container, styles.containerDesktop]}
+        footer={
+          <View style={styles.acoes}>
+            {/* só ocupa espaço quando há mensagem: o MessageBanner reserva 68 px mesmo vazio,
+                e no rodapé fixo isso empurrava o "Esqueci minha senha" para fora da tela */}
+            {message ? <MessageBanner message={message} type={type} onClose={clearMessage} /> : null}
+            <AppButton
+              label={loading ? 'ENTRANDO...' : 'VAMOS LÁ'}
+              backgroundColor={colors.primaryDark}
+              textColor={colors.white}
+              shadowColor="#123024"
+              disabled={loading}
+              onPress={handleLogin}
+            />
+            {/* caminho claro para quem ainda não tem conta */}
+            <Pressable
+              onPress={() => irParaTelaAuth(navigation, 'Signup')}
+              accessibilityRole="link"
+              accessibilityLabel="Ainda não tenho conta. Cadastrar"
+              hitSlop={{ top: 6, bottom: 6 }}
+              style={styles.linkConta}
+            >
+              <AppText style={styles.textoConta}>
+                Ainda não tenho conta · <AppText style={styles.link}>Cadastrar</AppText>
+              </AppText>
+            </Pressable>
+          </View>
+        }
         header={
           <CabecalhoAuth
             titulo="Olha você! Seja bem-vindo(a) novamente ;)"
@@ -86,30 +113,6 @@ export default function LoginScreen({ navigation }: any) {
 
         <Pressable onPress={() => navigation.navigate('EsqueciSenha')} accessibilityRole="link">
           <AppText style={styles.forgotPassword}>Esqueci minha senha</AppText>
-        </Pressable>
-
-        <View style={styles.acoes}>
-          <MessageBanner message={message} type={type} onClose={clearMessage} />
-          <AppButton
-            label={loading ? 'ENTRANDO...' : 'VAMOS LÁ'}
-            backgroundColor={colors.primaryDark}
-            textColor={colors.white}
-            shadowColor="#123024"
-            disabled={loading}
-            onPress={handleLogin}
-          />
-        </View>
-
-        {/* caminho claro para quem ainda não tem conta */}
-        <Pressable
-          onPress={() => irParaTelaAuth(navigation, 'Signup')}
-          accessibilityRole="link"
-          accessibilityLabel="Ainda não tenho conta. Cadastrar"
-          style={styles.linkConta}
-        >
-          <AppText style={styles.textoConta}>
-            Ainda não tenho conta · <AppText style={styles.link}>Cadastrar</AppText>
-          </AppText>
         </Pressable>
 
         {/* só no computador (ver acessoProfissional.ts) */}
@@ -158,15 +161,13 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     textAlign: 'center',
     textDecorationLine: 'underline',
-    paddingVertical: 12,
-    marginBottom: 12,
+    paddingVertical: 6,
   },
-  acoes: { gap: 12 },
+  acoes: { gap: 4 },
   linkConta: {
-    minHeight: 48,
+    minHeight: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
   },
   textoConta: {
     fontFamily: typography.regular,
