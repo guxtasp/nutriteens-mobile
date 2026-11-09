@@ -33,9 +33,11 @@ type Props = {
   detalhe?: Detalhe;
   /** observação discreta sobre os dados (limitação conhecida) */
   nota?: string | null;
+  /** Broxis ao lado da frase (use em UM cartão por aba) */
+  mascote?: boolean;
 };
 
-export function CartaoMetrica({ cartao, feedback, destaque, comparacao, children, celebrar, indice = 0, onProximoPasso, detalhe, nota }: Props) {
+export function CartaoMetrica({ cartao, feedback, destaque, comparacao, children, celebrar, indice = 0, onProximoPasso, detalhe, nota, mascote = false }: Props) {
   const info = CARTOES_INFO[cartao];
   const ac = ACENTOS[cartao];
   return (
@@ -47,11 +49,10 @@ export function CartaoMetrica({ cartao, feedback, destaque, comparacao, children
     >
       <View style={styles.cabecalho}>
         <View style={[styles.icone, { backgroundColor: ac.suave }]}>
-          <Ionicons name={ac.icone} size={20} color={ac.cor} />
+          <Ionicons name={ac.icone} size={18} color={ac.cor} />
         </View>
         <View style={{ flex: 1 }}>
           <AppText style={styles.titulo} accessibilityRole="header">{info.titulo}</AppText>
-          <AppText style={styles.descricao}>{info.oQueMostra}</AppText>
         </View>
       </View>
 
@@ -74,24 +75,24 @@ export function CartaoMetrica({ cartao, feedback, destaque, comparacao, children
         </View>
       )}
 
-      <BroxisFeedback feedback={feedback} corFundo={ac.suave} corTexto={ac.cor} onProximoPasso={onProximoPasso} />
+      <BroxisFeedback feedback={feedback} corFundo={ac.suave} corTexto={ac.cor} onProximoPasso={onProximoPasso} mascote={mascote} />
 
-      {detalhe && <DetalheMetrica detalhe={detalhe} cor={ac.cor} corSuave={ac.suave} />}
+      <DetalheMetrica detalhe={detalhe ?? { linhas: [], dicas: [] }} cor={ac.cor} corSuave={ac.suave} explicacao={info.oQueMostra} />
     </MotiView>
   );
 }
 
 const styles = StyleSheet.create({
   cartao: { backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 14, borderColor: 'transparent', borderWidth: 2 },
-  cabecalho: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  icone: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  cabecalho: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  icone: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   titulo: { fontFamily: typography.bold, fontSize: 16, color: '#1B4332' },
   descricao: { fontFamily: typography.regular, fontSize: 12, lineHeight: 17, color: TEXTO_SUAVE, marginTop: 2 },
-  destaque: { marginTop: 14, gap: 8 },
+  destaque: { marginTop: 10, gap: 6 },
   valorLinha: { flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' },
-  valor: { fontFamily: typography.bold, fontSize: 36, lineHeight: 42 },
+  valor: { fontFamily: typography.bold, fontSize: 32, lineHeight: 38 },
   rotulo: { fontFamily: typography.semiBold, fontSize: 14, color: '#1B4332', flexShrink: 1 },
-  grafico: { marginTop: 14 },
+  grafico: { marginTop: 12 },
   nota: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', marginTop: 10 },
   notaTexto: { flex: 1, fontFamily: typography.regular, fontSize: 12, lineHeight: 17, color: TEXTO_SUAVE },
 });

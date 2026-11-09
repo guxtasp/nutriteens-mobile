@@ -15,14 +15,16 @@ type Props = {
   corFundo: string;
   corTexto: string;
   onProximoPasso?: (passo: ProximoPasso) => void;
+  /** mostra o Broxis ao lado do texto. Só um por aba (o destaque); nos demais cartões fica só o texto. */
+  mascote?: boolean;
 };
 
-export function BroxisFeedback({ feedback, corFundo, corTexto, onProximoPasso }: Props) {
+export function BroxisFeedback({ feedback, corFundo, corTexto, onProximoPasso, mascote = false }: Props) {
   const passo = feedback.proximoPasso;
   return (
     <View style={styles.raiz}>
       <View style={styles.linha}>
-        <BroxisMascot size={52} pose={feedback.pose} entrance="nenhuma" showParticles={false} />
+        {mascote && <BroxisMascot size={52} pose={feedback.pose} entrance="nenhuma" showParticles={false} />}
         <View style={[styles.balao, { backgroundColor: corFundo }]}>
           <AppText style={styles.texto} accessibilityLabel={`Broxis diz: ${feedback.texto}`}>{feedback.texto}</AppText>
         </View>
@@ -32,7 +34,7 @@ export function BroxisFeedback({ feedback, corFundo, corTexto, onProximoPasso }:
           onPress={() => onProximoPasso(passo)}
           accessibilityRole="button"
           accessibilityLabel={passo.texto}
-          style={({ pressed }) => [styles.passo, { borderColor: corTexto, opacity: pressed ? 0.7 : 1 }]}
+          style={({ pressed }) => [styles.passo, mascote && { borderColor: corTexto, borderWidth: 1.5 }, { opacity: pressed ? 0.7 : 1 }]}
         >
           <AppText style={[styles.passoTexto, { color: corTexto }]}>{passo.texto}</AppText>
           <Ionicons name="chevron-forward" size={16} color={corTexto} />
@@ -43,10 +45,10 @@ export function BroxisFeedback({ feedback, corFundo, corTexto, onProximoPasso }:
 }
 
 const styles = StyleSheet.create({
-  raiz: { gap: 10, marginTop: 14 },
+  raiz: { gap: 8, marginTop: 12 },
   linha: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   balao: { flex: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10 },
   texto: { fontFamily: typography.medium, fontSize: 13, lineHeight: 19, color: '#1B4332' },
-  passo: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14 },
+  passo: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderRadius: 14, paddingHorizontal: 4 },
   passoTexto: { flex: 1, fontFamily: typography.bold, fontSize: 13 },
 });

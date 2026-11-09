@@ -7,8 +7,6 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../../../shared/ui/AppText';
 import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
-import { BroxisMascot } from '../../../../shared/ui/BroxisMascot';
-import { SpeechBubble } from '../../../../shared/ui/SpeechBubble';
 import { typography } from '../../../../shared/theme/typography';
 import type { EstadoMetricas, GruposInfo } from '../types/estado';
 import type { MetricasCompletas, TipoPeriodo } from '../types/metricas';
@@ -22,6 +20,7 @@ import type { MelhorSemana } from '../utils/melhorPeriodo';
 import type { Retrospectiva } from '../utils/retrospectiva';
 import { CartaoRetrospectiva } from '../components/CartaoRetrospectiva';
 import { CartaoTermometro } from '../components/CartaoTermometro';
+import { ResumoRapido, type ItemResumo } from '../components/ResumoRapido';
 import { AbasJornada } from '../components/AbasJornada';
 import { ABA_INICIAL, type AbaId } from '../utils/abas';
 import type { MisturaNova } from '../utils/misturaNova';
@@ -35,7 +34,6 @@ import { GraficoBarras } from '../components/graficos/GraficoBarras';
 import { GraficoDias } from '../components/graficos/GraficoDias';
 import { ProgressoSegmentado } from '../components/graficos/ProgressoSegmentado';
 
-const INTRO = 'Aqui eu mostro o que você registrou e aprendeu. Só você e a sua jornada!';
 const MAX_GRUPOS = 6;
 
 type Props = {
@@ -102,6 +100,17 @@ function Cartoes({ aba, onMudarAba, metricas: m, mistura, feedbacks: f, gruposIn
   const rotuloAgua = h.agua.diasComMeta === null ? 'com água registrada' : 'na meta de água';
   const marcadosAgua = diasAgua.filter((d) => d.marcado).length;
 
+  // visão geral do Resumo: um número por assunto, cada um leva à sua aba
+  const nAgua = h.agua.diasComMeta ?? h.agua.diasComRegistro;
+  const itensResumo: ItemResumo[] = [
+    { cartao: 'alimentacao', valor: String(h.diasComRefeicao), rotulo: pluralizar(h.diasComRefeicao, 'dia com refeição', 'dias com refeição'), aba: 'comida' },
+    { cartao: 'agua', valor: String(nAgua), rotulo: `${pluralizar(nAgua, 'dia', 'dias')} ${rotuloAgua}`, aba: 'habitos' },
+    { cartao: 'atividade', valor: String(h.atividade.minutos), rotulo: pluralizar(h.atividade.minutos, 'minuto de atividade', 'minutos de atividade'), aba: 'habitos' },
+    temMissoes
+      ? { cartao: 'engajamento', valor: `${e.missoes.concluidas}/${e.missoes.atribuidas}`, rotulo: 'missões do dia concluídas', aba: 'conquistas' }
+      : { cartao: 'engajamento', valor: String(e.licoes), rotulo: pluralizar(e.licoes, 'lição concluída', 'lições concluídas'), aba: 'conquistas' },
+  ];
+
   return (
     <View style={{ marginTop: 4 }}>
       <AbasJornada valor={aba} onChange={onMudarAba} />
@@ -110,15 +119,12 @@ function Cartoes({ aba, onMudarAba, metricas: m, mistura, feedbacks: f, gruposIn
       <View key={aba} style={{ marginTop: 16 }}>
         {aba === 'resumo' && (
           <>
-            <View style={styles.intro}>
-              <BroxisMascot size={84} pose="apresentando" entrance="pulo" showParticles={false} />
-              <View style={{ flex: 1 }}><SpeechBubble text={INTRO} tailPosition="left" /></View>
-            </View>
-
             {retrospectiva && <CartaoRetrospectiva dados={retrospectiva} />}
 
+            {/* o Broxis aparece aqui (e só aqui) quando não há retrospectiva: ela já traz o mascote */}
             <CartaoMetrica
               cartao="resumo" detalhe={det.resumo} indice={0} feedback={f.resumo} onProximoPasso={onProximoPasso} comparacao={c.diasAtivos}
+              mascote={!retrospectiva}
               destaque={{ valor: String(a.diasAtivos), rotulo: pluralizar(a.diasAtivos, 'dia ativo', 'dias ativos') }}
             >
               <GraficoDias
@@ -127,6 +133,8 @@ function Cartoes({ aba, onMudarAba, metricas: m, mistura, feedbacks: f, gruposIn
                 rotuloAcessivel={textoAcessivelDias(a.diasAtivos, total, 'com registro ou lição')}
               />
             </CartaoMetrica>
+
+            <ResumoRapido itens={itensResumo} onAbrirAba={onMudarAba} />
           </>
         )}
 
@@ -213,6 +221,5 @@ function Cartoes({ aba, onMudarAba, metricas: m, mistura, feedbacks: f, gruposIn
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: FUNDO },
   conteudo: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 60 },
-  intro: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   aviso: { fontFamily: typography.regular, fontSize: 12, lineHeight: 17, color: '#4B4B4B', textAlign: 'center', marginTop: 8 },
 });

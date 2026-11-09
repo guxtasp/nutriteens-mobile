@@ -10,11 +10,11 @@ import { typography } from '../../../../shared/theme/typography';
 import type { Detalhe } from '../utils/detalhes';
 import { TEXTO_SUAVE, TRILHO } from '../ui/tokens';
 
-type Props = { detalhe: Detalhe; cor: string; corSuave: string };
+type Props = { detalhe: Detalhe; cor: string; corSuave: string; /** o que o cartão mostra (antes ficava sempre visível sob o título) */ explicacao?: string };
 
-export function DetalheMetrica({ detalhe, cor, corSuave }: Props) {
+export function DetalheMetrica({ detalhe, cor, corSuave, explicacao }: Props) {
   const [aberto, setAberto] = useState(false);
-  const vazio = detalhe.linhas.length === 0 && detalhe.dicas.length === 0 && !detalhe.sugestoes;
+  const vazio = !explicacao && detalhe.linhas.length === 0 && detalhe.dicas.length === 0 && !detalhe.sugestoes;
   if (vazio) return null;
 
   return (
@@ -32,6 +32,8 @@ export function DetalheMetrica({ detalhe, cor, corSuave }: Props) {
 
       {aberto && (
         <MotiView from={{ opacity: 0, translateY: -6 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 220 }}>
+          {!!explicacao && <AppText style={styles.explicacao}>{explicacao}</AppText>}
+
           {detalhe.linhas.map((l, i) => (
             <View key={`${l.rotulo}-${i}`} style={[styles.linha, i > 0 && styles.linhaBorda]}>
               <AppText style={styles.rotulo}>{l.rotulo}</AppText>
@@ -73,6 +75,7 @@ const styles = StyleSheet.create({
   raiz: { marginTop: 12, borderTopWidth: 1, borderTopColor: TRILHO },
   botao: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   botaoTexto: { fontFamily: typography.bold, fontSize: 14 },
+  explicacao: { fontFamily: typography.regular, fontSize: 13, lineHeight: 19, color: TEXTO_SUAVE, paddingTop: 4, paddingBottom: 6 },
   linha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 10 },
   linhaBorda: { borderTopWidth: 1, borderTopColor: TRILHO },
   rotulo: { flex: 1, fontFamily: typography.medium, fontSize: 13, color: TEXTO_SUAVE },

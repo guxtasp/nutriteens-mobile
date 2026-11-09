@@ -73,13 +73,11 @@ export function CartaoTermometro({ mistura, periodo, evitarCobranca, semente, in
     >
       <View style={styles.cabecalho}>
         <View style={[styles.icone, { backgroundColor: ac.suave }]}>
-          <Ionicons name={ac.icone} size={20} color={ac.cor} />
+          <Ionicons name={ac.icone} size={18} color={ac.cor} />
         </View>
         <View style={{ flex: 1 }}>
           <AppText style={styles.titulo} accessibilityRole="header">{titulo}</AppText>
-          <AppText style={styles.descricao}>
-            A mistura entre alimentos in natura, processados e ultraprocessados, baseada no que você registrou.
-          </AppText>
+          <AppText style={styles.descricao}>In natura, processados e ultraprocessados</AppText>
         </View>
       </View>
 
@@ -134,8 +132,8 @@ export function CartaoTermometro({ mistura, periodo, evitarCobranca, semente, in
 
 const styles = StyleSheet.create({
   cartao: { backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 14, borderColor: 'transparent', borderWidth: 2 },
-  cabecalho: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  icone: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  cabecalho: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  icone: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   titulo: { fontFamily: typography.bold, fontSize: 16, color: '#1B4332' },
   descricao: { fontFamily: typography.regular, fontSize: 12, lineHeight: 17, color: TEXTO_SUAVE, marginTop: 2 },
   grafico: { marginTop: 14 },
