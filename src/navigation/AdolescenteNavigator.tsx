@@ -34,6 +34,7 @@ import DesafioDetalheScreen from '../features/adolescente/social/screens/Desafio
 import NovoDesafioScreen from '../features/adolescente/social/screens/NovoDesafioScreen';
 import JardimDetalheScreen from '../features/adolescente/social/screens/JardimDetalheScreen';
 import NovoJardimScreen from '../features/adolescente/social/screens/NovoJardimScreen';
+import ListaAmigosScreen from '../features/adolescente/social/screens/ListaAmigosScreen';
 import PerfilAmigoScreen from '../features/adolescente/social/screens/PerfilAmigoScreen';
 import MaisScreen from '../features/adolescente/_shared/screens/MaisScreen';
 import AcessibilidadeScreen from '../features/adolescente/_shared/screens/AcessibilidadeScreen';
@@ -101,6 +102,7 @@ export type AdolescenteStackParamList = {
   Social: undefined;
   // Só o que o banco libera a um amigo; apelido/avatar vêm só pra tela não piscar.
   PerfilAmigo: { amizadeId: string; apelido: string; avatar: string | null };
+  ListaAmigos: undefined;
   Jardim: undefined;
   JardimDetalhe: { id: string };
   NovoJardim: undefined;
@@ -120,7 +122,7 @@ export type AdolescenteStackParamList = {
   BuscaAlimento: { tipo: TipoRefeicao; nomeRefeicao: string; alimentoRecemCriado?: Alimento };
   NovoAlimentoOrigem: { tipo: TipoRefeicao; nomeRefeicao: string };
   NovoAlimentoForm: { tipo: TipoRefeicao; nomeRefeicao: string; origem: OrigemAlimento };
-  AlimentoCadastrado: { tipo: TipoRefeicao; nomeRefeicao: string; alimento: Alimento };
+  AlimentoCadastrado: { tipo: TipoRefeicao; nomeRefeicao: string; alimento: Alimento; jaExistia?: boolean };
   FeedbackRefeicao: {
   tipo: TipoRefeicao;
   nomeRefeicao: string;
@@ -183,6 +185,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="PerfilAmigo" component={PerfilAmigoScreen} />
+                    <Stack.Screen name="ListaAmigos" component={ListaAmigosScreen} />
                     <Stack.Screen name="Jardim" component={JardimScreen} />
                     <Stack.Screen name="JardimDetalhe" component={JardimDetalheScreen} />
                     <Stack.Screen name="NovoJardim" component={NovoJardimScreen} />
@@ -230,6 +233,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="TrilhaCompleta" component={TrilhaCompletaScreen} />
                     <Stack.Screen name="Social" component={SocialScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="PerfilAmigo" component={PerfilAmigoScreen} />
+                    <Stack.Screen name="ListaAmigos" component={ListaAmigosScreen} />
                     <Stack.Screen name="Jardim" component={JardimScreen} />
                     <Stack.Screen name="JardimDetalhe" component={JardimDetalheScreen} />
                     <Stack.Screen name="NovoJardim" component={NovoJardimScreen} />

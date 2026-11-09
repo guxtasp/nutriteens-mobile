@@ -14,7 +14,13 @@ export type IngredienteReceita = {
  * Ingrediente que o adolescente tem em casa. `ids` é opcional: um atalho como "Arroz" vale para
  * todas as variações do catálogo (arroz branco, integral...), então combina com mais receitas.
  */
-export type IngredienteCasa = { id: string; nome: string; ids?: string[] };
+export type IngredienteCasa = {
+  id: string;
+  nome: string;
+  ids?: string[];
+  /** grupos alimentares do catálogo (só serve para arrumar os atalhos por grupo; não é gravado na despensa) */
+  grupos?: string[];
+};
 
 const idsDe = (lista: IngredienteCasa[]): Set<string> => new Set(lista.flatMap((i) => i.ids ?? [i.id]));
 
@@ -135,7 +141,11 @@ export function unirIngredientes(daReceita: IngredienteReceita[], doPrato: Ingre
  */
 export function unirUniversos(a: IngredienteCasa[], b: IngredienteCasa[]): IngredienteCasa[] {
   const mapa = new Map<string, IngredienteCasa>();
-  [...b, ...a].forEach((i) => mapa.set(i.id, { id: i.id, nome: i.nome }));
+  // o ingrediente vindo de uma receita não traz grupo; o do catálogo traz: guarda o grupo de onde houver
+  [...b, ...a].forEach((i) => {
+    const grupos = i.grupos ?? mapa.get(i.id)?.grupos;
+    mapa.set(i.id, grupos ? { id: i.id, nome: i.nome, grupos } : { id: i.id, nome: i.nome });
+  });
   return [...mapa.values()].sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
 }
 
@@ -168,4 +178,31 @@ export function resolverIngredientesComuns(
     resultado.push({ id: ids[0], nome: termo.charAt(0).toUpperCase() + termo.slice(1), ids });
   });
   return resultado;
+}
+
+/**
+ * Nome do ingrediente para ler em frase. Os nomes do catálogo vêm no formato da tabela de composição
+ * ("Arroz, integral, cozido"): vira "arroz integral cozido".
+ */
+export function nomeLegivel(nome: string): string {
+  return nome.split(',').map((p) => p.trim()).filter(Boolean).join(' ').toLowerCase();
+}
+
+/** Divide as receitas em "dá para fazer agora" (nada falta), "falta pouquinho" (até 2) e "combinam em parte". */
+export type SecoesReceitas<T extends ReceitaBase> = {
+  agora: ReceitaPontuada<T>[];
+  pouquinho: ReceitaPontuada<T>[];
+  emParte: ReceitaPontuada<T>[];
+};
+
+export const MAX_FALTANTES_POUQUINHO = 2;
+
+export function separarPorFalta<T extends ReceitaBase>(lista: ReceitaPontuada<T>[]): SecoesReceitas<T> {
+  const secoes: SecoesReceitas<T> = { agora: [], pouquinho: [], emParte: [] };
+  lista.forEach((p) => {
+    if (p.faltam.length === 0) secoes.agora.push(p);
+    else if (p.faltam.length <= MAX_FALTANTES_POUQUINHO) secoes.pouquinho.push(p);
+    else secoes.emParte.push(p);
+  });
+  return secoes;
 }

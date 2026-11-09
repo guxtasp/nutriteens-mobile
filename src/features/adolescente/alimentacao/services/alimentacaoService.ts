@@ -4,7 +4,8 @@ import type { ClassificacaoEbia } from '../../triagem/ebia/data/ebiaData';
 import { gerarEPersistirFeedback } from './feedbackService';
 import { ClassificacaoNova, FeedbackRefeicao } from '../utils/regraFeedbackRefeicao';
 import { valoresEbiaAceitaveis } from '../../triagem/ebia/utils/ordemEbia';
-import { inferirNutrientesPorGrupo, inferirAtencaoPorGrupo } from '../utils/nutrientesPorGrupo';
+import { inferirNutrientesPorGrupos, inferirAtencaoPorGrupos } from '../utils/nutrientesPorGrupo';
+import { normalizarGrupos, validarGrupos } from '../utils/categoriasAlimento';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
 import { buscarTrocaDaRefeicao, TrocaSugerida } from '../../trocas/services/trocasService';
 import { comCache, lerCache } from '../../../../shared/offline/cacheLocal';
@@ -56,6 +57,15 @@ async function obterClassificacaoEbiaAtual(userId: string): Promise<Classificaca
 /** Erro de validação do nome (mensagem já pronta para mostrar à pessoa). */
 export class NomeAlimentoInvalidoError extends Error {}
 
+/** Erro de validação dos grupos alimentares (mensagem já pronta para mostrar à pessoa). */
+export class GruposAlimentoInvalidosError extends Error {}
+
+export type ResultadoCriarAlimento = {
+  alimento: Alimento;
+  /** true quando já existia um alimento com esse nome e ele foi reaproveitado (nada novo foi criado) */
+  jaExistia: boolean;
+};
+
 async function buscarAlimentoPorNomeExato(nome: string): Promise<Alimento | null> {
   const { data, error } = await supabase
     .from('alimentos')
@@ -69,24 +79,29 @@ async function buscarAlimentoPorNomeExato(nome: string): Promise<Alimento | null
 export async function criarAlimento(params: {
   nome: string;
   classificacaoNova: ClassificacaoNova;
-  grupoAlimentar: string;
+  /** 1 grupo (alimento natural) ou mais (preparado em casa / industrializado) */
+  gruposAlimentares: string[];
   userId: string; // obrigatório agora — a RLS exige auth.uid() = criado_por
-}): Promise<Alimento> {
+}): Promise<ResultadoCriarAlimento> {
   const nome = normalizarNomeAlimento(params.nome);
   const erroNome = validarNomeAlimento(nome);
   if (erroNome) throw new NomeAlimentoInvalidoError(erroNome);
 
+  const grupos = normalizarGrupos(params.gruposAlimentares);
+  const erroGrupos = validarGrupos(grupos);
+  if (erroGrupos) throw new GruposAlimentoInvalidosError(erroGrupos);
+
   // `alimentos.nome` é UNIQUE: se já existe (do catálogo ou de outra pessoa,
   // com qualquer caixa), usa o que existe em vez de falhar com "já existe".
   const existente = await buscarAlimentoPorNomeExato(nome);
-  if (existente) return existente;
+  if (existente) return { alimento: existente, jaExistia: true };
 
   const { data, error } = await supabase
     .from('alimentos')
     .insert({
       nome,
       classificacao_nova: params.classificacaoNova,
-      grupos_alimentares: [params.grupoAlimentar],
+      grupos_alimentares: grupos,
       eh_prato_composto: false,
       criado_por: params.userId,
     })
@@ -96,19 +111,19 @@ export async function criarAlimento(params: {
   // corrida: outro cadastro do mesmo nome entrou entre a checagem e o insert
   if (error && (error as { code?: string }).code === '23505') {
     const jaExiste = await buscarAlimentoPorNomeExato(nome);
-    if (jaExiste) return jaExiste;
+    if (jaExiste) return { alimento: jaExiste, jaExistia: true };
   }
   if (error) throw error;
 
   // alimento cadastrado pelo próprio adolescente não passa por curadoria de
   // nutricionista — sem isso, ele nasceria sem nenhum dado em
   // alimento_nutrientes. Preenchemos só o que dá pra inferir com confiança
-  // a partir do grupo escolhido (vitaminas/minerais/proteína/fibra E,
+  // a partir dos grupos escolhidos (vitaminas/minerais/proteína/fibra E,
   // separadamente, sódio/carboidrato/gordura); o resto fica NULL ("não
   // sabemos"), nunca AUSENTE/BAIXO — ver comentário em nutrientesPorGrupo.ts.
   const inferidos = {
-    ...inferirNutrientesPorGrupo(params.grupoAlimentar),
-    ...inferirAtencaoPorGrupo(params.grupoAlimentar),
+    ...inferirNutrientesPorGrupos(grupos),
+    ...inferirAtencaoPorGrupos(grupos),
   };
   if (Object.keys(inferidos).length > 0) {
     const { error: erroNutrientes } = await supabase
@@ -119,7 +134,7 @@ export async function criarAlimento(params: {
     if (erroNutrientes) console.error('Erro ao inferir nutrientes do alimento:', erroNutrientes);
   }
 
-  return data;
+  return { alimento: data, jaExistia: false };
 }
 
 // mesma lógica de "achar ou criar o dia" que já deve existir em aguaService —

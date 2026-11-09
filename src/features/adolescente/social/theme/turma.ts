@@ -21,6 +21,14 @@ export const turma = {
   agua: '#4AA3F0',
 } as const;
 
+/** Como a Turma chama "quem manteve a sequência hoje": um só lugar para o texto ficar igual em todas as telas. */
+export const HOJE = {
+  titulo: 'Amigos que cumpriram hoje',
+  filtro: 'Cumpriram hoje',
+  selo: 'cumpriu hoje',
+  explicacao: 'A chama aparece em quem já fez a atividade do dia no app.',
+} as const;
+
 /** Cor de cada atividade da Turma: o cartão de entrada, a tela e o selo usam a mesma, para virarem uma família. */
 export const ATIVIDADE = {
   desafio: { cor: '#7A5BD6', fundo: '#F1ECFD' },

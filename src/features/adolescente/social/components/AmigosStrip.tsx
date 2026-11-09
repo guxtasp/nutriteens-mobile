@@ -35,7 +35,7 @@ export function AmigosStrip({ amigos, mantiveramHoje, onAbrirAmigo, margem = 20 
             onPress={() => onAbrirAmigo(amigo)}
             style={({ pressed }) => [styles.item, pressed && { opacity: 0.7 }]}
             accessibilityRole="button"
-            accessibilityLabel={`Ver perfil de ${amigo.apelido}${ativo ? ', manteve a sequência hoje' : ''}`}
+            accessibilityLabel={`Ver perfil de ${amigo.apelido}${ativo ? ', cumpriu o dia hoje' : ''}`}
           >
             <View>
               {ativo ? (

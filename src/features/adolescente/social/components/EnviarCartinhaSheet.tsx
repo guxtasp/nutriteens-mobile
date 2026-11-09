@@ -108,8 +108,8 @@ export function EnviarCartinhaSheet({ amigo, onFechar }: Props) {
         <Pressable style={estilos.fundo} onPress={onFechar} accessibilityLabel="Fechar" />
         <View style={estilos.caixa}>
           <View style={estilos.puxador} />
-          <AppText style={estilos.titulo}>Cartinha para {amigo.apelido}</AppText>
-          <AppText style={estilos.sub}>Escolha uma. Dá para mandar 1 por dia para cada amigo.</AppText>
+          <AppText style={estilos.titulo}>Mandar cartinha para {amigo.apelido}</AppText>
+          <AppText style={estilos.sub}>Escolha uma. Ela chega na caixa de cartinhas. Dá para mandar 1 por dia para cada amigo.</AppText>
 
           {resultado ? (
             <View style={[estilos.resultado, resultado.ok ? estilos.resultadoOk : estilos.resultadoInfo]} accessibilityRole="alert">

@@ -16,8 +16,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSituacaoModeracao } from '../hooks/useSituacaoModeracao';
@@ -66,6 +69,7 @@ import DesafioGrupoEntradaCard from '../components/DesafioGrupoEntradaCard';
 import CartinhasCard from '../components/CartinhasCard';
 import JuntosCard from '../components/JuntosCard';
 import { EnviarCartinhaSheet } from '../components/EnviarCartinhaSheet';
+import { PedidosAmizadeSheet } from '../components/PedidosAmizadeSheet';
 import TurmaHero from '../components/TurmaHero';
 import SeletorTurma from '../components/SeletorTurma';
 import SecaoTitulo from '../components/SecaoTitulo';
@@ -257,8 +261,16 @@ export default function SocialScreen() {
 
   // O feed é a tela principal; "Amigos" guarda perfil, código, pedidos e Chama em Dupla.
   const [aba, setAba] = useState<AbaSocial>('feed');
+  const { width: larguraTela } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // A HomeBottomBar é desenhada por cima (padding 24 + área segura + ~60 de barra) e o botão + sobe ~36 acima dela.
+  const baixoBotaoAdicionar = 24 + insets.bottom + 60 + 36 + 12;
+  const [paginaAtividade, setPaginaAtividade] = useState(0);
+  // 2 cartões por vez cabem com um pedaço do próximo à mostra: convida a deslizar
+  const larguraCartaoAtividade = larguraTela - 40 - 28;
   const [amigoCartinha, setAmigoCartinha] = useState<{ amizadeId: string; apelido: string } | null>(null);
   const [sheetAberto, setSheetAberto] = useState(false);
+  const [pedidosAberto, setPedidosAberto] = useState(false);
   // muda a cada "puxar para atualizar" para o feed recarregar junto
   const [feedToken, setFeedToken] = useState(0);
 
@@ -1371,19 +1383,10 @@ export default function SocialScreen() {
   function renderAdicionarAmigo() {
     return (
       <>
-        <Text style={styles.sectionTitle}>
-          Adicionar um amigo
-        </Text>
-
-        <Text style={styles.sectionDescription}>
-          Digite o código de amizade que a pessoa compartilhou
-          com você.
-        </Text>
-
         <View style={styles.searchRow}>
           <View style={styles.searchInputWrapper}>
             <Ionicons
-              name="search-outline"
+              name="key-outline"
               size={20}
               color="#87959A"
             />
@@ -1490,257 +1493,6 @@ export default function SocialScreen() {
     );
   }
 
-  function renderPedidosRecebidos() {
-    if (pedidosRecebidos.length === 0) {
-      return null;
-    }
-
-    return (
-      <>
-        <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitleNoMargin}>
-            Pedidos recebidos
-          </Text>
-
-          <View style={styles.counter}>
-            <Text style={styles.counterText}>
-              {pedidosRecebidos.length}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.listCard}>
-          {pedidosRecebidos.map((pedido, index) => (
-            <View
-              key={pedido.amizadeId}
-              style={[
-                styles.personRow,
-                index === pedidosRecebidos.length - 1 &&
-                  styles.lastPersonRow,
-              ]}
-            >
-              <AvatarSocialView
-                avatar={pedido.avatar}
-                size="small"
-              />
-
-              <View style={styles.personInfo}>
-                <Text style={styles.personName}>
-                  {pedido.apelido}
-                </Text>
-
-                <Text style={styles.personSubtext}>
-                  Quer ser seu amigo
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.acceptButton}
-                onPress={() =>
-                  responderPedido(
-                    pedido.amizadeId,
-                    true,
-                    pedido.apelido,
-                  )
-                }
-                disabled={ocupado}
-              >
-                <Text style={styles.acceptButtonText}>Aceitar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.rejectButton}
-                onPress={() =>
-                  responderPedido(
-                    pedido.amizadeId,
-                    false,
-                    pedido.apelido,
-                  )
-                }
-                disabled={ocupado}
-              >
-                <Text style={styles.rejectButtonText}>Recusar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.moreButton}
-                accessibilityLabel="Mais opções"
-                onPress={() =>
-                  abrirOpcoesPedido(pedido)
-                }
-                disabled={ocupado}
-              >
-                <Ionicons
-                  name="ellipsis-horizontal"
-                  size={19}
-                  color="#7D898E"
-                />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      </>
-    );
-  }
-
-  function renderPedidosEnviados() {
-    if (pedidosEnviados.length === 0) {
-      return null;
-    }
-
-    return (
-      <>
-        <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitleNoMargin}>
-            Pedidos enviados
-          </Text>
-
-          <View style={styles.counterMuted}>
-            <Text style={styles.counterMutedText}>
-              {pedidosEnviados.length}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.listCard}>
-          {pedidosEnviados.map((pedido, index) => (
-            <View
-              key={pedido.amizadeId}
-              style={[
-                styles.personRow,
-                index === pedidosEnviados.length - 1 &&
-                  styles.lastPersonRow,
-              ]}
-            >
-              <AvatarSocialView
-                avatar={pedido.avatar}
-                size="small"
-              />
-
-              <View style={styles.personInfo}>
-                <Text style={styles.personName}>
-                  {pedido.apelido}
-                </Text>
-
-                <Text style={styles.personSubtext}>
-                  Aguardando resposta
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() =>
-                  cancelarPedido(
-                    pedido.amizadeId,
-                    pedido.apelido,
-                  )
-                }
-                disabled={ocupado}
-              >
-                <Text style={styles.cancelButtonText}>
-                  Cancelar
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      </>
-    );
-  }
-
-  function renderAmigos() {
-    return (
-      <>
-        <SecaoTitulo titulo="Minha turma" icone="people" contador={amigos.length} />
-
-        {amigos.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name="people-outline"
-                size={30}
-                color={colors.primaryDark}
-              />
-            </View>
-
-            <Text style={styles.emptyTitle}>
-              Sua turma ainda está vazia
-            </Text>
-
-            <Text style={styles.emptyText}>
-              Toque em Adicionar amigos para chamar alguém
-              com o seu código ou entrar na turma de um amigo.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.listCard}>
-            {amigos.map((amigo, index) => (
-              <TouchableOpacity
-                key={amigo.amizadeId}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={`Ver perfil de ${amigo.apelido}`}
-                onPress={() =>
-                  navigation.navigate('PerfilAmigo', {
-                    amizadeId: amigo.amizadeId,
-                    apelido: amigo.apelido,
-                    avatar: amigo.avatar,
-                  })
-                }
-                style={[
-                  styles.personRow,
-                  index === amigos.length - 1 &&
-                    styles.lastPersonRow,
-                ]}
-              >
-                <AvatarSocialView
-                  avatar={amigo.avatar}
-                  size="small"
-                />
-
-                <View style={styles.personInfo}>
-                  <Text style={styles.personName}>
-                    {amigo.apelido}
-                  </Text>
-
-                  {amigo.desde && (
-                    <Text style={styles.personSubtext}>
-                      Amigos desde {formatarData(amigo.desde)}
-                    </Text>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.moreButton}
-                  onPress={() => setAmigoCartinha({ amizadeId: amigo.amizadeId, apelido: amigo.apelido })}
-                  disabled={ocupado}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Mandar cartinha para ${amigo.apelido}`}
-                >
-                  <Ionicons name="mail-outline" size={21} color={colors.primaryDark} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.moreButton}
-                  onPress={() =>
-                    abrirOpcoesAmigo(amigo)
-                  }
-                  disabled={ocupado}
-                >
-                  <Ionicons
-                    name="ellipsis-horizontal"
-                    size={20}
-                    color="#7D898E"
-                  />
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </>
-    );
-  }
-
   function renderSeletorAba() {
     return <SeletorTurma ativa={aba} onChange={setAba} pedidos={pedidosRecebidos.length} />;
   }
@@ -1751,7 +1503,7 @@ export default function SocialScreen() {
     return (
       <TouchableOpacity
         style={styles.avisoPedidos}
-        onPress={() => setSheetAberto(true)}
+        onPress={() => setPedidosAberto(true)}
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={`Você tem ${n} ${n === 1 ? 'pedido' : 'pedidos'} de amizade. Toque para ver.`}
@@ -1763,7 +1515,36 @@ export default function SocialScreen() {
           <Text style={styles.avisoPedidosTitulo}>
             {n === 1 ? '1 pedido de amizade' : `${n} pedidos de amizade`}
           </Text>
-          <Text style={styles.avisoPedidosSub}>Toque para ver e responder</Text>
+          <Text style={styles.avisoPedidosSub}>esperando</Text>
+        </View>
+        <View style={styles.avisoPedidosVer}>
+          <Text style={styles.avisoPedidosVerTexto}>VER</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  // Atalho no sheet de adicionar: as listas de pedidos agora moram na própria tela "Pedidos de amizade".
+  function renderLinkPedidos() {
+    const total = pedidosRecebidos.length + pedidosEnviados.length;
+    if (total === 0) return null;
+    return (
+      <TouchableOpacity
+        style={styles.linkPedidos}
+        activeOpacity={0.85}
+        onPress={() => {
+          setSheetAberto(false);
+          setPedidosAberto(true);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver pedidos de amizade. ${pedidosRecebidos.length} recebidos e ${pedidosEnviados.length} enviados.`}
+      >
+        <Ionicons name="mail-unread-outline" size={20} color={colors.primaryDark} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.linkPedidosTitulo}>Pedidos de amizade</Text>
+          <Text style={styles.linkPedidosSub}>
+            {pedidosRecebidos.length} {pedidosRecebidos.length === 1 ? 'recebido' : 'recebidos'} · {pedidosEnviados.length} {pedidosEnviados.length === 1 ? 'enviado' : 'enviados'}
+          </Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
       </TouchableOpacity>
@@ -1811,17 +1592,54 @@ export default function SocialScreen() {
               {renderBanner()}
 
               {!!perfil.apelido && (
-                <>
-                  <Text style={styles.sectionTitle}>Seu código de amizade</Text>
+                <View style={styles.cartaoSheet}>
+                  <View style={styles.cartaoSheetTopo}>
+                    <View style={[styles.seloSheet, { backgroundColor: '#E3F2D3' }]}>
+                      <Ionicons name="qr-code-outline" size={20} color={colors.primaryDark} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cartaoSheetTitulo}>Seu código de amizade</Text>
+                      <Text style={styles.cartaoSheetSub}>Mande para quem você quer na sua turma.</Text>
+                    </View>
+                  </View>
                   {renderMeuCodigo()}
-                </>
+                </View>
               )}
 
-              {renderAdicionarAmigo()}
+              <View style={styles.cartaoSheet}>
+                <View style={styles.cartaoSheetTopo}>
+                  <View style={[styles.seloSheet, { backgroundColor: '#FCE6EF' }]}>
+                    <Ionicons name="person-add-outline" size={20} color="#C2477D" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cartaoSheetTitulo}>Tem o código de alguém?</Text>
+                    <Text style={styles.cartaoSheetSub}>Digite aqui para mandar o pedido.</Text>
+                  </View>
+                </View>
+                {renderAdicionarAmigo()}
+              </View>
 
-              {renderPedidosRecebidos()}
+              {renderLinkPedidos()}
 
-              {renderPedidosEnviados()}
+              {!!perfil.apelido && (
+                <TouchableOpacity
+                  style={styles.linkPedidos}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    setSheetAberto(false);
+                    iniciarEdicaoPerfil();
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Editar apelido e avatar"
+                >
+                  <Ionicons name="create-outline" size={20} color={colors.primaryDark} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.linkPedidosTitulo}>Meu perfil na turma</Text>
+                    <Text style={styles.linkPedidosSub}>{perfil.apelido} · editar apelido e avatar</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -1898,7 +1716,7 @@ export default function SocialScreen() {
                 />
               ) : (
                 <>
-                  {renderPerfilSocial()}
+                  {!perfil.apelido && renderPerfilSocial()}
 
                   {renderAvisoPedidos()}
 
@@ -1912,6 +1730,7 @@ export default function SocialScreen() {
                         avatar: amigo.avatar,
                       })
                     }
+                    onVerTodos={() => navigation.navigate('ListaAmigos')}
                   />
 
                   <JuntosCard
@@ -1924,13 +1743,42 @@ export default function SocialScreen() {
 
                   <SecaoTitulo titulo="Para fazer em turma" icone="rocket" corIcone={ATIVIDADE.desafio.cor} corFundo={ATIVIDADE.desafio.fundo} />
 
-                  <DesafioGrupoEntradaCard onPress={() => navigation.navigate('DesafioGrupo')} />
-
-                  <JardimEntradaCard onPress={() => navigation.navigate('Jardim')} />
+                  <ScrollView
+                    horizontal
+                    pagingEnabled={false}
+                    snapToInterval={larguraCartaoAtividade + 12}
+                    decelerationRate="fast"
+                    showsHorizontalScrollIndicator={false}
+                    nestedScrollEnabled
+                    style={{ marginHorizontal: -20 }}
+                    contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+                    onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) =>
+                      setPaginaAtividade(Math.round(e.nativeEvent.contentOffset.x / (larguraCartaoAtividade + 12)))
+                    }
+                    scrollEventThrottle={16}
+                  >
+                    <View style={{ width: larguraCartaoAtividade }}>
+                      <DesafioGrupoEntradaCard onPress={() => navigation.navigate('DesafioGrupo')} />
+                    </View>
+                    <View style={{ width: larguraCartaoAtividade }}>
+                      <JardimEntradaCard onPress={() => navigation.navigate('Jardim')} />
+                    </View>
+                  </ScrollView>
+                  <View style={styles.pontos} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                    {[0, 1].map((i) => (
+                      <View key={i} style={[styles.ponto, paginaAtividade === i && styles.pontoAtivo]} />
+                    ))}
+                  </View>
 
                   <ChamaDuplaSection chama={chamaDupla} onAbrirHome={() => navigation.navigate('Home')} />
 
-                  {renderAmigos()}
+                  {!!perfil.apelido && (
+                    <>
+                      <SecaoTitulo titulo="Meu perfil e código" icone="id-card" />
+                      {renderPerfilSocial()}
+                    </>
+                  )}
+
                 </>
               )}
             </>
@@ -1938,8 +1786,8 @@ export default function SocialScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {!carregando && aba === 'amigos' && !!perfil.apelido && (
-        <View style={styles.barraAdicionar}>
+      {!carregando && !!perfil.apelido && (
+        <View style={[styles.barraAdicionar, { bottom: baixoBotaoAdicionar }]} pointerEvents="box-none">
           <TouchableOpacity
             style={styles.botaoAdicionar}
             onPress={() => setSheetAberto(true)}
@@ -1951,7 +1799,9 @@ export default function SocialScreen() {
                 : 'Adicionar amigos'
             }
           >
-            <Ionicons name="person-add" size={20} color={colors.primaryDark} />
+            <View style={styles.botaoAdicionarIcone}>
+              <Ionicons name="person-add" size={17} color={colors.primaryDark} />
+            </View>
             <Text style={styles.botaoAdicionarTexto}>ADICIONAR AMIGOS</Text>
             {pedidosRecebidos.length > 0 && (
               <View style={styles.botaoAdicionarBadge}>
@@ -1963,6 +1813,17 @@ export default function SocialScreen() {
       )}
 
       {renderSheetAdicionar()}
+
+      <PedidosAmizadeSheet
+        visivel={pedidosAberto}
+        recebidos={pedidosRecebidos}
+        enviados={pedidosEnviados}
+        ocupado={ocupado}
+        onFechar={() => setPedidosAberto(false)}
+        onResponder={(p, aceitar) => responderPedido(p.amizadeId, aceitar, p.apelido)}
+        onCancelar={(p) => cancelarPedido(p.amizadeId, p.apelido)}
+        onOpcoes={abrirOpcoesPedido}
+      />
 
       <EnviarCartinhaSheet amigo={amigoCartinha} onFechar={() => setAmigoCartinha(null)} />
 
@@ -1993,6 +1854,26 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+
+  avisoPedidosVer: {
+    paddingHorizontal: 16,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.primary,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.primaryShadow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avisoPedidosVerTexto: {
+    fontFamily: typography.bold,
+    fontSize: 13,
+    letterSpacing: 0.4,
+    color: colors.primaryDark,
+  },
+  pontos: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 14 },
+  ponto: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#D5DDD8' },
+  pontoAtivo: { width: 22, backgroundColor: colors.primaryDark },
 
   // ----------------------------------------------------------
   // SELETOR FEED / AMIGOS
@@ -2057,7 +1938,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 120,
+    paddingBottom: 260,
   },
 
   // ----------------------------------------------------------
@@ -2126,9 +2007,11 @@ const styles = StyleSheet.create({
 
   codeBoxCompact: {
     flex: 1,
-    minHeight: 44,
-    borderRadius: 12,
-    backgroundColor: '#F3F8EE',
+    minHeight: 58,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#CFE6B8',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
@@ -2136,8 +2019,8 @@ const styles = StyleSheet.create({
 
   codeTextCompact: {
     fontFamily: typography.bold,
-    fontSize: 20,
-    letterSpacing: 3,
+    fontSize: 24,
+    letterSpacing: 4,
     color: colors.primaryDark,
   },
 
@@ -2652,6 +2535,8 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 14,
     backgroundColor: colors.primary,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.primaryShadow,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2892,24 +2777,37 @@ const styles = StyleSheet.create({
 
   // ---- Turma (Parte 2): botão fixo, sheet e aviso de pedidos ----
   barraAdicionar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 10,
-    backgroundColor: turma.fundo,
-    borderTopWidth: 1,
-    borderTopColor: '#E9EEEA',
+    zIndex: 5,
   },
 
   botaoAdicionar: {
-    minHeight: 52,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    borderRadius: 16,
+    borderRadius: 18,
     backgroundColor: colors.primary,
     borderBottomWidth: 4,
     borderBottomColor: colors.primaryShadow,
+    shadowColor: '#1B4332',
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+
+  botaoAdicionarIcone: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   botaoAdicionarTexto: {
@@ -2958,6 +2856,69 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#D9E1DC',
     marginBottom: 10,
+  },
+
+  cartaoSheet: {
+    marginTop: 14,
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: '#F6F9F5',
+    borderWidth: 1,
+    borderColor: '#E4EAE6',
+  },
+
+  cartaoSheetTopo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+  },
+
+  seloSheet: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  cartaoSheetTitulo: {
+    fontFamily: typography.bold,
+    fontSize: 16,
+    color: colors.primaryDark,
+  },
+
+  cartaoSheetSub: {
+    fontFamily: typography.regular,
+    fontSize: 12.5,
+    color: '#6B7A74',
+    marginTop: 1,
+  },
+
+  linkPedidos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 12,
+    padding: 14,
+    minHeight: 60,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E4EAE6',
+  },
+
+  linkPedidosTitulo: {
+    fontFamily: typography.bold,
+    fontSize: 14,
+    color: colors.primaryDark,
+  },
+
+  linkPedidosSub: {
+    fontFamily: typography.regular,
+    fontSize: 12,
+    color: '#7A6A52',
+    marginTop: 1,
   },
 
   avisoPedidos: {

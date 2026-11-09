@@ -25,7 +25,7 @@ function frase(apelido: string | null, qtdAmigos: number, naSequencia: number): 
   const nome = apelido ? `, ${apelido}` : '';
   if (qtdAmigos === 0) return { titulo: `Oi${nome}!`, sub: 'Chame amigos e cresçam juntos. É mais fácil e mais divertido em turma.' };
   if (naSequencia === 0) return { titulo: `Oi${nome}!`, sub: 'O dia está só começando. Bora abrir o caminho pra turma?' };
-  if (naSequencia === qtdAmigos) return { titulo: 'Turma on fire!', sub: 'Todo mundo manteve a sequência hoje. Que time!' };
+  if (naSequencia === qtdAmigos) return { titulo: 'Turma on fire!', sub: 'Todo mundo cumpriu o dia hoje. Que time!' };
   return { titulo: `Oi${nome}!`, sub: 'A turma já está em ação hoje. Bora se juntar?' };
 }
 
@@ -60,7 +60,7 @@ export default function TurmaHero({ apelido, amigos, refreshToken }: Props) {
             <AppText style={estilos.chipTexto}>{qtd} {qtd === 1 ? 'amigo' : 'amigos'}</AppText>
           </View>
           {qtd > 0 && (
-            <View style={[estilos.chip, estilos.chipChama]} accessible accessibilityLabel={`${naSequencia} na sequência hoje`}>
+            <View style={[estilos.chip, estilos.chipChama]} accessible accessibilityLabel={`${naSequencia} amigos cumpriram o dia hoje`}>
               <Ionicons name="flame" size={14} color={turma.chama} />
               <AppText style={estilos.chipTexto}>{naSequencia} hoje</AppText>
             </View>

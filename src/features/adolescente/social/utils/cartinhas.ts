@@ -201,6 +201,6 @@ export function mensagemPresente(r: ResultadoPresente, apelido: string): string 
 export function resumoJuntos(qtd: number): { titulo: string; sub: string } {
   return {
     titulo: 'Fizemos juntos hoje!',
-    sub: qtd === 1 ? 'Você e 1 amigo mantiveram a sequência hoje.' : `Você e ${qtd} amigos mantiveram a sequência hoje.`,
+    sub: qtd === 1 ? 'Você e 1 amigo cumpriram o dia hoje.' : `Você e ${qtd} amigos cumpriram o dia hoje.`,
   };
 }

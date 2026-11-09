@@ -111,6 +111,36 @@ export async function listarAmigos(): Promise<AmigoSocial[]> {
   }));
 }
 
+export type FiltroAmigos = 'todos' | 'hoje' | 'recentes';
+export type AmigoDaLista = AmigoSocial & { mantemHoje: boolean };
+
+/** Uma página da lista "Sua turma" (ver data/migration_social_lista_amigos.sql). A busca é feita no servidor. */
+export async function listarAmigosPagina(
+  busca: string,
+  filtro: FiltroAmigos,
+  offset: number,
+  limite = 30
+): Promise<{ itens: AmigoDaLista[]; total: number }> {
+  const { data, error } = await supabase.rpc('social_listar_amigos_pagina', {
+    p_busca: busca.trim() || null,
+    p_filtro: filtro,
+    p_limite: limite,
+    p_offset: offset,
+  });
+  if (error) throw error;
+  const linhas = (data ?? []) as any[];
+  return {
+    total: linhas.length ? Number(linhas[0].total) : 0,
+    itens: linhas.map((l) => ({
+      amizadeId: l.amizade_id,
+      apelido: l.apelido,
+      avatar: l.avatar,
+      desde: l.desde ? new Date(l.desde) : null,
+      mantemHoje: l.manteve_hoje === true,
+    })),
+  };
+}
+
 /**
  * Perfil de um amigo (ver data/migration_social_perfil_amigo.sql). Devolve
  * `null` quando a amizade não existe mais, não foi aceita ou há bloqueio: o

@@ -64,6 +64,53 @@ export function inferirNutrientesPorGrupo(grupoAlimentar: string): Partial<Recor
   return NUTRIENTES_POR_GRUPO[grupoAlimentar] ?? {};
 }
 
+// ---------------------------------------------------------------------------
+// Alimento com MAIS DE UM grupo (bolo, biscoito recheado, nuggets...)
+//
+// Junta as inferências de cada grupo ficando com o maior nível de cada
+// nutriente. Só que, numa mistura, o ingrediente está diluído: o ovo do bolo
+// não faz do bolo um "alto teor" de proteína. Por isso, com 2 grupos ou mais:
+//   - benefício: ALTO_TEOR vira FONTE (nunca prometemos mais que "fonte");
+//   - atenção:   ALTO vira MODERADO (o grupo deixa de DEFINIR a quantidade).
+// Com 1 grupo o resultado é idêntico ao de inferirNutrientesPorGrupo.
+// ---------------------------------------------------------------------------
+const RANK_BENEFICIO: Record<NivelNutriente, number> = { AUSENTE: 0, FONTE: 1, ALTO_TEOR: 2 };
+const RANK_ATENCAO: Record<NivelAtencao, number> = { BAIXO: 0, MODERADO: 1, ALTO: 2 };
+
+export function inferirNutrientesPorGrupos(grupos: string[]): Partial<Record<NutrienteChave, NivelNutriente>> {
+  const unicos = Array.from(new Set(grupos));
+  const resultado: Partial<Record<NutrienteChave, NivelNutriente>> = {};
+  for (const g of unicos) {
+    for (const [coluna, nivel] of Object.entries(inferirNutrientesPorGrupo(g)) as [NutrienteChave, NivelNutriente][]) {
+      const atual = resultado[coluna];
+      if (!atual || RANK_BENEFICIO[nivel] > RANK_BENEFICIO[atual]) resultado[coluna] = nivel;
+    }
+  }
+  if (unicos.length > 1) {
+    for (const coluna of Object.keys(resultado) as NutrienteChave[]) {
+      if (resultado[coluna] === 'ALTO_TEOR') resultado[coluna] = 'FONTE';
+    }
+  }
+  return resultado;
+}
+
+export function inferirAtencaoPorGrupos(grupos: string[]): Partial<Record<NutrienteAtencaoChave, NivelAtencao>> {
+  const unicos = Array.from(new Set(grupos));
+  const resultado: Partial<Record<NutrienteAtencaoChave, NivelAtencao>> = {};
+  for (const g of unicos) {
+    for (const [coluna, nivel] of Object.entries(inferirAtencaoPorGrupo(g)) as [NutrienteAtencaoChave, NivelAtencao][]) {
+      const atual = resultado[coluna];
+      if (!atual || RANK_ATENCAO[nivel] > RANK_ATENCAO[atual]) resultado[coluna] = nivel;
+    }
+  }
+  if (unicos.length > 1) {
+    for (const coluna of Object.keys(resultado) as NutrienteAtencaoChave[]) {
+      if (resultado[coluna] === 'ALTO') resultado[coluna] = 'MODERADO';
+    }
+  }
+  return resultado;
+}
+
 const NIVEIS_BOA_FONTE = new Set<string>(['FONTE', 'ALTO_TEOR']);
 
 /**

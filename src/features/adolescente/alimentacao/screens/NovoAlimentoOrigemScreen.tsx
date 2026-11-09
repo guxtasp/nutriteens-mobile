@@ -1,4 +1,5 @@
 // src/features/adolescente/screens/NovoAlimentoOrigemScreen.tsx
+// Cadastro de alimento, passo 1: de onde vem o alimento (natural, feito em casa, industrializado).
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,20 +8,40 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
-import { typography } from '../../../../shared/theme/typography';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { InfoButton } from '../../../../shared/ui/InfoButton';
 import { InfoSheet } from '../../../../shared/ui/InfoSheet';
+import { colors } from '../../../../shared/theme/colors';
+import { typography } from '../../../../shared/theme/typography';
+import { ProgressoCadastro } from '../components/ProgressoCadastro';
+import type { OrigemAlimento } from '../utils/categoriasAlimento';
 
-export type OrigemAlimento = 'PREPARADO_EM_CASA' | 'INDUSTRIALIZADO' | 'NATURAL';
+// o tipo mora em utils/categoriasAlimento (sem React, testável); reexportado porque o navegador importa daqui
+export type { OrigemAlimento } from '../utils/categoriasAlimento';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'NovoAlimentoOrigem'>;
 type RouteProps = RouteProp<AdolescenteStackParamList, 'NovoAlimentoOrigem'>;
 
-const OPCOES: { origem: OrigemAlimento; titulo: string; exemplo: string }[] = [
-  { origem: 'PREPARADO_EM_CASA', titulo: 'Preparado em casa', exemplo: 'Por exemplo: geleia caseira, bolo caseiro e sopa' },
-  { origem: 'INDUSTRIALIZADO', titulo: 'Produto industrializado', exemplo: 'Por exemplo: refrigerante, biscoito recheado, salgadinho' },
-  { origem: 'NATURAL', titulo: 'Alimento natural', exemplo: 'Por exemplo: maçã, banana, alface' },
-];
+type InfoOrigem = {
+  titulo: string;
+  exemplo: string;
+  /** o que a pessoa vai fazer no passo 2, para não ser surpresa */
+  regra: string;
+  icone: keyof typeof Ionicons.glyphMap;
+  /** cor de fundo e do ícone da "fichinha" de cada origem */
+  fundo: string;
+  cor: string;
+};
+
+/** Visual de cada origem; o formulário (passo 2) reaproveita para mostrar a origem escolhida. */
+export const INFO_ORIGEM: Record<OrigemAlimento, InfoOrigem> = {
+  NATURAL: { titulo: 'Alimento natural', exemplo: 'Por exemplo: maçã, banana, alface', regra: 'Você escolhe 1 grupo', icone: 'leaf', fundo: '#E2F3D3', cor: '#2E7D4F' },
+  PREPARADO_EM_CASA: { titulo: 'Preparado em casa', exemplo: 'Por exemplo: bolo de cenoura, sopa, geleia caseira', regra: 'Você marca os grupos dos ingredientes', icone: 'home', fundo: '#FFEFCF', cor: '#B7791F' },
+  INDUSTRIALIZADO: { titulo: 'Produto industrializado', exemplo: 'Por exemplo: refrigerante, biscoito recheado, salgadinho', regra: 'Você marca os grupos que aparecem no rótulo', icone: 'cube', fundo: '#FFE1DD', cor: '#C0392B' },
+};
+
+// do mais natural para o mais processado
+const ORDEM: OrigemAlimento[] = ['NATURAL', 'PREPARADO_EM_CASA', 'INDUSTRIALIZADO'];
 
 export default function NovoAlimentoOrigemScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -33,31 +54,45 @@ export default function NovoAlimentoOrigemScreen() {
 
   return (
     <SafeAreaView style={styles.tela}>
-      <View style={styles.topo}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.botaoCircular}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </Pressable>
-        <View style={styles.topoDireita}>
-          <InfoButton style={styles.botaoCircularPequeno} onPress={() => setInfoVisivel(true)} />
-          <Pressable onPress={() => navigation.goBack()} style={styles.botaoCircularPequeno}>
-            <Ionicons name="close" size={16} color="#fff" />
-          </Pressable>
+      <ScreenHeader
+        titulo="Novo alimento"
+        subtitulo="Passo 1 de 2"
+        onVoltar={() => navigation.goBack()}
+        direita={<InfoButton onPress={() => setInfoVisivel(true)} accessibilityLabel="Entender a origem" />}
+      />
+      <ProgressoCadastro passo={1} />
+
+      <View style={styles.corpo}>
+        <AppText style={styles.titulo}>De onde vem esse alimento?</AppText>
+        <AppText style={styles.dica}>Escolha o que mais combina com ele.</AppText>
+
+        <View style={styles.lista}>
+          {ORDEM.map((origem) => {
+            const o = INFO_ORIGEM[origem];
+            return (
+              <Pressable
+                key={origem}
+                style={({ pressed }) => [styles.card, pressed && styles.cardPressionado]}
+                onPress={() => selecionar(origem)}
+                accessibilityRole="button"
+                accessibilityLabel={`${o.titulo}. ${o.exemplo}. ${o.regra}`}
+              >
+                <View style={[styles.ficha, { backgroundColor: o.fundo }]}>
+                  <Ionicons name={o.icone} size={26} color={o.cor} />
+                </View>
+                <View style={styles.cardTextos}>
+                  <AppText style={styles.cardTitulo}>{o.titulo}</AppText>
+                  <AppText style={styles.cardExemplo}>{o.exemplo}</AppText>
+                  <View style={styles.cardRegra}>
+                    <Ionicons name="checkbox-outline" size={13} color={o.cor} />
+                    <AppText style={[styles.cardRegraTexto, { color: o.cor }]}>{o.regra}</AppText>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+              </Pressable>
+            );
+          })}
         </View>
-      </View>
-
-      <AppText style={styles.titulo}>Qual a origem?</AppText>
-
-      <View style={styles.lista}>
-        {OPCOES.map((opcao) => (
-          <Pressable key={opcao.origem} style={styles.card} onPress={() => selecionar(opcao.origem)}>
-            <Ionicons name="restaurant-outline" size={20} color="#8BC34A" style={styles.icone} />
-            <View style={styles.cardTextos}>
-              <AppText style={styles.cardTitulo}>{opcao.titulo}</AppText>
-              <AppText style={styles.cardExemplo}>{opcao.exemplo}</AppText>
-            </View>
-            <Ionicons name="add" size={22} color="#8BC34A" />
-          </Pressable>
-        ))}
       </View>
 
       <InfoSheet
@@ -65,24 +100,29 @@ export default function NovoAlimentoOrigemScreen() {
         onFechar={() => setInfoVisivel(false)}
         titulo="Qual a origem do alimento?"
         icone="restaurant-outline"
-        explicacao="A origem ajuda a gente a entender o quanto o alimento foi processado antes de chegar até você. Isso conta pra saber se a refeição está mais equilibrada ou não."
-        exemplo="Natural = veio direto da natureza. Preparado em casa = você ou sua família cozinhou. Industrializado = veio pronto de fábrica."
+        explicacao="A origem ajuda a gente a entender o quanto o alimento foi processado antes de chegar até você. No próximo passo você diz o nome e em quais grupos alimentares ele entra."
+        exemplo="Natural = veio direto da natureza (fruta, legume, ovo). Preparado em casa = você ou sua família cozinhou (bolo, sopa). Industrializado = veio pronto de fábrica, com embalagem e rótulo."
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: '#1F5138', paddingHorizontal: 20, paddingTop: 12 },
-  topo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  botaoCircular: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#8BC34A', alignItems: 'center', justifyContent: 'center' },
-  topoDireita: { flexDirection: 'row', gap: 10 },
-  botaoCircularPequeno: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#8BC34A', alignItems: 'center', justifyContent: 'center' },
-  titulo: { fontFamily: typography.bold, fontSize: 24, color: '#8BC34A', marginBottom: 20 },
-  lista: { gap: 16 },
-  card: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: 1.5, borderColor: '#8BC34A', borderRadius: 16, padding: 16 },
-  icone: { marginTop: 2 },
-  cardTextos: { flex: 1 },
-  cardTitulo: { fontFamily: typography.bold, fontSize: 15, color: '#8BC34A', marginBottom: 2 },
-  cardExemplo: { fontFamily: typography.regular, fontSize: 12, color: '#A8C9B5' },
+  tela: { flex: 1, backgroundColor: '#F6FAF1' },
+  corpo: { flex: 1, paddingHorizontal: 20 },
+  titulo: { fontFamily: typography.bold, fontSize: 24, lineHeight: 30, color: colors.primaryDark },
+  dica: { fontFamily: typography.regular, fontSize: 14, color: '#5B6B75', marginTop: 4, marginBottom: 20 },
+  lista: { gap: 14 },
+  card: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: colors.white, borderRadius: 20, padding: 14,
+    borderWidth: 1.5, borderColor: '#DDE8D2', borderBottomWidth: 4,
+  },
+  cardPressionado: { transform: [{ translateY: 2 }], borderBottomWidth: 2 },
+  ficha: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  cardTextos: { flex: 1, gap: 2 },
+  cardTitulo: { fontFamily: typography.bold, fontSize: 16, color: colors.primaryDark },
+  cardExemplo: { fontFamily: typography.regular, fontSize: 12, lineHeight: 17, color: '#5B6B75' },
+  cardRegra: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+  cardRegraTexto: { flex: 1, fontFamily: typography.bold, fontSize: 11 },
 });

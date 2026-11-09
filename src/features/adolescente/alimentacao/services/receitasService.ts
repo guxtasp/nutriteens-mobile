@@ -204,7 +204,9 @@ export async function listarReceitasComIngredientes(userId: string): Promise<Rec
 export async function listarIngredientesDisponiveis(userId: string): Promise<IngredienteCasa[]> {
   try {
     const alimentos = await listarAlimentosIniciais(userId);
-    return alimentos.filter((a) => !a.eh_prato_composto).map((a) => ({ id: a.id, nome: a.nome }));
+    return alimentos
+      .filter((a) => !a.eh_prato_composto)
+      .map((a) => ({ id: a.id, nome: a.nome, grupos: a.grupos_alimentares ?? [] }));
   } catch {
     return [];
   }
