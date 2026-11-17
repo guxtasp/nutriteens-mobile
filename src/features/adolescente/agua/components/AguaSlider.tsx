@@ -151,7 +151,7 @@ export default function AguaSlider({ min = 0, max = 1000, step = 100, valor, onC
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', marginBottom: 12 },
+  container: { alignItems: 'center', marginBottom: 8 },
   reguaWrapper: { width: '100%', height: 56, justifyContent: 'center' },
   linhaCentral: {
     position: 'absolute',

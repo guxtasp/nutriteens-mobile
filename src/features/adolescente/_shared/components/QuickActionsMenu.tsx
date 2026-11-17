@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Pressable, StyleSheet, Modal, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -21,6 +22,8 @@ const OPCOES: { key: Opcao; label: string; icone: keyof typeof Ionicons.glyphMap
 ];
 
 export default function QuickActionsMenu({ aberto, onFechar, onSelecionar }: Props) {
+  // o Modal cobre a janela inteira (inclusive sob os botões do Android); a barra de abas sobe com a área segura
+  const insets = useSafeAreaInsets();
   // controla se o Modal está montado — precisa ficar montado durante a animação de saída
   const [montado, setMontado] = React.useState(aberto);
 
@@ -100,6 +103,7 @@ export default function QuickActionsMenu({ aberto, onFechar, onSelecionar }: Pro
         style={[
           styles.wrapper,
           {
+            bottom: 110 + insets.bottom,
             opacity: pillOpacity,
             transform: [{ translateY: pillTranslateY }],
           },

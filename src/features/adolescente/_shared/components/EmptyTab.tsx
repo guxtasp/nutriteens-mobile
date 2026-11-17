@@ -31,7 +31,7 @@ export function EmptyTab({ activeTab }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       <View style={styles.conteudo} />
 
       <QuickActionsMenu aberto={menuAberto} onFechar={() => setMenuAberto(false)} onSelecionar={handleSelecionarAcao} />

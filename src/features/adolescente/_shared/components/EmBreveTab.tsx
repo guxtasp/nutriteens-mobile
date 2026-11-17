@@ -37,7 +37,7 @@ export function EmBreveTab({ activeTab, tituloTela, titulo, subtitulo, icone }: 
   }
 
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       <TabHeader titulo={tituloTela} />
       <View style={styles.conteudo}>
         <View style={styles.iconeCirculo}>

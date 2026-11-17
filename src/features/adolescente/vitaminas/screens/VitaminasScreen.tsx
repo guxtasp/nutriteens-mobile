@@ -13,7 +13,7 @@ import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { useAcoesRapidas, AcaoRapida } from '../../_shared/hooks/useAcoesRapidas';
-import HomeBottomBar from '../../_shared/components/HomeBottomBar';
+import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import { NUTRIENTES_INFO, NutrienteInfo } from '../data/nutrientesInfo';
 import { buscarNutrientesComFonte } from '../services/fontesService';
@@ -64,6 +64,7 @@ function CardNutriente({ n, atraso, emBreve, onPress }: { n: NutrienteInfo; atra
 }
 
 export default function VitaminasScreen() {
+  const alturaBarra = useAlturaBarraAbas();
   const navigation = useNavigation<Nav>();
   const [menuAberto, setMenuAberto] = useState(false);
   const navegarAcaoRapida = useAcoesRapidas();
@@ -86,14 +87,14 @@ export default function VitaminasScreen() {
   let indice = 0; // atraso da animação continua entre as seções
 
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       <ScreenHeader
         titulo="Vitaminas e minerais"
         subtitulo="Escolha uma para saber mais"
         onVoltar={() => navigation.goBack()}
       />
 
-      <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.conteudo, { paddingBottom: alturaBarra + 24 }]} showsVerticalScrollIndicator={false}>
         {SECOES.map((secao) => (
           <View key={secao.tipo} style={styles.secao}>
             <AppText style={styles.secaoTitulo} accessibilityRole="header">{secao.titulo}</AppText>

@@ -52,13 +52,22 @@ export default function MissoesWidget({ missao, concluida, onPress }: Props) {
       <View style={styles.card}>
         {/* hoje */}
         <View style={styles.hojeTopo}>
-          <AppText style={styles.emoji}>{missao.icone ?? '🎯'}</AppText>
-          <View style={{ flex: 1 }}>
-            <AppText style={styles.rotulo}>MISSÃO DE HOJE · +{missao.pontosRecompensa} pontos</AppText>
-            <AppText style={styles.titulo} numberOfLines={1}>{missao.titulo}</AppText>
+          <View style={styles.emojiBolha}>
+            <AppText style={styles.emoji}>{missao.icone ?? '🎯'}</AppText>
           </View>
-          {feita && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+          <View style={{ flex: 1 }}>
+            <AppText style={styles.rotulo}>MISSÃO DE HOJE</AppText>
+            <AppText style={styles.titulo} numberOfLines={2}>{missao.titulo}</AppText>
+          </View>
+          {feita ? (
+            <Ionicons name="checkmark-circle" size={26} color={colors.primary} />
+          ) : (
+            <View style={styles.chipPontos}>
+              <AppText style={styles.chipPontosTexto}>+{missao.pontosRecompensa} pontos</AppText>
+            </View>
+          )}
         </View>
+
         <AppText style={[styles.falta, feita && styles.faltaFeita]} numberOfLines={2}>
           {feita ? 'Missão cumprida!' : progresso ? textoFalta(progresso) : 'Toque para ver como cumprir'}
         </AppText>
@@ -67,9 +76,16 @@ export default function MissoesWidget({ missao, concluida, onPress }: Props) {
           texto={feita ? 'Cumprida' : progresso ? textoBarra(progresso) : '—'}
         />
 
+        <View style={styles.divisor} />
+
         {/* mês */}
-        <AppText style={[styles.rotulo, { marginTop: 14 }]}>MISSÕES DO MÊS CONCLUÍDAS</AppText>
-        <BarraComTexto fracao={mes && mes.total > 0 ? mes.feitas / mes.total : 0} texto={mes ? `${mes.feitas} / ${mes.total}` : '—'} />
+        <View style={styles.mesLinha}>
+          <AppText style={styles.mesRotulo}>Missões do mês</AppText>
+          <AppText style={styles.mesContagem}>{mes ? `${mes.feitas} de ${mes.total}` : '—'}</AppText>
+        </View>
+        <View style={styles.trilhoFino}>
+          <View style={[styles.preenchimentoFino, { width: `${mes && mes.total > 0 ? Math.round((mes.feitas / mes.total) * 100) : 0}%` }]} />
+        </View>
 
         <View style={styles.verTodas}>
           <AppText style={styles.verTodasTexto}>Ver todas</AppText>
@@ -89,17 +105,26 @@ const styles = StyleSheet.create({
   // cabeça e mão acenando aparecem; o resto do corpo fica escondido atrás do card
   contagemAte: { fontSize: 12, fontFamily: typography.semiBold, color: colors.primaryDark, opacity: 0.6 },
   mascote: { position: 'absolute', right: 14, top: 4, width: 92, height: 146 },
-  card: { marginTop: -22, zIndex: 2, backgroundColor: colors.primaryDark, borderRadius: 22, padding: 16 },
-  hojeTopo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  emoji: { fontSize: 26 },
+  card: { marginTop: -22, zIndex: 2, backgroundColor: colors.primaryDark, borderRadius: 22, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
+  hojeTopo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  emojiBolha: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  emoji: { fontSize: 24 },
   rotulo: { fontSize: 10, fontFamily: typography.bold, color: colors.primary, letterSpacing: 0.8 },
-  titulo: { fontSize: 17, fontFamily: typography.bold, color: '#fff', marginTop: 1 },
-  falta: { fontSize: 13, fontFamily: typography.semiBold, color: colors.textOnDarkMuted, marginTop: 8, marginBottom: 8 },
+  titulo: { fontSize: 16, lineHeight: 21, fontFamily: typography.bold, color: '#fff', marginTop: 2 },
+  chipPontos: { backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  chipPontosTexto: { fontSize: 12, fontFamily: typography.bold, color: colors.primaryDark },
+  falta: { fontSize: 13, fontFamily: typography.semiBold, color: colors.textOnDarkMuted, marginTop: 14, marginBottom: 2 },
   faltaFeita: { color: colors.primary },
-  trilho: { height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', justifyContent: 'center', marginTop: 6 },
+  divisor: { height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginTop: 16, marginBottom: 14 },
+  mesLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  mesRotulo: { fontSize: 13, fontFamily: typography.semiBold, color: '#fff' },
+  mesContagem: { fontSize: 13, fontFamily: typography.bold, color: colors.primary },
+  trilhoFino: { height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', marginTop: 8 },
+  preenchimentoFino: { height: '100%', borderRadius: 4, backgroundColor: colors.primary },
+  trilho: { height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.14)', overflow: 'hidden', justifyContent: 'center', marginTop: 4 },
   preenchimento: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 12, backgroundColor: colors.primary },
   textoBarra: { textAlign: 'center', fontSize: 12, fontFamily: typography.bold, color: colors.textOnDarkMuted },
   textoBarraSobreVerde: { color: colors.primaryDark },
-  verTodas: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2, marginTop: 12 },
+  verTodas: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2, marginTop: 10 },
   verTodasTexto: { fontSize: 12, fontFamily: typography.bold, color: colors.primary },
 });

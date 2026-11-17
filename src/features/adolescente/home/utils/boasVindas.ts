@@ -16,7 +16,7 @@ export const JANELA_BOAS_VINDAS_DIAS = 3;
 const FORMATO_DATA = /^(\d{4})-(\d{2})-(\d{2})/;
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
 
-function numeroDoDia(iso: string | null | undefined): number | null {
+export function numeroDoDia(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const m = FORMATO_DATA.exec(iso);
   if (!m) return null;

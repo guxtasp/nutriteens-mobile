@@ -10,7 +10,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import HomeBottomBar from '../../_shared/components/HomeBottomBar';
+import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import type { TipoRefeicao } from '../services/alimentacaoService';
 import GuiaAlimentacaoSheet from '../components/GuiaAlimentacaoSheet';
@@ -28,6 +28,7 @@ const REFEICOES: { tipo: TipoRefeicao; nome: string }[] = [
   { tipo: 'CEIA', nome: 'Ceia' },
 ];
 export default function TipoRefeicaoScreen() {
+  const alturaBarra = useAlturaBarraAbas();
   const navigation = useNavigation<NavigationProp>();
   const [menuAberto, setMenuAberto] = useState(false);
   const [sheetGuia, setSheetGuia] = useState(false);
@@ -46,7 +47,7 @@ export default function TipoRefeicaoScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       <ScreenHeader
         titulo="Alimentação"
         subtitulo="Diga pra gente: o que comeu agora?"
@@ -64,7 +65,7 @@ export default function TipoRefeicaoScreen() {
         <FlatList
           data={REFEICOES}
           keyExtractor={(item) => item.tipo}
-          contentContainerStyle={{ gap: 14 }}
+          contentContainerStyle={{ gap: 14, paddingBottom: alturaBarra + 24 }}
           renderItem={({ item }) => (
             <Pressable style={styles.card} onPress={() => selecionar(item)}>
               <View style={styles.cardEsquerda}>

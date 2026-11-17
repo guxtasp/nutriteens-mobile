@@ -51,6 +51,9 @@ const ID_TOUR_ABA: Record<HomeTabKey, string> = {
 type SlotLayout = { x: number; width: number };
 
 const RAIO_BARRA = 26;
+const PADDING_BAIXO_BARRA = 24;
+/** barra (16 + 10 de padding + ~46 do item) */
+const ALTURA_BARRA_ABAS = 72;
 const RAIO_INDICADOR = 10;
 
 
@@ -72,6 +75,16 @@ function raioIndicador(index: number) {
     };
   }
   return { borderRadius: RAIO_INDICADOR };
+}
+
+/**
+ * Altura que a barra de abas ocupa por cima do conteúdo (padding de baixo + área segura + barra).
+ * As telas que desenham a barra usam `edges={['top']}` no SafeAreaView (a barra cuida sozinha da
+ * área de baixo: botões do Android, indicador do iPhone) e somam isto ao fim da rolagem.
+ */
+export function useAlturaBarraAbas(): number {
+  const insets = useSafeAreaInsets();
+  return PADDING_BAIXO_BARRA + ALTURA_BARRA_ABAS + insets.bottom;
 }
 
 export default function HomeBottomBar({ activeTab, onAbrirMenu, menuAberto }: Props) {
@@ -219,7 +232,7 @@ export default function HomeBottomBar({ activeTab, onAbrirMenu, menuAberto }: Pr
     <View
       style={[
         styles.wrapper,
-        { paddingBottom: 24 + insets.bottom } 
+        { paddingBottom: PADDING_BAIXO_BARRA + insets.bottom } 
       ]}
     >      
       <Pressable ref={refFab} collapsable={false} style={styles.fab} onPress={onAbrirMenu} accessibilityLabel="Novo registro">

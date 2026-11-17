@@ -15,6 +15,7 @@ import { typography } from '../../../../../shared/theme/typography';
 import { OptionButton } from '../../../../../shared/ui/OptionButton';
 import { MessageBanner } from '../../../../../shared/ui/MessageBanner';
 import { filtrarAlimentosPorBusca } from '../utils/buscaAlimentos';
+import { rotuloOntem } from '../utils/dataReferencia';
 
 export default function RecordatorioRefeicaoScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
@@ -48,6 +49,7 @@ export default function RecordatorioRefeicaoScreen({ navigation, route }: any) {
   }, [indiceAtual]);
   const visiveis = useMemo(() => filtrarAlimentosPorBusca(alimentos, busca), [alimentos, busca]);
   const buscando = busca.trim().length > 0;
+  const dataOntem = useMemo(() => rotuloOntem(), []);
 
   return (
     <KeyboardAvoidingView
@@ -62,7 +64,16 @@ export default function RecordatorioRefeicaoScreen({ navigation, route }: any) {
         <SpeechBubble text={refeicao.perguntaBroxis} typewriter={false} tailPosition="left" style={styles.bubble} />
       </View>
 
-      <AppText style={styles.tituloRefeicao}>{refeicao.titulo}</AppText>
+      {/* fixo (fora da rolagem): o recordatório é sempre sobre ONTEM, em todas as refeições */}
+      <View style={styles.tituloBloco}>
+        <View style={styles.chipOntem} accessible accessibilityLabel={`Estas perguntas são sobre ontem, ${dataOntem}`}>
+          <Ionicons name="time-outline" size={14} color={colors.primaryDark} />
+          <AppText style={styles.chipOntemTexto}>
+            <AppText style={styles.chipOntemNegrito}>Ontem</AppText> · {dataOntem}
+          </AppText>
+        </View>
+        <AppText style={styles.tituloRefeicao} accessibilityRole="header">{refeicao.titulo}</AppText>
+      </View>
 
       {carregando ? (
         <ActivityIndicator color={colors.primaryDark} style={{ marginTop: 40 }} />
@@ -89,7 +100,7 @@ export default function RecordatorioRefeicaoScreen({ navigation, route }: any) {
             </View>
 
             <OptionButton
-                label="Não comi nada nessa refeição"
+                label="Ontem não comi nada nessa refeição"
                 ativo={naoComeuNada}
                 onPress={marcarNaoComeuNada}
                 style={styles.botaoNaoComeu}
@@ -151,11 +162,22 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 8,
   },
+  tituloBloco: { alignItems: 'center', marginBottom: 12, gap: 8 },
+  chipOntem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E2F3D3',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  chipOntemTexto: { fontFamily: typography.medium, fontSize: 12, color: colors.primaryDark },
+  chipOntemNegrito: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
   tituloRefeicao: {
     fontFamily: typography.bold,
-    fontSize: 18,
+    fontSize: 20,
     color: colors.primaryDark,
-    marginBottom: 16,
     textAlign: 'center',
   },
   scrollContent: {

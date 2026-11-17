@@ -58,7 +58,7 @@ export default function MaisScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       <View style={styles.cabecalho}>
         <AppText style={styles.titulo}>Mais</AppText>
       </View>

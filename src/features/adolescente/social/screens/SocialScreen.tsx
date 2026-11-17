@@ -20,7 +20,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSituacaoModeracao } from '../hooks/useSituacaoModeracao';
@@ -262,9 +262,6 @@ export default function SocialScreen() {
   // O feed é a tela principal; "Amigos" guarda perfil, código, pedidos e Chama em Dupla.
   const [aba, setAba] = useState<AbaSocial>('feed');
   const { width: larguraTela } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  // A HomeBottomBar é desenhada por cima (padding 24 + área segura + ~60 de barra) e o botão + sobe ~36 acima dela.
-  const baixoBotaoAdicionar = 24 + insets.bottom + 60 + 36 + 12;
   const [paginaAtividade, setPaginaAtividade] = useState(0);
   // 2 cartões por vez cabem com um pedaço do próximo à mostra: convida a deslizar
   const larguraCartaoAtividade = larguraTela - 40 - 28;
@@ -1697,6 +1694,38 @@ export default function SocialScreen() {
             <>
               <TurmaHero apelido={perfil.apelido || null} amigos={amigos} refreshToken={feedToken} />
 
+              {!!perfil.apelido && (
+                <TouchableOpacity
+                  style={styles.botaoAdicionar}
+                  onPress={() => setSheetAberto(true)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    pedidosRecebidos.length > 0
+                      ? `Adicionar amigos. ${pedidosRecebidos.length} ${pedidosRecebidos.length === 1 ? 'pedido esperando' : 'pedidos esperando'}`
+                      : 'Adicionar amigos'
+                  }
+                >
+                  <View style={styles.botaoAdicionarIcone}>
+                    <Ionicons name="person-add" size={18} color={colors.primaryDark} />
+                  </View>
+                  <View style={styles.botaoAdicionarTextos}>
+                    <Text style={styles.botaoAdicionarTexto}>Adicionar amigos</Text>
+                    <Text style={styles.botaoAdicionarSub}>
+                      {pedidosRecebidos.length > 0
+                        ? `${pedidosRecebidos.length} ${pedidosRecebidos.length === 1 ? 'pedido esperando você' : 'pedidos esperando você'}`
+                        : 'Use o código de amizade'}
+                    </Text>
+                  </View>
+                  {pedidosRecebidos.length > 0 && (
+                    <View style={styles.botaoAdicionarBadge}>
+                      <Text style={styles.botaoAdicionarBadgeTexto}>{pedidosRecebidos.length}</Text>
+                    </View>
+                  )}
+                  <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
+                </TouchableOpacity>
+              )}
+
               {renderSeletorAba()}
 
               {aba === 'feed' ? (
@@ -1785,32 +1814,6 @@ export default function SocialScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {!carregando && !!perfil.apelido && (
-        <View style={[styles.barraAdicionar, { bottom: baixoBotaoAdicionar }]} pointerEvents="box-none">
-          <TouchableOpacity
-            style={styles.botaoAdicionar}
-            onPress={() => setSheetAberto(true)}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={
-              pedidosRecebidos.length > 0
-                ? `Adicionar amigos. ${pedidosRecebidos.length} ${pedidosRecebidos.length === 1 ? 'pedido esperando' : 'pedidos esperando'}`
-                : 'Adicionar amigos'
-            }
-          >
-            <View style={styles.botaoAdicionarIcone}>
-              <Ionicons name="person-add" size={17} color={colors.primaryDark} />
-            </View>
-            <Text style={styles.botaoAdicionarTexto}>ADICIONAR AMIGOS</Text>
-            {pedidosRecebidos.length > 0 && (
-              <View style={styles.botaoAdicionarBadge}>
-                <Text style={styles.botaoAdicionarBadgeTexto}>{pedidosRecebidos.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
 
       {renderSheetAdicionar()}
 
@@ -1938,7 +1941,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 260,
+    paddingBottom: 140,
   },
 
   // ----------------------------------------------------------
@@ -2776,45 +2779,42 @@ const styles = StyleSheet.create({
   },
 
   // ---- Turma (Parte 2): botão fixo, sheet e aviso de pedidos ----
-  barraAdicionar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    zIndex: 5,
-  },
-
   botaoAdicionar: {
-    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+    gap: 12,
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 18,
-    backgroundColor: colors.primary,
-    borderBottomWidth: 4,
-    borderBottomColor: colors.primaryShadow,
-    shadowColor: '#1B4332',
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    backgroundColor: '#E2F3D3',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
 
   botaoAdicionarIcone: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  botaoAdicionarTextos: { flex: 1 },
 
   botaoAdicionarTexto: {
     fontFamily: typography.bold,
     fontSize: 15,
-    letterSpacing: 0.5,
     color: colors.primaryDark,
+  },
+
+  botaoAdicionarSub: {
+    fontFamily: typography.regular,
+    fontSize: 12,
+    color: colors.primaryDark,
+    opacity: 0.75,
+    marginTop: 1,
   },
 
   botaoAdicionarBadge: {

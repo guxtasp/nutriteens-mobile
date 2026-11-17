@@ -10,6 +10,7 @@ import { AppText } from '../../../../../shared/ui/AppText';
 import { BroxisMascot } from '../../../../../shared/ui/BroxisMascot';
 import { SpeechBubble } from '../../../../../shared/ui/SpeechBubble';
 import { MessageBanner } from '../../../../../shared/ui/MessageBanner';
+import { SeloPeriodo } from '../../../../../shared/ui/SeloPeriodo';
 import { OpcaoSimNao } from '../components/OpcaoSimNao';
 import { useEbiaPergunta } from '../hooks/useEbiaPergunta';
 import { colors } from '../../../../../shared/theme/colors';
@@ -34,7 +35,19 @@ export default function EbiaPerguntaScreen({ navigation, route }: any) {
         <SpeechBubble text={pergunta.texto} typewriter={false} tailPosition="left" style={styles.bubble} />
       </View>
 
-      <AppText style={styles.hint}>Toque para selecionar</AppText>
+      {/* fixo: avisa que o tempo mudou. O recordatório (etapa anterior) era sobre ONTEM; estas perguntas
+          são sobre os últimos meses, e não têm relação com o que a pessoa marcou lá. */}
+      <SeloPeriodo
+        titulo="Agora é sobre os últimos meses"
+        detalhe="Não é sobre o que você comeu ontem"
+        icone="calendar-outline"
+        cor="#1D4E89"
+        corFundo="#DCEBFE"
+      />
+
+      <AppText style={styles.hint}>
+        {route.params?.indice ? 'Toque para selecionar' : 'Pense em como foi em casa nos últimos meses e toque para selecionar'}
+      </AppText>
 
       <OpcaoSimNao selecionado={selecionado} onSelecionar={setSelecionado} />
 
@@ -60,13 +73,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   backButton: {
-    marginBottom: 32,
+    marginBottom: 5,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 32,
+    marginBottom: 20,
   },
   bubble: {
     flex: 1,

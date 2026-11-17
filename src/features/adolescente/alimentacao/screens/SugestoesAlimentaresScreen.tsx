@@ -12,7 +12,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
-import HomeBottomBar from '../../_shared/components/HomeBottomBar';
+import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import CartaoHub from '../components/CartaoHub';
 import { AlternativasLista } from '../../trocas/components/TrocaLista';
@@ -28,6 +28,7 @@ function contarOpcoes(trocas: Troca[] | null, c: CategoriaTroca): number {
 }
 
 export default function SugestoesAlimentaresScreen() {
+  const alturaBarra = useAlturaBarraAbas();
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<Rota>();
   const [categoria, setCategoria] = useState<CategoriaTroca | null>(params?.categoria ?? null);
@@ -65,14 +66,14 @@ export default function SugestoesAlimentaresScreen() {
     : [];
 
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       <ScreenHeader
         titulo={categoria ? ROTULO_CATEGORIA[categoria] : 'Sugestões alimentares'}
         subtitulo={categoria ? 'Que tal estas opções?' : 'Escolha a categoria'}
         onVoltar={voltar}
       />
 
-      <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.conteudo, { paddingBottom: alturaBarra + 24 }]} showsVerticalScrollIndicator={false}>
         {!categoria ? (
           CATEGORIAS_TROCA.map((c, i) => {
             const n = contarOpcoes(trocas, c);

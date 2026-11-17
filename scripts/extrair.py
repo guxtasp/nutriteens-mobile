@@ -2,9 +2,10 @@ import os
 import pandas as pd
 from supabase import create_client
 
-# Pegue a URL e a KEY anon no painel: Settings > API
-URL = "https://nrncjdwivgidlboliypw.supabase.co"
-KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ybmNqZHdpdmdpZGxib2xpeXB3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDE0MzU2MCwiZXhwIjoyMDk5NzE5NTYwfQ.iwe-pcWgX7_8GGiNnmEUUUdvGxj4MMT12hG2ybXjeQw"
+# Credenciais SÓ por variável de ambiente (nunca no código). Este script lê dados de todos os
+# participantes, então precisa da service_role: rode localmente, nunca versione a chave.
+URL = os.environ["SUPABASE_URL"]
+KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 supabase = create_client(URL, KEY)
 
 # Lista das tabelas que você quer baixar

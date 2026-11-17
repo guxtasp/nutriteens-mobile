@@ -14,7 +14,7 @@ import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { useAcoesRapidas, AcaoRapida } from '../../_shared/hooks/useAcoesRapidas';
-import HomeBottomBar from '../../_shared/components/HomeBottomBar';
+import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import { infoDoNutriente } from '../data/nutrientesInfo';
 import { buscarFontes } from '../services/fontesService';
@@ -27,6 +27,7 @@ type Nav = NativeStackNavigationProp<AdolescenteStackParamList, 'NutrienteDetalh
 type Rota = RouteProp<AdolescenteStackParamList, 'NutrienteDetalhe'>;
 
 export default function NutrienteDetalheScreen() {
+  const alturaBarra = useAlturaBarraAbas();
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<Rota>();
   const { userId } = useAuth();
@@ -61,7 +62,7 @@ export default function NutrienteDetalheScreen() {
   // chave desconhecida: em vez de tela em branco, explica e deixa voltar
   if (!info) {
     return (
-      <SafeAreaView style={styles.tela}>
+      <SafeAreaView style={styles.tela} edges={['top']}>
         <ScreenHeader titulo="Nutriente" onVoltar={() => navigation.goBack()} />
         <View style={styles.estado}>
           <AppText style={styles.estadoTitulo}>Não encontramos esse nutriente</AppText>
@@ -72,10 +73,10 @@ export default function NutrienteDetalheScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       <ScreenHeader titulo={info.nome} subtitulo={info.tipo === 'VITAMINA' ? 'Vitamina' : 'Mineral'} onVoltar={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.conteudo, { paddingBottom: alturaBarra + 24 }]} showsVerticalScrollIndicator={false}>
         <HeroNutriente simbolo={info.simbolo} />
 
         <MotiView from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 320, delay: 120 }}>

@@ -1,7 +1,7 @@
 // src/features/adolescente/agua/screens/ConsumoAguaScreen.tsx
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Pressable, Alert, InteractionManager } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, Pressable, Alert, InteractionManager, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,6 +23,7 @@ type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'Cons
 
 export default function ConsumoAguaScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const {
     precisaPesoAltura,
     metaMl,
@@ -85,7 +86,13 @@ export default function ConsumoAguaScreen() {
         onVoltar={() => navigation.goBack()}
       />
 
-      <View style={styles.corpo}>
+      {/* rolável: em telas baixas (e no web) o conteúdo passa da altura e o botão ficava cortado/colado embaixo */}
+      <ScrollView
+        style={styles.corpo}
+        contentContainerStyle={[styles.corpoConteudo, { paddingBottom: Math.max(insets.bottom, 0) + 32 }]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <View style={styles.garrafaBloco}>
           <GarrafaAnimada progresso={progresso} />
 
@@ -133,7 +140,7 @@ export default function ConsumoAguaScreen() {
         >
           <AppText style={styles.botaoRegistrarTexto}>REGISTRE AQUI</AppText>
         </Pressable>
-      </View>
+      </ScrollView>
 
       <PesoAlturaModal
         visivel={telaAssentou && precisaPesoAltura && !pesoDispensado}
@@ -153,14 +160,15 @@ export default function ConsumoAguaScreen() {
 }
 
 const styles = StyleSheet.create({
-  tela: { flex: 1, marginTop: 20, backgroundColor: colors.white ?? '#fff' },
+  tela: { flex: 1, marginTop: 8, backgroundColor: colors.white ?? '#fff' },
   cabecalho: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, gap: 12 },
   tituloBloco: { flex: 1, alignItems: 'center' },
   titulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark, textAlign: 'center' },
   subtitulo: { fontFamily: typography.regular, fontSize: 12, color: '#7A8B94', textAlign: 'center', marginTop: 2 },
   botaoInfo: { width: 25, height: 25, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  corpo: { flex: 1, paddingHorizontal: 24, paddingTop: 12 },
-  garrafaBloco: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 20 },
+  corpo: { flex: 1 },
+  corpoConteudo: { paddingHorizontal: 24, paddingTop: 12 },
+  garrafaBloco: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 8 },
   infoDireita: { flex: 1, alignItems: 'flex-end', paddingBottom: 40, marginLeft: 16 },
   rotuloHoje: { fontFamily: typography.medium, fontSize: 16, color: colors.primaryDark },
   valorHoje: { fontFamily: typography.bold, fontSize: 32, color: colors.primaryDark, marginTop: 4 },
@@ -172,7 +180,7 @@ const styles = StyleSheet.create({
   cardProgressoValor: { fontFamily: typography.bold, fontSize: 26, color: colors.primaryDark },
   cardProgressoUnidade: { fontFamily: typography.regular, fontSize: 14 },
   cardProgressoSub: { fontFamily: typography.regular, fontSize: 11, color: '#4A7A5A', marginTop: 2 },
-  pergunta: { fontFamily: typography.medium, fontSize: 15, color: colors.primaryDark, textAlign: 'center', marginBottom: 12 },
-  botaoRegistrar: { backgroundColor: colors.primaryDark, borderRadius: 24, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
+  pergunta: { fontFamily: typography.medium, fontSize: 15, color: colors.primaryDark, textAlign: 'center', marginBottom: 5 },
+  botaoRegistrar: { backgroundColor: colors.primaryDark, borderRadius: 24, paddingVertical: 16, alignItems: 'center', marginTop: 5, marginBottom: 16 },
   botaoRegistrarTexto: { fontFamily: typography.bold, fontSize: 13, color: '#fff', letterSpacing: 0.5 },
 });

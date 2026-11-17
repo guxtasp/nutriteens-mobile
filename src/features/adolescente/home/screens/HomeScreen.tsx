@@ -10,16 +10,22 @@ import WeekDaySelector from '../components/WeekDaySelector';
 import WaterProgressCard from '../../agua/components/WaterProgressCard';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import ChatFab from '../../_shared/components/ChatFab';
-import HomeBottomBar from '../../_shared/components/HomeBottomBar';
+import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import MissoesWidget from '../../missoes/components/MissoesWidget';
 import CartaoMetricasHome from '../../metricas/components/CartaoMetricasHome';
 import CelebracaoSequenciaModal from '../components/CelebracaoSequenciaModal';
 import PerdaSequenciaOverlay from '../components/PerdaSequenciaOverlay';
 import AniversarioModal from '../components/AniversarioModal';
 import BoasVindasModal from '../components/BoasVindasModal';
+import PrimeirosPassosCard from '../components/PrimeirosPassosCard';
+import MissaoDoDiaModal from '../components/MissaoDoDiaModal';
 import { useBoasVindas } from '../hooks/useBoasVindas';
 import { useHomeData } from '../hooks/useHomeData';
 import { useAniversario } from '../hooks/useAniversario';
+import { usePrimeirosPassos } from '../hooks/usePrimeirosPassos';
+import { useMissaoDoDiaTela } from '../hooks/useMissaoDoDiaTela';
+import type { RotaPasso } from '../utils/primeirosPassos';
+import type { ConteudoMissaoTela } from '../utils/missaoDoDiaTela';
 import { useRetrospectivaAno } from '../hooks/useRetrospectivaAno';
 import { colors } from '../../../../shared/theme/colors';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
@@ -32,13 +38,14 @@ import { concederXp } from '../../../../shared/services/xpService';
 import AvisoModeracaoModal from '../../social/components/AvisoModeracaoModal';
 import { useSituacaoModeracao } from '../../social/hooks/useSituacaoModeracao';
 import { useRecompensasStore } from '../../recompensas/store/recompensasStore';
-import { TourAlvo, useTourRolagem } from '../../tour/TourContext';
+import { TourAlvo, useTour, useTourRolagem } from '../../tour/TourContext';
 import { useTourPrimeiroAcesso } from '../../tour/useTourPrimeiroAcesso';
 
 type NavigationProp = NativeStackNavigationProp<AdolescenteStackParamList, 'Home'>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const alturaBarra = useAlturaBarraAbas();
   const {
     dadosCarregados,
     dias: diasComStatus,
@@ -216,11 +223,40 @@ export default function HomeScreen() {
   //
   // Continuação das boas-vindas: assim que o aluno fecha o modal (e nenhuma outra animação cheia
   // está na fila), o Bróxis oferece um tour opcional. Ver tour/useTourPrimeiroAcesso.ts.
-  useTourPrimeiroAcesso({
+  const { aguardandoTour } = useTourPrimeiroAcesso({
     userId,
     boasVindasPendente: boasVindas.pendente,
     podeIniciar: podeMostrarAnimacaoCheia && !aniversario.pendente,
   });
+  const { ativo: tourAtivo } = useTour();
+
+  // --- missão do dia (uma vez por dia) ---
+  //
+  // Tela que apresenta a missão de hoje na primeira abertura do dia. Entra por último na fila:
+  // espera boas-vindas, aniversário, tour e as celebrações; no primeiro acesso ela vem logo
+  // depois do tour ("e agora? essa é a sua primeira missão"). Ver useMissaoDoDiaTela.ts.
+  const missaoTela = useMissaoDoDiaTela({
+    userId,
+    hojeISO,
+    missaoId: missao?.id ?? null,
+    missaoConcluida,
+    dadosCarregados,
+    podeMostrar:
+      podeMostrarAnimacaoCheia && !boasVindas.pendente && !aniversario.pendente && !aguardandoTour && !tourAtivo,
+  });
+
+  useEffect(() => {
+    if (missaoTela.pendente) pausarRecompensas('missaodia');
+    else retomarRecompensas('missaodia');
+    return () => retomarRecompensas('missaodia');
+  }, [missaoTela.pendente, pausarRecompensas, retomarRecompensas]);
+
+  // --- primeiros passos ---
+  //
+  // Cartão na Home para quem acabou de chegar: o que fazer primeiro (água, atividade, refeição,
+  // lição, turma). Fica escondido durante o tour para não deslocar os destaques dele.
+  const primeirosPassos = usePrimeirosPassos({ userId, contaCriadaEm: session?.user.created_at, hojeISO });
+  const mostrarPrimeirosPassos = primeirosPassos.visivel && !tourAtivo && !aguardandoTour;
 
   // retrospectiva do ano: só consulta quando a mensagem de aniversário está na tela
   const retrospectivaAno = useRetrospectivaAno(userId, hojeISO, aniversario.visivel);
@@ -238,13 +274,22 @@ export default function HomeScreen() {
     else if (opcao === 'alimentacao') navigation.navigate('TipoRefeicao');
   }
 
+  function handleAbrirPasso(rota: RotaPasso) {
+    navigation.navigate(rota as 'Trilha');
+  }
+
+  function handleAceitarMissao(conteudo: ConteudoMissaoTela) {
+    missaoTela.fechar();
+    navigation.navigate((conteudo.destino?.rota ?? 'Missoes') as 'Missoes');
+  }
+
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       {/* rolável: a barra de baixo e os botões flutuantes ficam fixos por cima */}
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={styles.conteudo}
+        contentContainerStyle={[styles.conteudo, { paddingBottom: alturaBarra + 76 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={false} onRefresh={recarregar} tintColor={colors.primaryDark} />}
       >
@@ -252,8 +297,16 @@ export default function HomeScreen() {
       <TourAlvo id="semana">
         <WeekDaySelector dias={diasComStatus} />
       </TourAlvo>
-
+      
       <WaterProgressCard mlAtual={mlHoje} mlMeta={metaMl} />
+
+      {mostrarPrimeirosPassos && (
+        <PrimeirosPassosCard
+          resumo={primeirosPassos.resumo}
+          onAbrirPasso={handleAbrirPasso}
+          onDispensar={primeirosPassos.dispensar}
+        />
+      )}
 
       {missao && <MissoesWidget missao={missao} concluida={missaoConcluida} onPress={() => navigation.navigate('Missoes')} />}
       <CartaoMetricasHome onPress={() => navigation.navigate('Metricas')} />
@@ -280,6 +333,15 @@ export default function HomeScreen() {
 
       <BoasVindasModal visivel={boasVindas.visivel} mensagem={boasVindas.mensagem} onFechar={boasVindas.fechar} />
 
+      <MissaoDoDiaModal
+        visivel={missaoTela.visivel}
+        missao={missao}
+        hojeISO={hojeISO}
+        sequenciaAtual={sequenciaAtual}
+        onAceitar={handleAceitarMissao}
+        onFechar={missaoTela.fechar}
+      />
+
       <AniversarioModal
         visivel={aniversario.visivel}
         mensagem={aniversario.mensagem}
@@ -292,7 +354,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white ?? '#A9C7B8' },
-  // espaço no fim para o último card não ficar escondido atrás da barra inferior/FAB
-  conteudo: { paddingBottom: 170 },
+  // o espaço no fim (para o último card não ficar atrás da barra/FAB) é somado na tela, com a área segura
+  conteudo: {},
   
 });

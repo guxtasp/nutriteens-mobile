@@ -16,7 +16,7 @@ import { layout } from '../../../../shared/theme/layout';
 import { typography } from '../../../../shared/theme/typography';
 import CartaoHub from '../components/CartaoHub';
 import CartaoJogo from '../../jogos/components/CartaoJogo';
-import HomeBottomBar from '../../_shared/components/HomeBottomBar';
+import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import TabHeader from '../../_shared/components/TabHeader';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 
@@ -105,6 +105,7 @@ const ITENS: Item[] = [
 ];
 
 export default function AlimentacaoHomeScreen() {
+  const alturaBarra = useAlturaBarraAbas();
   const navigation = useNavigation<Nav>();
   const [menuAberto, setMenuAberto] = useState(false);
   const [info, setInfo] = useState<Item['info'] | null>(null);
@@ -125,9 +126,9 @@ export default function AlimentacaoHomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.tela}>
+    <SafeAreaView style={styles.tela} edges={['top']}>
       <TabHeader titulo="Comer" />
-      <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.conteudo, { paddingBottom: alturaBarra + 24 }]} showsVerticalScrollIndicator={false}>
         <AppText style={styles.pergunta}>O que você quer conhecer?</AppText>
 
         {ITENS.map((item, i) => item.key === 'jogos' ? (
