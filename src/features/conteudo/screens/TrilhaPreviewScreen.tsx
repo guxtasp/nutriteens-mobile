@@ -142,7 +142,7 @@ const criarEstilos = (t: TemaPainel) => ({
   ok: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto },
   alertas: { backgroundColor: t.selos.erro.fundo, borderRadius: 12, padding: 10, gap: 4 },
   alertaTexto: { fontFamily: typography.semiBold, fontSize: 12, color: t.erro },
-  modulo: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 6 },
+  modulo: { borderWidth: t.borda, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 6 },
   moduloTitulo: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
   licao: { minHeight: 48, justifyContent: 'center', borderTopWidth: 1, borderTopColor: t.linhaSuave, paddingVertical: 4 },
   licaoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.textoCorpo },

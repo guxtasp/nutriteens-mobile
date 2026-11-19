@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
+import { IconeMissao } from '../../../../shared/ui/IconeMissao';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import type { MissaoDoDia } from '../../home/services/missaoService';
@@ -53,7 +54,7 @@ export default function MissoesWidget({ missao, concluida, onPress }: Props) {
         {/* hoje */}
         <View style={styles.hojeTopo}>
           <View style={styles.emojiBolha}>
-            <AppText style={styles.emoji}>{missao.icone ?? '🎯'}</AppText>
+            <IconeMissao valor={missao.icone} tamanho={24} cor={colors.white} />
           </View>
           <View style={{ flex: 1 }}>
             <AppText style={styles.rotulo}>MISSÃO DE HOJE</AppText>
@@ -108,7 +109,6 @@ const styles = StyleSheet.create({
   card: { marginTop: -22, zIndex: 2, backgroundColor: colors.primaryDark, borderRadius: 22, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
   hojeTopo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   emojiBolha: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-  emoji: { fontSize: 24 },
   rotulo: { fontSize: 10, fontFamily: typography.bold, color: colors.primary, letterSpacing: 0.8 },
   titulo: { fontSize: 16, lineHeight: 21, fontFamily: typography.bold, color: '#fff', marginTop: 2 },
   chipPontos: { backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },

@@ -1,3 +1,4 @@
+import { diasDesde, textoEspera } from '../fluxo';
 import { acoesPermitidas, avisoEdicao, permissoes, rotuloAcao, validarMotivo } from '../fluxo';
 
 describe('fluxo de aprovação', () => {
@@ -41,5 +42,20 @@ describe('fluxo de aprovação', () => {
   it('rejeição exige motivo', () => {
     expect(validarMotivo('   ')).not.toBeNull();
     expect(validarMotivo('Faltou fonte')).toBeNull();
+  });
+});
+
+describe('tempo de espera na fila', () => {
+  it('conta dias inteiros e nunca negativos', () => {
+    const agora = new Date('2026-11-19T12:00:00Z');
+    expect(diasDesde('2026-11-19T08:00:00Z', agora)).toBe(0);
+    expect(diasDesde('2026-11-17T11:00:00Z', agora)).toBe(2);
+    expect(diasDesde('2026-11-20T08:00:00Z', agora)).toBe(0);
+    expect(diasDesde('lixo', agora)).toBe(0);
+  });
+  it('escreve o texto', () => {
+    expect(textoEspera(0)).toBe('desde hoje');
+    expect(textoEspera(1)).toBe('há 1 dia');
+    expect(textoEspera(4)).toBe('há 4 dias');
   });
 });

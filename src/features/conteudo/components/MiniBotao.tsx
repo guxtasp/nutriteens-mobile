@@ -25,7 +25,7 @@ export function MiniBotao({ label, onPress, desativado, perigo, acessibilidade }
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  mini: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderRadius: 12, borderWidth: 2, borderColor: t.cardBorda, alignItems: 'center', justifyContent: 'center', backgroundColor: t.card },
+  mini: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderRadius: 12, borderWidth: t.borda, borderColor: t.cardBorda, alignItems: 'center', justifyContent: 'center', backgroundColor: t.card },
   perigo: { borderColor: t.erro },
   texto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
 }) as const;

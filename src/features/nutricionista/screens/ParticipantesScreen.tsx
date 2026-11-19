@@ -49,13 +49,15 @@ const nome = (p: Participante) => primeiroNome(p.nome, p.apelido);
 export default function ParticipantesScreen() {
   const styles = useEstilos(criarEstilos);
   const navigation = useNavigation<any>();
-  const { modo } = useModoPainel();
+  const { largura } = useModoPainel();
   const lista = useListaPaginada<Participante>(
     (p) => listarParticipantes({ busca: p.busca, ebia: p.filtro, ordem: p.ordem, limite: p.limite, offset: p.offset }),
     { ordemInicial: 'recentes' }
   );
   const abrir = (p: Participante) => navigation.navigate('ParticipanteDetalhe', { id: p.id });
-  const tabela = modo !== 'celular';
+  // Tabela de 6 colunas só quando cabe (~900px de janela, já descontado o menu);
+  // abaixo disso, cartões empilhados leem melhor que colunas espremidas.
+  const tabela = largura >= 900;
 
   return (
     <PainelLayout config={NUTRICIONISTA_PAINEL} titulo="Participantes" subtitulo="Adolescentes acompanhados no NutriTeens">
@@ -70,10 +72,10 @@ export default function ParticipantesScreen() {
       />
       <View style={styles.controles}>
         <CampoBusca valor={lista.busca} onChange={lista.setBusca} placeholder="Buscar por primeiro nome, apelido ou código" />
-        <ChipsFiltro opcoes={FILTROS} valor={lista.filtro ?? 'TODOS'} onChange={(c) => lista.setFiltro(c === 'TODOS' ? null : c)} />
+        <ChipsFiltro opcoes={FILTROS} valor={lista.filtro ?? 'TODOS'} onChange={(c) => lista.setFiltro(c === 'TODOS' ? null : c)} rotulo="Filtrar" />
         <View style={{ gap: 6 }}>
           <AppText style={styles.ordemRotulo}>Ordenar por</AppText>
-          <ChipsFiltro opcoes={ORDENS} valor={lista.ordem} onChange={lista.setOrdem} />
+          <ChipsFiltro opcoes={ORDENS} valor={lista.ordem} onChange={lista.setOrdem} rotulo="Ordenar por" />
         </View>
       </View>
 
@@ -103,7 +105,7 @@ export default function ParticipantesScreen() {
           )}
           {lista.itens.map((p) =>
             tabela ? (
-              <Pressable key={p.id} onPress={() => abrir(p)} accessibilityRole="button" style={[styles.linha, styles.linhaDado]}>
+              <Pressable key={p.id} onPress={() => abrir(p)} accessibilityRole="button" accessibilityLabel={`Abrir acompanhamento de ${nome(p)}`} style={[styles.linha, styles.linhaDado]}>
                 <View style={styles.cNome}>
                   <AppText style={styles.nome} numberOfLines={1}>{nome(p)}</AppText>
                   <AppText style={styles.sub} numberOfLines={1}>{p.codigoParticipante ? `Código ${p.codigoParticipante}` : p.instituicaoEnsino ?? ''}</AppText>
@@ -115,7 +117,7 @@ export default function ParticipantesScreen() {
                 <AppText style={[styles.td, styles.cAcesso]}>{ultimoAcessoTexto(p.ultimoAcesso)}</AppText>
               </Pressable>
             ) : (
-              <Pressable key={p.id} onPress={() => abrir(p)} accessibilityRole="button" style={styles.card}>
+              <Pressable key={p.id} onPress={() => abrir(p)} accessibilityRole="button" accessibilityLabel={`Abrir acompanhamento de ${nome(p)}`} style={styles.card}>
                 <View style={styles.cardTopo}>
                   <AppText style={[styles.nome, { flexShrink: 1 }]} numberOfLines={2}>{nome(p)}</AppText>
                   {seloEbia(p.classificacaoEbia)}
@@ -141,7 +143,7 @@ const criarEstilos = (t: TemaPainel) => ({
   controles: { gap: 12, marginBottom: 12 },
   ordemRotulo: { fontFamily: typography.medium, fontSize: 12, color: t.textoSuave },
   linha: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  linhaDado: { backgroundColor: t.card, borderRadius: 14, borderWidth: 2, borderColor: t.cardBorda, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56 },
+  linhaDado: { backgroundColor: t.card, borderRadius: 14, borderWidth: t.borda, borderColor: t.cardBorda, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56 },
   th: { fontFamily: typography.bold, fontSize: 11, color: t.textoSuave, textTransform: 'uppercase' },
   td: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo },
   cNome: { flex: 3, minWidth: 0 },
@@ -151,7 +153,7 @@ const criarEstilos = (t: TemaPainel) => ({
   cAcesso: { flex: 1.6, minWidth: 0 },
   nome: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
   sub: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
-  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14, gap: 6, minHeight: 48 },
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 14, gap: 6, minHeight: 48 },
   cardTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
   erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro, textAlign: 'center' },
 }) as const;

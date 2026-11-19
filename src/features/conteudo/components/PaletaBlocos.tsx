@@ -60,7 +60,7 @@ export default function PaletaBlocos({ total, max, aposDoBloco, onAdicionar }: P
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  caixa: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 12 },
+  caixa: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 16, gap: 12 },
   topo: { gap: 2 },
   titulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto },
   suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },

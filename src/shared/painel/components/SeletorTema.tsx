@@ -33,14 +33,15 @@ export function SeletorTema({ variante, compacto }: Props) {
       style={[styles.item, compacto && styles.itemCompacto]}
     >
       <Ionicons name={icone} size={20} color={styles.icone.color as string} />
-      {!compacto && <AppText style={styles.texto}>{rotulo}</AppText>}
+      <AppText style={compacto ? styles.textoCompacto : styles.texto}>{compacto ? (escuro ? 'Claro' : 'Escuro') : rotulo}</AppText>
     </Pressable>
   );
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  item: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingHorizontal: 12, borderRadius: 14 } as const,
-  itemCompacto: { justifyContent: 'center', paddingHorizontal: 0 } as const,
+  item: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: 10 } as const,
+  itemCompacto: { flexDirection: 'column', justifyContent: 'center', gap: 4, minHeight: 58, paddingHorizontal: 2 } as const,
+  textoCompacto: { fontFamily: typography.medium, fontSize: 10, color: t.menuTexto, textAlign: 'center' } as const,
   botaoBarra: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' } as const,
   icone: { color: t.menuTexto },
   texto: { fontFamily: typography.medium, fontSize: 14, color: t.menuTexto, flexShrink: 1 } as const,

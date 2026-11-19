@@ -30,6 +30,7 @@ export const ROTAS_COM_TEMA: ReadonlySet<string> = new Set([
   'Metricas',
   'NutriAnalytics',
   'NutriAprovacoes',
+  'NutriConfiguracoes',
   'NutriDesafios',
   'NutriExportar',
   'NutriProdutosScanner',

@@ -111,3 +111,16 @@ export function formatarDataHora(iso: string | null): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
+
+/** Dias inteiros desde uma data (0 = hoje). Usado para mostrar há quanto tempo algo espera revisão. */
+export function diasDesde(iso: string, agora: Date = new Date()): number {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return 0;
+  return Math.max(0, Math.floor((agora.getTime() - t) / 86400000));
+}
+
+/** "desde hoje", "há 1 dia", "há 5 dias". */
+export function textoEspera(dias: number): string {
+  if (dias <= 0) return 'desde hoje';
+  return dias === 1 ? 'há 1 dia' : `há ${dias} dias`;
+}

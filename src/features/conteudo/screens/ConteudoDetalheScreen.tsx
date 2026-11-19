@@ -3,12 +3,15 @@
 // VER ≠ EDITAR ≠ APROVAR: Admin e Nutricionista leem tudo; só a nutricionista decide.
 import React, { useCallback, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { Colunas } from '../../../shared/painel/components/Colunas';
 import { AjudaInfo } from '../../../shared/painel/components/AjudaInfo';
 import { IntroSecao } from '../../../shared/painel/components/IntroSecao';
+import { AbasPainel } from '../../../shared/painel/components/AbasPainel';
+import { AvisoPainel } from '../../../shared/painel/components/Formulario';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
@@ -51,6 +54,16 @@ type Props = { config: ConfigPainel; route: { params: { tipo: 'TRILHA' | 'RECEIT
 
 const ROTULO_LICAO: Record<string, string> = { conteudo: 'Conteúdo', quiz: 'Quiz', atividade_rastreavel: 'Hábito' };
 const ROTULO_DIFICULDADE: Record<string, string> = { FACIL: 'Fácil', MEDIO: 'Médio', DIFICIL: 'Difícil' };
+
+// Checklist de revisão da nutricionista: as regras de domínio do NutriTeens (AGENTS.md) em
+// forma de conferência. Não é salvo; só libera aprovar/publicar depois de marcado.
+const CHECKLIST_REVISAO = [
+  'Linguagem clara, curta e sem julgamento (nada de "errado", "proibido", culpa ou cobrança).',
+  'Não fala de calorias, peso, IMC ou medidas do corpo.',
+  'Não faz diagnóstico nem prescreve dieta.',
+  'A classificação dos alimentos segue o Guia Alimentar (in natura, minimamente processado, processado, ultraprocessado).',
+  'As informações nutricionais estão corretas (fonte: TACO ou Open Food Facts).',
+];
 
 const CONFIRMACAO: Partial<Record<AcaoFluxo, string>> = {
   APROVAR: 'Confirmar aprovação? Depois de aprovado, o conteúdo ainda precisa ser publicado para os adolescentes verem.',
@@ -324,15 +337,22 @@ function Detalhe(p: {
     }
   }
 
+  const [aba, setAba] = useState<'ler' | 'historico' | 'decidir'>('ler');
+  const [conferidos, setConferidos] = useState<Set<number>>(new Set());
+  const decideConteudo = acoes.some((a) => ACOES_DECISAO.includes(a));
+  const checklistOk = conferidos.size === CHECKLIST_REVISAO.length;
+  // aprovar e publicar exigem o checklist; rejeitar, enviar, arquivar e reabrir não
+  const exigeChecklist = (a: AcaoFluxo) => perm.aprovar && (a === 'APROVAR' || a === 'PUBLICAR');
+
   return (
     <>
       <IntroSecao
         chave="detalhe_conteudo"
         titulo="Leia antes de decidir"
         linhas={[
-          'Esta página mostra o conteúdo completo, do jeito que os adolescentes verão. As ações ficam depois do conteúdo, de propósito.',
+          'A revisão segue três passos: ler o conteúdo completo, conferir o histórico e decidir.',
           'Ver, editar e aprovar são permissões diferentes: o Admin consulta e organiza; só a nutricionista aprova, rejeita e publica.',
-          'Rejeitar exige um motivo, que aparece para quem criou o conteúdo.',
+          'Para aprovar ou publicar, a nutricionista confirma o checklist de revisão. Rejeitar exige um motivo, que aparece para quem criou o conteúdo.',
         ]}
       />
 
@@ -348,17 +368,14 @@ function Detalhe(p: {
           <AppText style={styles.versao}>versão {dados.versao}</AppText>
         </View>
         <AppText style={styles.meta}>
-          Criado por {dados.criadorNome ?? 'sistema'} · {formatarDataHora(dados.criadoEm)}
+          Criado por {dados.criadorNome ?? 'sistema'} · {formatarDataHora(dados.criadoEm)} · última alteração {formatarDataHora(dados.atualizadoEm)}
         </AppText>
         {!!dados.revisadoEm && (
           <AppText style={styles.meta}>
             {dados.status === 'REJEITADO' ? 'Rejeitado' : 'Revisado'} por {dados.revisorNome ?? '—'} · {formatarDataHora(dados.revisadoEm)}
           </AppText>
         )}
-        {!!dados.publicadoEm && dados.status === 'PUBLICADO' && (
-          <AppText style={styles.meta}>Publicado em {formatarDataHora(dados.publicadoEm)}</AppText>
-        )}
-        <AppText style={styles.meta}>Última alteração: {formatarDataHora(dados.atualizadoEm)}</AppText>
+        {!!dados.publicadoEm && dados.status === 'PUBLICADO' && <AppText style={styles.meta}>Publicado em {formatarDataHora(dados.publicadoEm)}</AppText>}
         {dados.status === 'REJEITADO' && !!dados.motivoRejeicao && (
           <View style={styles.motivo}>
             <AppText style={styles.motivoTitulo}>Motivo da rejeição</AppText>
@@ -367,7 +384,19 @@ function Detalhe(p: {
         )}
       </View>
 
-      <Colunas bases={[420, 300]}>
+      {!!p.aviso && <AvisoPainel tom="ok" texto={p.aviso} />}
+
+      <AbasPainel<'ler' | 'historico' | 'decidir'>
+        ativa={aba}
+        onChange={setAba}
+        abas={[
+          { chave: 'ler', label: '1. Ler o conteúdo', icone: 'book-outline' },
+          { chave: 'historico', label: `2. Histórico (${dados.historico.length})`, icone: 'time-outline' },
+          { chave: 'decidir', label: decideConteudo ? '3. Decidir' : '3. Ações', icone: decideConteudo ? 'checkmark-done-outline' : 'flash-outline' },
+        ]}
+      />
+
+      {aba === 'ler' && (
         <CartaoSecao
           titulo="Conteúdo completo"
           subtitulo="Exatamente o que será avaliado"
@@ -416,156 +445,151 @@ function Detalhe(p: {
           ) : (
             <CorpoReceitaView corpo={dados.corpo as CorpoReceita} ingredientesReceita={p.ingredientesReceita} />
           )}
+          {acoes.length > 0 && (
+            <View style={styles.proximo}>
+              <AppText style={styles.dica}>{decideConteudo ? 'Terminou de ler? A decisão fica no passo 3.' : 'As ações deste conteúdo ficam no passo 3.'}</AppText>
+              <AppButton label={decideConteudo ? 'IR PARA A DECISÃO →' : 'VER AÇÕES →'} fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botao} onPress={() => setAba('decidir')} />
+            </View>
+          )}
         </CartaoSecao>
+      )}
 
+      {aba === 'historico' && (
+        <CartaoSecao titulo="Histórico" subtitulo="Quem fez o quê, e quando" ajuda="Registro imutável de cada ação neste conteúdo. A mesma lista completa fica em Auditoria.">
+          {dados.historico.length === 0 && <AppText style={styles.meta}>Sem registros.</AppText>}
+          {dados.historico.map((h, i) => (
+            <View key={i} style={styles.hist}>
+              <AppText style={styles.histTopo}>
+                {ACAO_LABEL[h.acao as keyof typeof ACAO_LABEL] ?? h.acao}
+                {h.versao ? ` · v${h.versao}` : ''}
+              </AppText>
+              <AppText style={styles.meta}>
+                {h.atorNome ?? 'sistema'}
+                {h.atorPapel ? ` (${h.atorPapel === 'NUTRICIONISTA' ? 'Nutricionista' : h.atorPapel === 'ADMINISTRADOR' ? 'Administrador' : h.atorPapel})` : ''} · {formatarDataHora(h.criadoEm)}
+              </AppText>
+              {!!h.motivo && <AppText style={styles.texto}>{h.motivo}</AppText>}
+            </View>
+          ))}
+        </CartaoSecao>
+      )}
+
+      {aba === 'decidir' && (
         <View style={{ gap: 16 }}>
-          <CartaoSecao
-            titulo="O que você pode fazer"
-            ajuda="Ver, editar e aprovar são permissões separadas. Ter acesso para ler não significa poder aprovar."
-          >
+          {perm.aprovar && decideConteudo && (
+            <CartaoSecao
+              titulo="Checklist de revisão"
+              subtitulo={`${conferidos.size} de ${CHECKLIST_REVISAO.length} conferidos · obrigatório para aprovar ou publicar`}
+              ajuda="Itens das regras do NutriTeens para conteúdo com adolescentes. O checklist não é salvo: serve para a sua leitura."
+            >
+              {CHECKLIST_REVISAO.map((item, i) => {
+                const ok = conferidos.has(i);
+                return (
+                  <Pressable
+                    key={i}
+                    onPress={() => setConferidos((c) => { const n = new Set(c); ok ? n.delete(i) : n.add(i); return n; })}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: ok }}
+                    style={[styles.check, ok && styles.checkOk]}
+                  >
+                    <Ionicons name={ok ? 'checkbox' : 'square-outline'} size={22} color={ok ? tema.destaqueTexto : tema.textoSuave} />
+                    <AppText style={[styles.texto, { flex: 1 }]}>{item}</AppText>
+                  </Pressable>
+                );
+              })}
+            </CartaoSecao>
+          )}
+
+          <CartaoSecao titulo={decideConteudo ? 'Decisão' : 'Ações'} ajuda="As ações valem para o conteúdo inteiro e ficam registradas na auditoria.">
+            {!!p.erroAcao && <AvisoPainel tom={/obrigat|motivo/i.test(p.erroAcao) ? 'aviso' : 'erro'} texto={p.erroAcao} />}
+
+            {!pendente && (
+              <View style={styles.acoes}>
+                {acoes.map((a) => {
+                  const principal = ACOES_DECISAO.includes(a) && a !== 'REJEITAR' ? true : a === 'ENVIAR';
+                  const cor = a === 'REJEITAR' ? tema.erro : tema.texto;
+                  const bloqueada = exigeChecklist(a) && !checklistOk;
+                  return (
+                    <AppButton
+                      key={a}
+                      label={rotuloAcao(a, dados.status)}
+                      fullWidth={false}
+                      size="compact"
+                      {...(principal
+                        ? { backgroundColor: tema.botaoFundo, textColor: tema.botaoTexto, shadowColor: tema.botaoSombra }
+                        : { outlineColor: cor, textColor: cor })}
+                      disabled={p.ocupado || bloqueada}
+                      style={styles.botao}
+                      onPress={() => p.escolher(a)}
+                    />
+                  );
+                })}
+                {acoes.length === 0 && <AppText style={styles.meta}>Nenhuma ação disponível neste status.</AppText>}
+              </View>
+            )}
+            {!pendente && perm.aprovar && decideConteudo && !checklistOk && (
+              <AppText style={styles.dica}>Marque todos os itens do checklist para liberar aprovar e publicar.</AppText>
+            )}
+
+            {!!pendente && (
+              <View style={styles.confirmaCaixa}>
+                <AppText style={styles.confirma}>{pendente === 'REJEITAR' ? 'O que precisa mudar? (obrigatório)' : CONFIRMACAO[pendente]}</AppText>
+                {pendente === 'REJEITAR' && (
+                  <TextInput
+                    value={p.motivo}
+                    onChangeText={p.setMotivo}
+                    placeholder="Explique o que precisa ser corrigido. Quem criou o conteúdo verá este texto."
+                    placeholderTextColor={tema.placeholder}
+                    multiline
+                    maxLength={2000}
+                    style={styles.input}
+                    accessibilityLabel="Motivo da rejeição"
+                  />
+                )}
+                <View style={styles.acoes}>
+                  <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} disabled={p.ocupado} style={styles.botao} onPress={p.cancelar} />
+                  <AppButton
+                    label={p.ocupado ? 'ENVIANDO…' : `CONFIRMAR: ${rotuloAcao(pendente, dados.status)}`}
+                    fullWidth={false}
+                    size="compact"
+                    {...(pendente === 'REJEITAR'
+                      ? { outlineColor: tema.erro, textColor: tema.erro }
+                      : { backgroundColor: tema.botaoFundo, textColor: tema.botaoTexto, shadowColor: tema.botaoSombra })}
+                    disabled={p.ocupado}
+                    style={styles.botao}
+                    onPress={() => p.confirmar(pendente)}
+                  />
+                </View>
+              </View>
+            )}
+
+            {!pendente && podeExcluir && (
+              <View style={styles.zonaPerigo}>
+                {!confirmaExcluir ? (
+                  <AppButton label="EXCLUIR CONTEÚDO" fullWidth={false} size="compact" outlineColor={tema.erro} textColor={tema.erro} disabled={p.ocupado || excluindo} style={styles.botao} onPress={() => setConfirmaExcluir(true)} />
+                ) : (
+                  <AvisoPainel
+                    tom="aviso"
+                    titulo="Excluir este conteúdo de vez?"
+                    texto="Não dá para desfazer (fica só o registro na auditoria). Para guardar sem apagar, use Arquivar."
+                    acao={{ rotulo: excluindo ? 'Excluindo…' : 'Sim, excluir', onPress: excluir }}
+                    onFechar={() => setConfirmaExcluir(false)}
+                  />
+                )}
+                {!!erroExcluir && <AvisoPainel tom="erro" texto={erroExcluir} />}
+              </View>
+            )}
+          </CartaoSecao>
+
+          <CartaoSecao titulo="O que você pode fazer" ajuda="Ver, editar e aprovar são permissões separadas. Ter acesso para ler não significa poder aprovar.">
             <Linha ok={perm.ver} texto="Ver e ler o conteúdo completo, histórico e status" />
             <Linha ok={perm.editar} texto="Editar e organizar o conteúdo" />
             <Linha ok={perm.aprovar} texto="Aprovar ou rejeitar (validação técnica)" />
             <Linha ok={perm.publicar} texto="Publicar para os adolescentes" />
-            {!perm.aprovar && (
-              <AppText style={styles.dica}>Como administrador, você não assume a responsabilidade técnica: essas decisões são da nutricionista.</AppText>
-            )}
+            {!perm.aprovar && <AppText style={styles.dica}>Como administrador, você não assume a responsabilidade técnica: essas decisões são da nutricionista.</AppText>}
             {!!aviso && <AppText style={styles.dica}>{aviso}</AppText>}
           </CartaoSecao>
-
-          <CartaoSecao
-            titulo="Histórico"
-            subtitulo="Quem fez o quê, e quando"
-            ajuda="Registro imutável de cada ação neste conteúdo. A mesma lista completa fica em Auditoria."
-          >
-            {dados.historico.length === 0 && <AppText style={styles.meta}>Sem registros.</AppText>}
-            {dados.historico.map((h, i) => (
-              <View key={i} style={styles.hist}>
-                <AppText style={styles.histTopo}>
-                  {ACAO_LABEL[h.acao as keyof typeof ACAO_LABEL] ?? h.acao}
-                  {h.versao ? ` · v${h.versao}` : ''}
-                </AppText>
-                <AppText style={styles.meta}>
-                  {h.atorNome ?? 'sistema'}
-                  {h.atorPapel ? ` (${h.atorPapel === 'NUTRICIONISTA' ? 'Nutricionista' : h.atorPapel === 'ADMINISTRADOR' ? 'Administrador' : h.atorPapel})` : ''} · {formatarDataHora(h.criadoEm)}
-                </AppText>
-                {!!h.motivo && <AppText style={styles.texto}>{h.motivo}</AppText>}
-              </View>
-            ))}
-          </CartaoSecao>
         </View>
-      </Colunas>
-
-      <CartaoSecao
-        titulo="Ações"
-        ajuda="As ações valem para o conteúdo inteiro e ficam registradas na auditoria. Leia o conteúdo acima antes de decidir."
-      >
-        {!!p.aviso && <AppText style={styles.ok}>{p.aviso}</AppText>}
-        {!!p.erroAcao && <AppText style={styles.erro}>{p.erroAcao}</AppText>}
-
-        {!pendente && (
-          <View style={styles.acoes}>
-            {acoes.map((a) => {
-              const principal = ACOES_DECISAO.includes(a) && a !== 'REJEITAR' ? true : a === 'ENVIAR';
-              const cor = a === 'REJEITAR' ? tema.erro : tema.texto;
-              return (
-                <AppButton
-                  key={a}
-                  label={rotuloAcao(a, dados.status)}
-                  fullWidth={false}
-                  size="compact"
-                  {...(principal
-                    ? { backgroundColor: tema.botaoFundo, textColor: tema.botaoTexto, shadowColor: tema.botaoSombra }
-                    : { outlineColor: cor, textColor: cor })}
-                  disabled={p.ocupado}
-                  style={styles.botao}
-                  onPress={() => p.escolher(a)}
-                />
-              );
-            })}
-            {acoes.length === 0 && <AppText style={styles.meta}>Nenhuma ação disponível neste status.</AppText>}
-          </View>
-        )}
-
-        {!pendente && podeExcluir && (
-          <View style={{ gap: 8, marginTop: 4 }}>
-            {!confirmaExcluir ? (
-              <AppButton
-                label="EXCLUIR"
-                fullWidth={false}
-                size="compact"
-                outlineColor={tema.erro}
-                textColor={tema.erro}
-                disabled={p.ocupado || excluindo}
-                style={styles.botao}
-                onPress={() => setConfirmaExcluir(true)}
-              />
-            ) : (
-              <>
-                <AppText style={styles.erro}>
-                  Excluir este conteúdo de vez? Não dá para desfazer (fica só o registro na auditoria). Para guardar sem apagar, use Arquivar.
-                </AppText>
-                <View style={styles.acoes}>
-                  <AppButton
-                    label={excluindo ? 'EXCLUINDO...' : 'SIM, EXCLUIR'}
-                    fullWidth={false}
-                    size="compact"
-                    outlineColor={tema.erro}
-                    textColor={tema.erro}
-                    disabled={excluindo}
-                    style={styles.botao}
-                    onPress={excluir}
-                  />
-                  <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botao} onPress={() => setConfirmaExcluir(false)} />
-                </View>
-              </>
-            )}
-            {!!erroExcluir && <AppText style={styles.erro}>{erroExcluir}</AppText>}
-          </View>
-        )}
-
-        {!!pendente && (
-          <View style={{ gap: 10 }}>
-            <AppText style={styles.confirma}>
-              {pendente === 'REJEITAR' ? 'O que precisa mudar? (obrigatório)' : CONFIRMACAO[pendente]}
-            </AppText>
-            {pendente === 'REJEITAR' && (
-              <TextInput
-                value={p.motivo}
-                onChangeText={p.setMotivo}
-                placeholder="Explique o que precisa ser corrigido"
-                placeholderTextColor={tema.placeholder}
-                multiline
-                maxLength={2000}
-                style={styles.input}
-              />
-            )}
-            <View style={styles.acoes}>
-              <AppButton
-                label={p.ocupado ? 'ENVIANDO…' : `CONFIRMAR: ${rotuloAcao(pendente, dados.status)}`}
-                fullWidth={false}
-                size="compact"
-                {...(pendente === 'REJEITAR'
-                  ? { backgroundColor: tema.erro, textColor: tema.nome === 'escuro' ? '#2B0B08' : colors.white, shadowColor: '#7A2018' }
-                  : { backgroundColor: tema.botaoFundo, textColor: tema.botaoTexto, shadowColor: tema.botaoSombra })}
-                disabled={p.ocupado}
-                style={styles.botao}
-                onPress={() => p.confirmar(pendente)}
-              />
-              <AppButton
-                label="CANCELAR"
-                fullWidth={false}
-                size="compact"
-                outlineColor={tema.texto}
-                textColor={tema.texto}
-                disabled={p.ocupado}
-                style={styles.botao}
-                onPress={p.cancelar}
-              />
-            </View>
-          </View>
-        )}
-      </CartaoSecao>
+      )}
     </>
   );
 }
@@ -582,7 +606,7 @@ function Linha({ ok, texto }: { ok: boolean; texto: string }) {
 
 const criarEstilos = (t: TemaPainel) => ({
   card: {
-    backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda,
+    backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda,
     padding: 16, gap: 6, minWidth: 0,
   },
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
@@ -596,17 +620,22 @@ const criarEstilos = (t: TemaPainel) => ({
   dica: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
   motivo: { backgroundColor: t.selos.erro.fundo + '55', borderRadius: 12, padding: 10, gap: 2, marginTop: 6 },
   motivoTitulo: { fontFamily: typography.bold, fontSize: 12, color: t.erro },
-  bloco: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 2 },
+  bloco: { borderWidth: t.borda, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 2 },
   blocoTitulo: { fontFamily: typography.bold, fontSize: 13, color: t.texto, marginBottom: 4 },
   licao: { minHeight: 44, justifyContent: 'center', paddingVertical: 6, borderTopWidth: 1, borderTopColor: t.linhaSuave },
   licaoTitulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.textoCorpo },
+  proximo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingTop: 12, borderTopWidth: 1, borderTopColor: t.linhaSuave },
+  check: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 10, borderRadius: 10, borderWidth: t.borda, borderColor: t.cardBorda },
+  checkOk: { backgroundColor: t.destaqueSuave, borderColor: t.destaqueTexto },
+  confirmaCaixa: { gap: 10, padding: 12, borderRadius: 12, backgroundColor: t.superficieSuave },
+  zonaPerigo: { gap: 8, marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: t.linhaSuave },
   hist: { borderLeftWidth: 3, borderLeftColor: t.cardBorda, paddingLeft: 10, gap: 1 },
   histTopo: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
   acoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   botao: { paddingHorizontal: 14, minHeight: 44 },
   confirma: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
   input: {
-    minHeight: 84, borderWidth: 2, borderColor: t.cardBorda, borderRadius: 12, padding: 10,
+    minHeight: 84, borderWidth: t.borda, borderColor: t.cardBorda, borderRadius: 12, padding: 10,
     fontFamily: typography.regular, fontSize: 14, color: t.textoCorpo, textAlignVertical: 'top',
   },
   ok: { fontFamily: typography.semiBold, fontSize: 13, color: t.selos.ok.texto, backgroundColor: t.destaqueSuave, borderRadius: 10, padding: 10 },

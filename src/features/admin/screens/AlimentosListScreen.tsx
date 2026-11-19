@@ -1,6 +1,8 @@
 // src/features/admin/screens/AlimentosListScreen.tsx
-// Catálogo de alimentos do painel: busca, filtros e cartões. Mostra de relance se é prato ou
-// ingrediente, a classificação NOVA, os grupos, onde aparece no recordatório e se tem receita.
+// Catálogo de alimentos do painel (Administração e Nutricionista): busca, filtros e cartões.
+// Mostra de relance se é prato ou ingrediente, a classificação NOVA, os grupos, onde aparece
+// no recordatório e se tem receita. Renderiza o próprio PainelLayout (antes era embrulhado por
+// fora e o título "Catálogo" aparecia duas vezes, dentro de uma moldura).
 import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,9 +10,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
 import { CampoBusca, ChipsFiltro, Selo, VazioPainel, type TomSelo } from '../../../shared/painel/components/ControlesLista';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
+import { PainelLayout } from '../../../shared/painel/PainelLayout';
+import type { ConfigPainel } from '../../../shared/painel/types';
+import { fonte } from '../../../shared/painel/painelTheme';
 import { AbasCatalogo, type AbaCatalogo } from '../components/AbasCatalogo';
 import { Alimento, listarAlimentos, precisaRevisaoNutricional } from '../services/alimentosAdminService';
 import type { TemaPainel } from '../../../shared/painel/tema/paletas';
@@ -45,7 +49,7 @@ function CartaoAlimento({ item, onPress }: { item: Alimento; onPress: () => void
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Abrir ${item.nome}`} style={({ pressed }) => [styles.card, revisar && styles.cardRevisar, pressed && { opacity: 0.85 }]}>
       <View style={styles.topo}>
         <View style={[styles.icone, prato && styles.iconePrato]}>
-          <Ionicons name={prato ? 'restaurant' : 'nutrition'} size={18} color={prato ? tema.selos.aviso.texto : tema.texto} />
+          <Ionicons name={prato ? 'restaurant' : 'nutrition'} size={18} color={prato ? tema.selos.aviso.texto : tema.destaqueTexto} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <AppText numberOfLines={2} style={styles.nome}>{item.nome}</AppText>
@@ -66,7 +70,7 @@ function CartaoAlimento({ item, onPress }: { item: Alimento; onPress: () => void
       </AppText>
 
       <View style={styles.rodape}>
-        <Ionicons name={refeicoes.length ? 'checkmark-circle' : 'remove-circle-outline'} size={14} color={refeicoes.length ? tema.texto : tema.textoSuave} />
+        <Ionicons name={refeicoes.length ? 'checkmark-circle' : 'remove-circle-outline'} size={14} color={refeicoes.length ? tema.destaqueTexto : tema.textoSuave} />
         <AppText style={styles.rodapeTexto} numberOfLines={1}>
           {refeicoes.length ? `Recordatório: ${refeicoes.map((r) => ROTULO_REFEICAO[r] ?? r).join(', ')}` : 'Fora do recordatório'}
         </AppText>
@@ -86,11 +90,13 @@ function Linha({ rotulo, children }: { rotulo: string; children: React.ReactNode
   );
 }
 
-export default function AlimentosListScreen({ navigation, route }: any) {
+export default function AlimentosListScreen({ config, navigation, route }: { config: ConfigPainel; navigation: any; route: any }) {
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
   const { width } = useWindowDimensions();
-  const colunas = width >= 1180 ? 3 : width >= 760 ? 2 : 1;
+  // largura útil já descontando o menu lateral (256 no desktop, 92 no tablet)
+  const util = width >= 1024 ? width - 256 : width >= 700 ? width - 92 : width;
+  const colunas = util >= 1000 ? 3 : util >= 600 ? 2 : 1;
   const [alimentos, setAlimentos] = useState<Alimento[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -100,7 +106,7 @@ export default function AlimentosListScreen({ navigation, route }: any) {
   const aba: 'ALIMENTOS' | 'PRATOS' = route?.params?.aba === 'PRATOS' ? 'PRATOS' : 'ALIMENTOS';
   const tipoDaAba: FiltrosAlimentos['tipo'] = aba === 'PRATOS' ? 'PRATO' : 'INGREDIENTE';
   const trocarAba = (a: AbaCatalogo) => {
-    if (a === 'RECEITAS') navigation.navigate('AdminReceitas');
+    if (a === 'RECEITAS') navigation.navigate(config.rotaReceitas);
     else navigation.setParams({ aba: a });
   };
 
@@ -127,21 +133,11 @@ export default function AlimentosListScreen({ navigation, route }: any) {
 
   const cabecalho = (
     <View style={styles.cabecalho}>
-      <View style={styles.titulos}>
-        <View style={{ flex: 1, minWidth: 180 }}>
-          <AppText style={styles.titulo}>Catálogo</AppText>
-          <AppText style={styles.subtitulo}>
-            {aba === 'PRATOS' ? 'Pratos compostos do app' : 'Ingredientes e alimentos do app'} · {doTipo} cadastrados
-          </AppText>
-        </View>
-        <AppButton label={aba === 'PRATOS' ? '+ NOVO PRATO' : '+ NOVO ALIMENTO'} fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botaoNovo} onPress={() => navigation.navigate('AlimentoForm', aba === 'PRATOS' ? { novoPrato: true } : {})} />
-      </View>
-
       <AbasCatalogo ativa={aba} onTrocar={trocarAba} contagens={{ ALIMENTOS: alimentos.length - pratos, PRATOS: pratos }} />
 
       {pendentes > 0 && (
         <Pressable onPress={() => set('origem', filtros.origem === 'REVISAR' ? 'TODAS' : 'REVISAR')} style={styles.aviso} accessibilityRole="button">
-          <Ionicons name="alert-circle" size={18} color="#8A5A00" />
+          <Ionicons name="alert-circle" size={18} color={tema.alertaTexto} />
           <AppText style={styles.avisoTexto}>
             {pendentes} alimento(s) criados por adolescentes aguardam revisão nutricional. {filtros.origem === 'REVISAR' ? 'Toque para ver todos.' : 'Toque para ver só eles.'}
           </AppText>
@@ -159,7 +155,7 @@ export default function AlimentosListScreen({ navigation, route }: any) {
           <Ionicons name={painelAberto ? 'chevron-up' : 'chevron-down'} size={14} color={ativos > 0 ? tema.botaoTexto : tema.texto} />
         </Pressable>
         {(ativos > 0 || filtros.busca !== '') && (
-          <Pressable onPress={() => setFiltros(FILTROS_VAZIOS)} accessibilityRole="button" hitSlop={8}>
+          <Pressable onPress={() => setFiltros(FILTROS_VAZIOS)} accessibilityRole="button" hitSlop={8} style={{ minHeight: 44, justifyContent: 'center' }}>
             <AppText style={styles.limpar}>Limpar tudo</AppText>
           </Pressable>
         )}
@@ -180,12 +176,29 @@ export default function AlimentosListScreen({ navigation, route }: any) {
     </View>
   );
 
-  if (carregando && alimentos.length === 0) return <View style={styles.root}><EstadoCarregando /></View>;
-  if (erro && alimentos.length === 0) return <View style={styles.root}><EstadoErro mensagem={erro} onTentar={carregar} /></View>;
+  const botaoNovo = (
+    <AppButton
+      label={aba === 'PRATOS' ? '+ NOVO PRATO' : '+ NOVO ALIMENTO'}
+      fullWidth={false}
+      size="compact"
+      backgroundColor={tema.botaoFundo}
+      textColor={tema.botaoTexto}
+      shadowColor={tema.botaoSombra}
+      style={styles.botaoNovo}
+      onPress={() => navigation.navigate('AlimentoForm', aba === 'PRATOS' ? { novoPrato: true } : {})}
+    />
+  );
+  const subtitulo = `${aba === 'PRATOS' ? 'Pratos compostos (feitos de outros alimentos)' : 'Ingredientes e alimentos que se registram sozinhos'} · ${doTipo} cadastrados`;
 
   return (
-    <View style={styles.root}>
+    <PainelLayout config={config} titulo="Catálogo" subtitulo={subtitulo} acao={botaoNovo} rolagem={false}>
+      {carregando && alimentos.length === 0 ? (
+        <EstadoCarregando texto="Carregando o catálogo…" />
+      ) : erro && alimentos.length === 0 ? (
+        <EstadoErro mensagem={erro} onTentar={carregar} />
+      ) : (
       <FlatList
+        style={{ flex: 1 }}
         key={`col-${colunas}`}
         data={dados}
         numColumns={colunas}
@@ -194,10 +207,15 @@ export default function AlimentosListScreen({ navigation, route }: any) {
         contentContainerStyle={styles.lista}
         ListHeaderComponent={cabecalho}
         ListEmptyComponent={
-          <VazioPainel
-            titulo={doTipo === 0 && ativos === 0 && filtros.busca === '' ? (aba === 'PRATOS' ? 'Nenhum prato cadastrado' : 'Nenhum alimento cadastrado') : 'Nada com esses filtros'}
-            texto={doTipo === 0 && ativos === 0 && filtros.busca === '' ? `Toque em "${aba === 'PRATOS' ? 'Novo prato' : 'Novo alimento'}" para começar.` : 'Tente tirar algum filtro ou buscar por outro nome.'}
-          />
+          doTipo === 0 && ativos === 0 && filtros.busca === '' ? (
+            <VazioPainel
+              titulo={aba === 'PRATOS' ? 'Nenhum prato cadastrado' : 'Nenhum alimento cadastrado'}
+              texto={aba === 'PRATOS' ? 'Pratos são feitos de outros alimentos do catálogo e podem ter receita.' : 'Comece pelos alimentos mais comuns no dia a dia dos adolescentes.'}
+              acao={{ label: aba === 'PRATOS' ? 'CADASTRAR O PRIMEIRO PRATO' : 'CADASTRAR O PRIMEIRO ALIMENTO', onPress: () => navigation.navigate('AlimentoForm', aba === 'PRATOS' ? { novoPrato: true } : {}) }}
+            />
+          ) : (
+            <VazioPainel titulo="Nada com esses filtros" texto="Tente tirar algum filtro ou buscar por outro nome." acao={{ label: 'LIMPAR FILTROS', onPress: () => setFiltros(FILTROS_VAZIOS) }} />
+          )
         }
         renderItem={({ item }) => (
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -208,32 +226,29 @@ export default function AlimentosListScreen({ navigation, route }: any) {
         initialNumToRender={18}
         windowSize={7}
       />
-    </View>
+      )}
+    </PainelLayout>
   );
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  root: { flex: 1, backgroundColor: t.card },
-  lista: { padding: 20, paddingBottom: 48, gap: 12 },
+  lista: { paddingBottom: 48, gap: 12 },
   cabecalho: { gap: 12, marginBottom: 4 },
-  titulos: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 },
-  titulo: { fontFamily: typography.bold, fontSize: 20, color: t.texto },
-  subtitulo: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, marginTop: 2 },
-  botaoNovo: { paddingHorizontal: 18, minHeight: 46 },
+  botaoNovo: { paddingHorizontal: 18, minHeight: 44 },
   aviso: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.alertaSuave, borderRadius: 12, padding: 12 },
   avisoTexto: { flex: 1, fontFamily: typography.semiBold, fontSize: 12, color: t.selos.aviso.texto, lineHeight: 17 },
   linhaFiltros: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 },
-  botaoFiltros: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, backgroundColor: t.card },
+  botaoFiltros: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: 20, borderWidth: t.borda, borderColor: t.cardBorda, backgroundColor: t.card },
   botaoFiltrosOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
   botaoFiltrosTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
-  limpar: { fontFamily: typography.bold, fontSize: 12, color: t.erro },
+  limpar: { fontFamily: typography.bold, fontSize: fonte.legenda, color: t.destaqueTexto, textDecorationLine: 'underline' },
   contagem: { marginLeft: 'auto', fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
-  painelFiltros: { gap: 14, backgroundColor: painel.fundo, borderRadius: 14, padding: 14 },
+  painelFiltros: { gap: 14, backgroundColor: t.superficieSuave, borderRadius: 14, padding: 14 },
   rotuloFiltro: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
-  card: { backgroundColor: t.card, borderRadius: 16, borderWidth: 2, borderColor: t.cardBorda, padding: 14, gap: 10 },
-  cardRevisar: { borderColor: t.alerta, backgroundColor: t.alertaSuave },
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 14, gap: 10 },
+  cardRevisar: { borderColor: t.alerta, borderLeftWidth: 4 },
   topo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  icone: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: t.destaqueSuave },
+  icone: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: t.destaqueSuave },
   iconePrato: { backgroundColor: t.alertaSuave },
   nome: { fontFamily: typography.bold, fontSize: 15, color: t.texto },
   tipo: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, marginTop: 1 },

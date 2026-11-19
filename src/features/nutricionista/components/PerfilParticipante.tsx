@@ -61,10 +61,10 @@ export function PerfilParticipante({ p, nome, imc }: Props) {
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 16 } as const,
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 16, gap: 16 } as const,
   topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14 } as const,
   avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: t.destaqueSuave, alignItems: 'center', justifyContent: 'center' } as const,
-  avatarTexto: { fontFamily: typography.bold, fontSize: 20, color: t.destaque } as const,
+  avatarTexto: { fontFamily: typography.bold, fontSize: 20, color: t.destaqueTexto } as const,
   nome: { fontFamily: typography.bold, fontSize: 18, color: t.texto } as const,
   selos: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 } as const,
   meta: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave } as const,

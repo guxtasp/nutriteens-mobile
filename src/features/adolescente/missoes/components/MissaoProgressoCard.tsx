@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
+import { IconeMissao } from '../../../../shared/ui/IconeMissao';
 import { ProgressBar } from '../../../../shared/ui/ProgressBar';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -40,7 +41,10 @@ export function MissaoProgressoCard({ icone, titulo, descricao, progresso, ponto
   return (
     <Raiz style={[styles.card, feita && styles.cardFeita]} {...propsRaiz}>
       <View style={styles.topo}>
-        <AppText style={styles.icone}>{icone ?? '🎯'}</AppText>
+        {/* ícone escolhido no painel; emojis antigos são convertidos (shared/ui/iconesMissao) */}
+        <View style={styles.icone}>
+          <IconeMissao valor={icone} tamanho={24} cor={colors.primaryDark} />
+        </View>
         <View style={{ flex: 1 }}>
           <AppText style={styles.titulo}>{titulo}</AppText>
           <AppText style={styles.descricao}>{descricao}</AppText>
@@ -87,7 +91,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 2, borderColor: 'transparent' },
   cardFeita: { backgroundColor: colors.exercicioAcertoFundo, borderColor: colors.primary },
   topo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  icone: { fontSize: 28 },
+  icone: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.exercicioAcertoFundo, alignItems: 'center', justifyContent: 'center' },
   titulo: { fontSize: 15, fontFamily: typography.bold, color: colors.primaryDark },
   descricao: { fontSize: 12, color: colors.trilhaChipTexto, marginTop: 2 },
   barra: { marginTop: 14 },

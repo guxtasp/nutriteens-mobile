@@ -1,12 +1,17 @@
 // src/features/admin/dashboard/screens/AdminDashboardScreen.tsx
+//
+// Visão geral da Administração. Ordem pensada para a tarefa: resumo e atalhos, indicadores
+// (cada um abre a lista que o explica), o que precisa de ação e o pulso de uso. A análise
+// detalhada (retenção, funis, recursos) continua em Analytics.
 import React, { useMemo, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { PainelLayout } from '../../../../shared/painel/PainelLayout';
 import { IntroSecao } from '../../../../shared/painel/components/IntroSecao';
 import { CartaoKpi } from '../../../../shared/painel/components/CartaoKpi';
 import { CartaoSecao } from '../../../../shared/painel/components/CartaoSecao';
 import { Colunas } from '../../../../shared/painel/components/Colunas';
+import { ControlesDashboard } from '../../../../shared/painel/components/ControlesDashboard';
 import { EstadoCarregando, EstadoErro } from '../../../../shared/painel/components/EstadosPainel';
-import { FiltroPeriodo } from '../../../../shared/painel/components/FiltroPeriodo';
 import { GraficoLinha } from '../../../../shared/painel/components/GraficoLinha';
 import { GridResponsiva } from '../../../../shared/painel/components/GridResponsiva';
 import { ItemAtividade, ListaAtividades } from '../../../../shared/painel/components/ListaAtividades';
@@ -20,17 +25,18 @@ import { usePendentesScanner } from '../../../adolescente/scanner/hooks/usePende
 
 const ATALHOS: AtalhoHero[] = [
   { rota: 'AdminConteudos', label: 'Conteúdos', icone: 'document-text-outline', destaque: true },
-  { rota: 'AdminReceitas', label: 'Receitas', icone: 'restaurant-outline' },
-  { rota: 'AlimentosList', label: 'Alimentos', icone: 'nutrition-outline' },
   { rota: 'Usuarios', label: 'Usuários', icone: 'people-outline' },
+  { rota: 'AlimentosList', label: 'Catálogo', icone: 'nutrition-outline' },
   { rota: 'Metricas', label: 'Analytics', icone: 'stats-chart-outline' },
   { rota: 'AdminExportar', label: 'Exportar dados', icone: 'download-outline' },
 ];
 
 export default function AdminDashboardScreen() {
+  const navigation = useNavigation<any>();
   const [dias, setDias] = useState(30);
-  const { dados, carregando, erro, recarregar } = useDashboardPainel(dias);
+  const { dados, carregando, erro, recarregar, atualizadoEm } = useDashboardPainel(dias);
   const pendentesScanner = usePendentesScanner();
+  const abrir = (rota: string) => () => navigation.navigate(rota);
 
   const atividades: ItemAtividade[] = (dados?.atividades ?? []).map((a, i) => ({
     chave: `${a.tipo}-${a.quando}-${i}`,
@@ -39,10 +45,8 @@ export default function AdminDashboardScreen() {
     quando: a.quando,
   }));
 
-  // só o necessário para a visão geral; a análise de uso (dias, recursos, desafios, trilhas) fica em Analytics
   const derivados = useMemo(() => {
-    const serieUso = dados?.serie_uso ?? [];
-    const usuarios = serieUso.map((p) => p.usuarios);
+    const usuarios = (dados?.serie_uso ?? []).map((p) => p.usuarios);
     return { usuarios, tendUsuarios: tendenciaPct(usuarios) };
   }, [dados]);
 
@@ -65,9 +69,10 @@ export default function AdminDashboardScreen() {
       quantidade: pendentesScanner ?? 0,
     },
   ];
+  const totalPendencias = pendencias.reduce((s, p) => s + p.quantidade, 0);
 
   const resumo = dados
-    ? `${formatarNumero(aguardando)} conteúdo(s) em aprovação · ${formatarNumero(dados.kpis.ativos)} adolescente(s) ativo(s) nos últimos ${dias} dias`
+    ? `${totalPendencias > 0 ? `${formatarNumero(totalPendencias)} item(ns) precisam da sua atenção` : 'Nada pendente agora'} · ${formatarNumero(dados.kpis.ativos)} adolescente(s) ativo(s) nos últimos ${dias} dias`
     : 'Carregando o resumo...';
 
   return (
@@ -75,67 +80,72 @@ export default function AdminDashboardScreen() {
       config={ADMIN_PAINEL}
       titulo="Dashboard"
       subtitulo="Visão geral do NutriTeens"
-      acao={<FiltroPeriodo valor={dias} onChange={setDias} />}
+      acao={<ControlesDashboard dias={dias} onDias={setDias} atualizadoEm={atualizadoEm} carregando={carregando} onAtualizar={recarregar} />}
     >
-      {erro ? (
+      {erro && !dados ? (
         <EstadoErro mensagem={erro} onTentar={recarregar} />
-      ) : carregando && !dados ? (
-        <EstadoCarregando />
-      ) : dados ? (
+      ) : !dados ? (
+        <EstadoCarregando texto="Carregando a visão geral…" />
+      ) : (
         <>
+          {!!erro && <EstadoErro mensagem={erro} onTentar={recarregar} />}
           <HeroPainel saudacao={saudacao(new Date().getHours())} papel="Administração" resumo={resumo} atalhos={ATALHOS} />
           <IntroSecao
             chave="admin_dashboard"
             titulo="Bem-vindo à Administração"
             linhas={[
               'Esta é a visão geral e o que precisa da sua ação hoje. Os números mostram apenas totais, sem dados pessoais.',
+              'Toque em um indicador para abrir a lista relacionada (usuários, conteúdos, desafios...).',
               'Para entender como o app é usado (retenção, recursos mais usados, funis, trilhas e desafios), abra Analytics no menu.',
-              'Troque o período (7, 30 ou 90 dias) no filtro do topo; os indicadores marcados com "dias" seguem esse período.',
+              'Troque o período (7, 30 ou 90 dias) no topo; os indicadores marcados com "dias" seguem esse período. O botão de atualizar mostra a hora da última leitura.',
               'Toque no ícone "i" de cada indicador para entender o que ele conta. A seta de tendência compara a segunda metade do período com a primeira.',
               'Você consulta, organiza e envia conteúdos para revisão. Aprovar e publicar é sempre da nutricionista.',
-              'O botão de lua/sol no menu troca entre o tema claro e o escuro.',
             ]}
           />
-          <GridResponsiva minItem={150}>
-            <CartaoKpi titulo="Adolescentes cadastrados" ajuda={{ oque: "Total de contas de adolescentes criadas no aplicativo, em qualquer data.", como: "Número acumulado: só cresce. Para ver o ritmo de entrada, use “Novos usuários”.", origem: "Tabela de perfis (profiles), papel adolescente." }} valor={dados.kpis.adolescentes} icone="people-outline" />
-            <CartaoKpi
-              titulo={`Usuários ativos (${dias} dias)`}
-              ajuda={{ oque: "Adolescentes que registraram algo ou concluíram uma lição no período escolhido.", como: "Cada pessoa conta uma vez. O minigráfico mostra quantos usaram o app a cada dia; a etiqueta compara a 2ª metade do período com a 1ª.", origem: "Registros de refeição, água e atividade física e lições concluídas." }}
-              valor={dados.kpis.ativos}
-              icone="pulse-outline"
-              sparkline={derivados.usuarios}
-              tendencia={derivados.tendUsuarios}
-            />
-            <CartaoKpi titulo={`Novos usuários (${dias} dias)`} ajuda={{ oque: "Contas de adolescentes criadas dentro do período escolhido.", como: "Compare com o total de cadastrados para ver o ritmo de crescimento.", origem: "Tabela de perfis (profiles), pela data de criação." }} valor={dados.kpis.novos} icone="person-add-outline" />
-            <CartaoKpi titulo="Conteúdos publicados" ajuda={{ oque: "Trilhas e receitas aprovadas pela nutricionista e visíveis para os adolescentes.", como: "Número maior significa mais conteúdo disponível. Itens em revisão não entram.", origem: "Fluxo de conteúdo (status publicado) de trilhas e receitas." }} valor={dados.kpis.conteudos_publicados} icone="document-text-outline" />
-            <CartaoKpi
-              titulo="Aguardando aprovação"
-              ajuda={{ oque: "Conteúdos enviados para revisão que aguardam decisão da nutricionista.", como: "O ideal é próximo de zero. Enquanto não forem aprovados, os adolescentes não os veem.", origem: "Fluxo de conteúdo (status em revisão)." }}
-              valor={dados.kpis.conteudos_aguardando}
-              icone="hourglass-outline"
-              alerta={dados.kpis.conteudos_aguardando > 0}
-            />
-            <CartaoKpi titulo="Nutricionistas" ajuda={{ oque: "Contas com perfil de nutricionista, que validam o conteúdo nutricional.", como: "Mostra a equipe disponível para revisar conteúdo e acompanhar participantes.", origem: "Tabela de perfis (profiles), papel nutricionista." }} valor={dados.kpis.nutricionistas} icone="medkit-outline" />
-            <CartaoKpi titulo="Desafios ativos" ajuda={{ oque: "Desafios diários e periódicos disponíveis hoje no aplicativo.", como: "Se ficar muito baixo, os adolescentes ficam sem missões para cumprir.", origem: "Catálogos de missões diárias e periódicas (somente as ativas)." }} valor={dados.kpis.desafios_ativos} icone="trophy-outline" />
-          </GridResponsiva>
 
-          <Colunas bases={[460, 300]}>
-            <CartaoSecao titulo="Usuários ativos por dia" subtitulo={`Últimos ${dias} dias`} ajuda={{ oque: "Quantos adolescentes usaram o app em cada dia do período.", como: "Serve só como pulso rápido. Para retenção, funis e recursos mais usados, abra Analytics.", origem: "Registros de refeição, água e atividade física e lições concluídas, por dia." }}>
-              <GraficoLinha
-                dias={(dados.serie_uso ?? []).map((p) => p.dia)}
-                series={[{ nome: 'Usuários ativos', valores: derivados.usuarios }]}
+          <CartaoSecao titulo="Indicadores" subtitulo="Toque em um cartão para ver os detalhes">
+            <GridResponsiva minItem={160}>
+              <CartaoKpi titulo="Adolescentes cadastrados" ajuda={{ oque: 'Total de contas de adolescentes criadas no aplicativo, em qualquer data.', como: 'Número acumulado: só cresce. Para ver o ritmo de entrada, use “Novos usuários”.', origem: 'Tabela de perfis (profiles), papel adolescente.' }} valor={dados.kpis.adolescentes} icone="people-outline" onPress={abrir('Usuarios')} rotuloAcao="Ver usuários" />
+              <CartaoKpi
+                titulo={`Usuários ativos (${dias} dias)`}
+                ajuda={{ oque: 'Adolescentes que registraram algo ou concluíram uma lição no período escolhido.', como: 'Cada pessoa conta uma vez. O minigráfico mostra quantos usaram o app a cada dia; a etiqueta compara a 2ª metade do período com a 1ª.', origem: 'Registros de refeição, água e atividade física e lições concluídas.' }}
+                valor={dados.kpis.ativos}
+                icone="pulse-outline"
+                sparkline={derivados.usuarios}
+                tendencia={derivados.tendUsuarios}
+                onPress={abrir('Metricas')}
+                rotuloAcao="Abrir Analytics"
               />
-            </CartaoSecao>
-            <CartaoSecao titulo="Precisa da sua atenção" subtitulo="Toque para abrir" ajuda={{ oque: "Lista do que está esperando uma ação sua.", como: "Toque no item para abrir. Some da lista quando não houver pendências.", origem: "Fluxo de conteúdo e solicitações do painel." }}>
+              <CartaoKpi titulo={`Novos usuários (${dias} dias)`} ajuda={{ oque: 'Contas de adolescentes criadas dentro do período escolhido.', como: 'Compare com o total de cadastrados para ver o ritmo de crescimento.', origem: 'Tabela de perfis (profiles), pela data de criação.' }} valor={dados.kpis.novos} icone="person-add-outline" onPress={abrir('Usuarios')} rotuloAcao="Ver usuários" />
+              <CartaoKpi
+                titulo="Aguardando aprovação"
+                ajuda={{ oque: 'Conteúdos enviados para revisão que aguardam decisão da nutricionista.', como: 'O ideal é próximo de zero. Enquanto não forem aprovados, os adolescentes não os veem.', origem: 'Fluxo de conteúdo (status em revisão).' }}
+                valor={dados.kpis.conteudos_aguardando}
+                icone="hourglass-outline"
+                alerta={dados.kpis.conteudos_aguardando > 0}
+                onPress={abrir('AdminConteudos')}
+                rotuloAcao="Ver conteúdos"
+              />
+              <CartaoKpi titulo="Conteúdos publicados" ajuda={{ oque: 'Trilhas e receitas aprovadas pela nutricionista e visíveis para os adolescentes.', como: 'Número maior significa mais conteúdo disponível. Itens em revisão não entram.', origem: 'Fluxo de conteúdo (status publicado) de trilhas e receitas.' }} valor={dados.kpis.conteudos_publicados} icone="document-text-outline" onPress={abrir('AdminConteudos')} rotuloAcao="Ver conteúdos" />
+              <CartaoKpi titulo="Nutricionistas" ajuda={{ oque: 'Contas com perfil de nutricionista, que validam o conteúdo nutricional.', como: 'Mostra a equipe disponível para revisar conteúdo e acompanhar participantes.', origem: 'Tabela de perfis (profiles), papel nutricionista.' }} valor={dados.kpis.nutricionistas} icone="medkit-outline" onPress={abrir('AdminNutricionistas')} rotuloAcao="Ver equipe" />
+              <CartaoKpi titulo="Desafios ativos" ajuda={{ oque: 'Desafios diários e periódicos disponíveis hoje no aplicativo.', como: 'Se ficar muito baixo, os adolescentes ficam sem missões para cumprir.', origem: 'Catálogos de missões diárias e periódicas (somente as ativas).' }} valor={dados.kpis.desafios_ativos} icone="trophy-outline" onPress={abrir('AdminDesafios')} rotuloAcao="Ver desafios" />
+            </GridResponsiva>
+          </CartaoSecao>
+
+          <Colunas bases={[300, 460]}>
+            <CartaoSecao titulo="Precisa da sua atenção" subtitulo="Toque para abrir" ajuda={{ oque: 'Lista do que está esperando uma ação sua.', como: 'Toque no item para abrir. Some da lista quando não houver pendências.', origem: 'Fluxo de conteúdo e solicitações do painel.' }}>
               <PendenciasPainel itens={pendencias} />
+            </CartaoSecao>
+            <CartaoSecao titulo="Usuários ativos por dia" subtitulo={`Últimos ${dias} dias`} ajuda={{ oque: 'Quantos adolescentes usaram o app em cada dia do período.', como: 'Serve só como pulso rápido. Para retenção, funis e recursos mais usados, abra Analytics.', origem: 'Registros de refeição, água e atividade física e lições concluídas, por dia.' }}>
+              <GraficoLinha dias={(dados.serie_uso ?? []).map((p) => p.dia)} series={[{ nome: 'Usuários ativos', valores: derivados.usuarios }]} />
             </CartaoSecao>
           </Colunas>
 
-          <CartaoSecao titulo="Atividades recentes" ajuda={{ oque: "Últimos movimentos relevantes do aplicativo e do fluxo de conteúdo.", como: "Do mais recente para o mais antigo; serve para acompanhar o que acabou de acontecer.", origem: "Fluxo de conteúdo, cadastros e registros recentes." }}>
+          <CartaoSecao titulo="Atividades recentes" ajuda={{ oque: 'Últimos movimentos relevantes do aplicativo e do fluxo de conteúdo.', como: 'Do mais recente para o mais antigo; serve para acompanhar o que acabou de acontecer.', origem: 'Fluxo de conteúdo, cadastros e registros recentes.' }}>
             <ListaAtividades itens={atividades} vazio="Nenhuma atividade recente." />
           </CartaoSecao>
         </>
-      ) : null}
+      )}
     </PainelLayout>
   );
 }

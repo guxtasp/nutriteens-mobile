@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { AppText } from '../../../../shared/ui/AppText';
+import { IconeMissao } from '../../../../shared/ui/IconeMissao';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { feedbackLeve, feedbackToque } from '../../../../shared/audio/feedback';
@@ -214,9 +215,9 @@ export default function MissaoDoDiaModal({ visivel, missao, hojeISO, sequenciaAt
             </View>
 
             <Animated.View style={[styles.selo, { transform: [{ scale: seloScale }] }]}>
-              <AppText style={styles.emoji} accessible={false}>
-                {missao.icone ?? '🎯'}
-              </AppText>
+              <View accessible={false}>
+                <IconeMissao valor={missao.icone} tamanho={40} cor={colors.primaryDark} />
+              </View>
             </Animated.View>
 
             <AppText style={styles.tituloGeral} accessibilityRole="header">
@@ -336,7 +337,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
     marginBottom: 12,
   },
-  emoji: { fontSize: 40 },
   tituloGeral: { fontFamily: typography.semiBold, fontSize: 13, color: colors.exercicioBorda, textAlign: 'center' },
   titulo: { fontFamily: typography.bold, fontSize: 22, lineHeight: 28, color: colors.primaryDark, textAlign: 'center', marginTop: 2 },
   descricao: {

@@ -173,7 +173,7 @@ const criarEstilos = (t: TemaPainel) => ({
   limpar: { fontFamily: typography.bold, fontSize: 12, color: t.erro },
   detalhe: { gap: 2, marginTop: 4 },
   filtros: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center' },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: t.borda, borderColor: t.cardBorda, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center' },
   chipAtivo: { backgroundColor: t.botaoFundo, borderColor: t.texto },
   chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
   chipTextoAtivo: { color: t.chipAtivoTexto },

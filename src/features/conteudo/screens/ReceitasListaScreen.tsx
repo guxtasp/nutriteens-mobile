@@ -245,7 +245,7 @@ const criarEstilos = (t: TemaPainel) => ({
   rotuloOrdem: { fontFamily: typography.bold, fontSize: 12, color: t.textoSuave },
   limpar: { fontFamily: typography.bold, fontSize: 12, color: t.erro },
   botao: { paddingHorizontal: 14, minHeight: 44 },
-  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, overflow: 'hidden', minWidth: 0 },
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, overflow: 'hidden', minWidth: 0 },
   fotoBox: { height: 150, backgroundColor: t.superficieSuave },
   foto: { width: '100%', height: '100%' },
   semFoto: { flex: 1, alignItems: 'center', justifyContent: 'center' },

@@ -1,16 +1,20 @@
 // src/features/conteudo/components/GuiaCriacao.tsx
-// Guia visual "Como criar", passo a passo: marcador de passos clicável, desenho do passo,
-// o que fazer em ordem, uma dica e botões Voltar/Próximo. Dá para rever quando quiser
-// (menu "Como criar" ou o botão dentro dos editores).
+// Guia visual "Como criar", passo a passo, com a identidade NutriTeens: faixa verde da marca
+// com o Broxis, barra de progresso, passos clicáveis, desenho do passo, o que fazer em ordem
+// e a dica do passo. Dá para rever quando quiser (menu "Como criar" ou o botão nos editores).
+// O texto dos passos vem de utils/guiaCriacao (não mudou).
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
+import { BroxisMascot } from '../../../shared/ui/BroxisMascot';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
-import { COR_CATEGORIA } from '../utils/blocos';
+import { ALVO_TOQUE, fonte } from '../../../shared/painel/painelTheme';
+import { useModoPainel } from '../../../shared/painel/hooks/useModoPainel';
 import { PASSOS_GUIA, passoValido } from '../utils/guiaCriacao';
 import IlustracaoGuia from './IlustracaoGuia';
 import type { TemaPainel } from '../../../shared/painel/tema/paletas';
@@ -25,18 +29,40 @@ type Props = {
 export default function GuiaCriacao({ passoInicial = 0, acoes }: Props) {
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
+  const { modo } = useModoPainel();
+  const celular = modo === 'celular';
   const [i, setI] = useState(passoValido(passoInicial));
   const passo = PASSOS_GUIA[i];
-  const cor = COR_CATEGORIA[passo.cor];
-  const ultimo = i === PASSOS_GUIA.length - 1;
+  const total = PASSOS_GUIA.length;
+  const ultimo = i === total - 1;
   const acao = acoes?.[passo.id];
+  const gradiente: [string, string] = tema.nome === 'escuro' ? [tema.superficieSuave, tema.card] : [tema.menuFundo, colors.primaryDark];
 
   return (
     <View style={styles.raiz}>
-      {/* marcador de passos: toque para pular */}
-      <View style={styles.marcador} accessibilityRole="tablist">
+      {/* faixa da marca: Broxis + progresso */}
+      <LinearGradient colors={gradiente} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+        <View style={styles.heroTexto}>
+          <AppText style={styles.heroRotulo}>GUIA DE CRIAÇÃO</AppText>
+          <AppText style={styles.heroTitulo}>Da ideia à trilha publicada</AppText>
+          <AppText style={styles.heroSub}>
+            {total} passos para montar uma trilha que os adolescentes vão percorrer no app.
+          </AppText>
+          <View style={styles.progresso} accessibilityLabel={`Passo ${i + 1} de ${total}`}>
+            <View style={[styles.progressoCheio, { width: `${((i + 1) / total) * 100}%` }]} />
+          </View>
+          <AppText style={styles.heroPasso}>Passo {i + 1} de {total}</AppText>
+        </View>
+        {!celular && (
+          <View style={styles.mascote} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <BroxisMascot size={112} pose={ultimo ? 'supercontente' : 'apresentando'} entrance="fade" showParticles={false} />
+          </View>
+        )}
+      </LinearGradient>
+
+      {/* passos: toque para pular */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.passos} accessibilityRole="tablist">
         {PASSOS_GUIA.map((p, k) => {
-          const c = COR_CATEGORIA[p.cor];
           const atual = k === i;
           const feito = k < i;
           return (
@@ -45,57 +71,78 @@ export default function GuiaCriacao({ passoInicial = 0, acoes }: Props) {
               onPress={() => setI(k)}
               accessibilityRole="tab"
               accessibilityState={{ selected: atual }}
-              accessibilityLabel={`Passo ${k + 1}: ${p.titulo}`}
-              hitSlop={6}
-              style={[styles.bolinha, { borderColor: c.borda, backgroundColor: atual || feito ? c.fundo : tema.card }]}
+              accessibilityLabel={`Passo ${k + 1}: ${p.titulo}${feito ? ', visto' : ''}`}
+              style={[styles.passo, atual && styles.passoAtual]}
             >
-              {feito ? <Ionicons name="checkmark" size={16} color={colors.white} /> : <AppText style={[styles.bolinhaTexto, { color: atual ? colors.white : c.borda }]}>{k + 1}</AppText>}
+              <View style={[styles.bolinha, feito && styles.bolinhaFeita, atual && styles.bolinhaAtual]}>
+                {feito ? (
+                  <Ionicons name="checkmark" size={14} color={colors.primaryDark} />
+                ) : (
+                  <AppText style={[styles.bolinhaTexto, atual && { color: colors.primaryDark }]}>{k + 1}</AppText>
+                )}
+              </View>
+              {(!celular || atual) && (
+                <AppText style={[styles.passoTexto, atual && styles.passoTextoAtual]} numberOfLines={1}>
+                  {p.titulo}
+                </AppText>
+              )}
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
-      <View style={[styles.cartao, { borderColor: cor.borda }]}>
-        <View style={[styles.faixa, { backgroundColor: cor.fundo, borderBottomColor: cor.borda }]}>
-          <AppText style={styles.faixaRotulo}>PASSO {i + 1} DE {PASSOS_GUIA.length}</AppText>
-          <AppText style={styles.faixaTitulo}>{passo.titulo}</AppText>
+      <View style={styles.cartao}>
+        <View style={styles.cabecalho}>
+          <View style={styles.numeroGrande}>
+            <AppText style={styles.numeroGrandeTexto}>{i + 1}</AppText>
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppText style={styles.titulo} accessibilityRole="header">{passo.titulo}</AppText>
+            <AppText style={styles.resumo}>{passo.resumo}</AppText>
+          </View>
         </View>
 
-        <View style={styles.corpo}>
-          <IlustracaoGuia tipo={passo.ilustracao} />
-          <AppText style={styles.resumo}>{passo.resumo}</AppText>
+        <View style={[styles.corpo, !celular && styles.corpoLado]}>
+          <View style={!celular ? { flex: 1, minWidth: 0 } : undefined}>
+            <IlustracaoGuia tipo={passo.ilustracao} />
+          </View>
 
-          <View style={styles.lista}>
+          <View style={[styles.lista, !celular && { flex: 1, minWidth: 0 }]}>
             <AppText style={styles.listaTitulo}>O que fazer</AppText>
             {passo.faca.map((f, k) => (
               <View key={k} style={styles.item}>
-                <View style={[styles.itemNumero, { backgroundColor: cor.fundo }]}>
+                <View style={styles.itemNumero}>
                   <AppText style={styles.itemNumeroTexto}>{k + 1}</AppText>
                 </View>
                 <AppText style={styles.itemTexto}>{f}</AppText>
               </View>
             ))}
           </View>
+        </View>
 
-          <View style={[styles.dica, { backgroundColor: cor.suave, borderColor: cor.fundo }]}>
-            <Ionicons name="bulb-outline" size={18} color={cor.borda} />
+        <View style={styles.dica}>
+          <View style={styles.dicaIcone}>
+            <Ionicons name="bulb" size={16} color={colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <AppText style={styles.dicaTitulo}>Dica</AppText>
             <AppText style={styles.dicaTexto}>{passo.dica}</AppText>
           </View>
-
-          {!!acao && (
-            <View style={{ flexDirection: 'row' }}>
-              <AppButton label={acao.rotulo} fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botao} onPress={acao.onPress} />
-            </View>
-          )}
         </View>
+
+        {!!acao && (
+          <View style={{ flexDirection: 'row' }}>
+            <AppButton label={acao.rotulo} fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botao} onPress={acao.onPress} />
+          </View>
+        )}
       </View>
 
       <View style={styles.navegacao}>
-        <AppButton label="VOLTAR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} disabled={i === 0} style={styles.botao} onPress={() => setI((v) => passoValido(v - 1))} />
+        <AppButton label="← ANTERIOR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} disabled={i === 0} style={styles.botao} onPress={() => setI((v) => passoValido(v - 1))} />
         {ultimo ? (
           <AppButton label="REVER DO INÍCIO" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botao} onPress={() => setI(0)} />
         ) : (
-          <AppButton label="PRÓXIMO" fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botao} onPress={() => setI((v) => passoValido(v + 1))} />
+          <AppButton label="PRÓXIMO →" fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botao} onPress={() => setI((v) => passoValido(v + 1))} />
         )}
       </View>
     </View>
@@ -114,33 +161,55 @@ export function BotaoComoCriar({ passo = 0 }: { passo?: number }) {
       accessibilityLabel="Abrir o passo a passo de como criar"
       style={({ pressed }) => [styles.atalho, pressed && { opacity: 0.8 }]}
     >
-      <Ionicons name="school-outline" size={18} color={tema.texto} />
+      <Ionicons name="school-outline" size={18} color={tema.destaqueTexto} />
       <AppText style={styles.atalhoTexto}>Como criar? Ver o passo a passo</AppText>
     </Pressable>
   );
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  raiz: { gap: 14, width: '100%', maxWidth: 720, alignSelf: 'center' },
-  marcador: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
-  bolinha: { width: 40, height: 40, borderRadius: 20, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
-  bolinhaTexto: { fontFamily: typography.bold, fontSize: 15 },
-  cartao: { backgroundColor: t.card, borderRadius: 18, borderWidth: 2, overflow: 'hidden' },
-  faixa: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 3, gap: 2 },
-  faixaRotulo: { fontFamily: typography.semiBold, fontSize: 11, letterSpacing: 0.6, color: 'rgba(255,255,255,0.85)' },
-  faixaTitulo: { fontFamily: typography.bold, fontSize: 20, color: colors.white },
-  corpo: { padding: 16, gap: 14 },
-  resumo: { fontFamily: typography.regular, fontSize: 15, lineHeight: 22, color: t.textoCorpo },
-  lista: { gap: 8 },
-  listaTitulo: { fontFamily: typography.bold, fontSize: 13, color: t.texto },
+  raiz: { gap: 16, width: '100%', maxWidth: 960, alignSelf: 'center' },
+
+  hero: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: t.cardRaio, padding: 20, overflow: 'hidden' },
+  heroTexto: { flex: 1, gap: 6 },
+  heroRotulo: { fontFamily: typography.bold, fontSize: fonte.selo, letterSpacing: 1, color: colors.primary },
+  heroTitulo: { fontFamily: typography.bold, fontSize: 22, color: colors.white },
+  heroSub: { fontFamily: typography.regular, fontSize: fonte.apoio, color: 'rgba(255,255,255,0.85)', lineHeight: 19 },
+  progresso: { height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.18)', overflow: 'hidden', marginTop: 8, maxWidth: 420 },
+  progressoCheio: { height: 8, borderRadius: 4, backgroundColor: colors.primary },
+  heroPasso: { fontFamily: typography.semiBold, fontSize: fonte.legenda, color: 'rgba(255,255,255,0.85)' },
+  mascote: { width: 112, height: 112 },
+
+  passos: { gap: 6, paddingVertical: 2 },
+  passo: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: ALVO_TOQUE, paddingHorizontal: 10, borderRadius: 22, borderWidth: t.borda, borderColor: t.cardBorda, backgroundColor: t.card },
+  passoAtual: { borderColor: t.destaqueTexto, backgroundColor: t.destaqueSuave },
+  bolinha: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: t.chipBorda, alignItems: 'center', justifyContent: 'center' },
+  bolinhaAtual: { backgroundColor: colors.primary, borderColor: colors.primary },
+  bolinhaFeita: { backgroundColor: colors.primary, borderColor: colors.primary },
+  bolinhaTexto: { fontFamily: typography.bold, fontSize: fonte.legenda, color: t.textoSuave },
+  passoTexto: { fontFamily: typography.medium, fontSize: fonte.legenda, color: t.textoSuave, maxWidth: 170 },
+  passoTextoAtual: { fontFamily: typography.bold, color: t.texto },
+
+  cartao: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 20, gap: 18 },
+  cabecalho: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+  numeroGrande: { width: 44, height: 44, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  numeroGrandeTexto: { fontFamily: typography.bold, fontSize: 20, color: colors.primaryDark },
+  titulo: { fontFamily: typography.bold, fontSize: 20, color: t.texto },
+  resumo: { fontFamily: typography.regular, fontSize: fonte.corpo + 1, lineHeight: 22, color: t.textoCorpo, marginTop: 4 },
+  corpo: { gap: 18 },
+  corpoLado: { flexDirection: 'row', alignItems: 'flex-start' },
+  lista: { gap: 10 },
+  listaTitulo: { fontFamily: typography.bold, fontSize: fonte.legenda, color: t.textoSuave, textTransform: 'uppercase', letterSpacing: 0.6 },
   item: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  itemNumero: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  itemNumeroTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.white },
-  itemTexto: { flex: 1, fontFamily: typography.regular, fontSize: 14, lineHeight: 20, color: t.textoCorpo },
-  dica: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', borderWidth: 2, borderRadius: 12, padding: 12 },
-  dicaTexto: { flex: 1, fontFamily: typography.regular, fontSize: 13, lineHeight: 19, color: t.textoCorpo },
+  itemNumero: { width: 24, height: 24, borderRadius: 12, backgroundColor: t.destaqueSuave, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  itemNumeroTexto: { fontFamily: typography.bold, fontSize: fonte.legenda, color: t.destaqueTexto },
+  itemTexto: { flex: 1, fontFamily: typography.regular, fontSize: fonte.corpo, lineHeight: 21, color: t.textoCorpo },
+  dica: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', borderRadius: 12, padding: 14, backgroundColor: t.dicaFundo, borderWidth: t.borda, borderColor: t.dicaBorda },
+  dicaIcone: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  dicaTitulo: { fontFamily: typography.bold, fontSize: fonte.apoio, color: t.texto },
+  dicaTexto: { fontFamily: typography.regular, fontSize: fonte.apoio, lineHeight: 19, color: t.textoCorpo },
   navegacao: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  botao: { paddingHorizontal: 18, minHeight: 44 },
-  atalho: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 2, borderColor: t.cardBorda, backgroundColor: t.destaqueSuave },
-  atalhoTexto: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
+  botao: { paddingHorizontal: 18, minHeight: ALVO_TOQUE },
+  atalho: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', minHeight: ALVO_TOQUE, paddingHorizontal: 14, borderRadius: 22, borderWidth: t.borda, borderColor: t.dicaBorda, backgroundColor: t.dicaFundo },
+  atalhoTexto: { fontFamily: typography.semiBold, fontSize: fonte.apoio, color: t.texto },
 }) as const;

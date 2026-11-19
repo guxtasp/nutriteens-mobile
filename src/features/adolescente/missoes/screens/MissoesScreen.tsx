@@ -6,6 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
+import { IconeMissao } from '../../../../shared/ui/IconeMissao';
 import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
@@ -80,8 +81,9 @@ export default function MissoesScreen() {
                   {historico.dados!.map((h) => (
                     <View key={h.data} style={styles.historicoLinha}>
                       <AppText style={styles.historicoData}>{formatarDia(h.data)}</AppText>
+                      <IconeMissao valor={h.icone} tamanho={18} cor={colors.primaryDark} />
                       <AppText style={styles.historicoTitulo} numberOfLines={1}>
-                        {h.icone ?? '🎯'} {h.titulo}
+                        {h.titulo}
                       </AppText>
                       <Ionicons
                         name={h.cumprida ? 'checkmark-circle' : 'close-circle'}

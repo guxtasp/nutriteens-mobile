@@ -6,7 +6,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { AppText } from '../../../shared/ui/AppText';
-import { LabeledInput } from '../../../shared/ui/LabeledInput';
+import { CampoRotulado } from '../../../shared/painel/components/Formulario';
 import { typography } from '../../../shared/theme/typography';
 import { ROTULO_FORMATO } from '../utils/descreverQuestao';
 import { campoMultilinha } from './CamposEdicao';
@@ -104,7 +104,7 @@ export default function PassoEditor({ passo, indice, total, erros, onChange, onM
           {opts.unica && <Marca ligada={o.correta} onPress={() => marcarUnica(i)} rotulo="Resposta correta" />}
           {opts.reordenar && <AppText style={styles.numero}>{i + 1}.</AppText>}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <LabeledInput label="" value={o.texto} onChangeText={(t) => setOpcao(i, { texto: t })} maxLength={160} />
+            <CampoRotulado label="" value={o.texto} onChangeText={(t) => setOpcao(i, { texto: t })} maxLength={160} />
           </View>
           {opts.reordenar && (
             <>
@@ -126,7 +126,7 @@ export default function PassoEditor({ passo, indice, total, erros, onChange, onM
   );
 
   const explicacao = (chave: 'explicacao' | 'feedback', rotulo: string) => (
-    <LabeledInput
+    <CampoRotulado
       label={rotulo}
       value={String(extra[chave] ?? '')}
       onChangeText={(t) => setExtra({ [chave]: t })}
@@ -137,7 +137,7 @@ export default function PassoEditor({ passo, indice, total, erros, onChange, onM
 
   const conteudo = (
     <>
-      <LabeledInput
+      <CampoRotulado
         label={f === 'cartao' ? 'Título do cartão' : 'Enunciado'}
         value={passo.enunciado}
         onChangeText={(t) => set({ enunciado: t })}
@@ -146,7 +146,7 @@ export default function PassoEditor({ passo, indice, total, erros, onChange, onM
       />
 
       {f === 'cartao' && (
-        <LabeledInput label="Texto do cartão" value={String(extra.texto ?? '')} onChangeText={(t) => setExtra({ texto: t })} multiline style={campoMultilinha} />
+        <CampoRotulado label="Texto do cartão" value={String(extra.texto ?? '')} onChangeText={(t) => setExtra({ texto: t })} multiline style={campoMultilinha} />
       )}
 
       {f === 'completar' && (
@@ -185,11 +185,11 @@ export default function PassoEditor({ passo, indice, total, erros, onChange, onM
           {(Array.isArray(extra.pares) ? extra.pares : parVazios(0)).map((par: any, i: number, todos: any[]) => (
             <View key={i} style={styles.linha}>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <LabeledInput label="" placeholder="Esquerda" value={par.esquerda ?? ''} maxLength={80} onChangeText={(t) => setExtra({ pares: trocar(todos, i, { ...par, esquerda: t }) })} />
+                <CampoRotulado label="" placeholder="Esquerda" value={par.esquerda ?? ''} maxLength={80} onChangeText={(t) => setExtra({ pares: trocar(todos, i, { ...par, esquerda: t }) })} />
               </View>
               <AppText style={styles.numero}>↔</AppText>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <LabeledInput label="" placeholder="Direita" value={par.direita ?? ''} maxLength={80} onChangeText={(t) => setExtra({ pares: trocar(todos, i, { ...par, direita: t }) })} />
+                <CampoRotulado label="" placeholder="Direita" value={par.direita ?? ''} maxLength={80} onChangeText={(t) => setExtra({ pares: trocar(todos, i, { ...par, direita: t }) })} />
               </View>
               <Mini label="✕" perigo desativado={todos.length <= 2} onPress={() => setExtra({ pares: tirar(todos, i) })} />
             </View>
@@ -293,7 +293,7 @@ function EditorClassifique({
         {categorias.map((c, i) => (
           <View key={i} style={styles.linha}>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <LabeledInput label="" placeholder={`Coluna ${i + 1}`} value={c} maxLength={40} onChangeText={(t) => renomear(i, t)} />
+              <CampoRotulado label="" placeholder={`Coluna ${i + 1}`} value={c} maxLength={40} onChangeText={(t) => renomear(i, t)} />
             </View>
             <Mini label="✕" perigo desativado={categorias.length <= 2} onPress={() => removerColuna(i)} />
           </View>
@@ -309,7 +309,7 @@ function EditorClassifique({
           <View key={i} style={styles.itemClassifique}>
             <View style={styles.linha}>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <LabeledInput label="" placeholder="Item" value={o.texto} maxLength={80} onChangeText={(t) => setOpcao(i, { texto: t })} />
+                <CampoRotulado label="" placeholder="Item" value={o.texto} maxLength={80} onChangeText={(t) => setOpcao(i, { texto: t })} />
               </View>
               <Mini label="✕" perigo desativado={opcoes.length <= 2} onPress={() => set({ opcoes: tirar(opcoes, i) })} />
             </View>
@@ -343,14 +343,14 @@ function EditorPrato({ extra, setExtra }: { extra: Record<string, any>; setExtra
           <View key={i} style={styles.itemClassifique}>
             <View style={styles.linha}>
               <View style={{ width: 64 }}>
-                <LabeledInput label="" placeholder="🍚" value={a.emoji ?? ''} maxLength={4} onChangeText={(t) => setExtra({ alimentos: trocar(alimentos, i, { ...a, emoji: t }) })} />
+                <CampoRotulado label="" placeholder="🍚" value={a.emoji ?? ''} maxLength={4} onChangeText={(t) => setExtra({ alimentos: trocar(alimentos, i, { ...a, emoji: t }) })} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <LabeledInput label="" placeholder="Nome" value={a.nome ?? ''} maxLength={40} onChangeText={(t) => setExtra({ alimentos: trocar(alimentos, i, { ...a, nome: t }) })} />
+                <CampoRotulado label="" placeholder="Nome" value={a.nome ?? ''} maxLength={40} onChangeText={(t) => setExtra({ alimentos: trocar(alimentos, i, { ...a, nome: t }) })} />
               </View>
               <Mini label="✕" perigo onPress={() => setExtra({ alimentos: tirar(alimentos, i) })} />
             </View>
-            <LabeledInput label="" placeholder="Grupo (ex.: cereal, vegetal)" value={a.grupo ?? ''} maxLength={30} autoCapitalize="none" onChangeText={(t) => setExtra({ alimentos: trocar(alimentos, i, { ...a, grupo: t.trim().toLowerCase() }) })} />
+            <CampoRotulado label="" placeholder="Grupo (ex.: cereal, vegetal)" value={a.grupo ?? ''} maxLength={30} autoCapitalize="none" onChangeText={(t) => setExtra({ alimentos: trocar(alimentos, i, { ...a, grupo: t.trim().toLowerCase() }) })} />
             <View style={styles.linhaBotoes}>
               {GRUPOS_SUGERIDOS.map((g) => (
                 <Chip key={g} texto={g} ligado={a.grupo === g} onPress={() => setExtra({ alimentos: trocar(alimentos, i, { ...a, grupo: g }) })} />
@@ -365,10 +365,10 @@ function EditorPrato({ extra, setExtra }: { extra: Record<string, any>; setExtra
 
       <View style={styles.linha}>
         <View style={{ flex: 1 }}>
-          <LabeledInput label={`Lugares no prato (${LIMITES.capacidadeMin} a ${LIMITES.capacidadeMax})`} keyboardType="numeric" maxLength={1} value={String(extra.capacidade ?? '')} onChangeText={(t) => setExtra({ capacidade: t.replace(/\D/g, '') })} />
+          <CampoRotulado label={`Lugares no prato (${LIMITES.capacidadeMin} a ${LIMITES.capacidadeMax})`} keyboardType="numeric" maxLength={1} value={String(extra.capacidade ?? '')} onChangeText={(t) => setExtra({ capacidade: t.replace(/\D/g, '') })} />
         </View>
         <View style={{ flex: 1 }}>
-          <LabeledInput label="Mínimo de alimentos para concluir" keyboardType="numeric" maxLength={1} value={String(extra.minimoItens ?? '')} onChangeText={(t) => setExtra({ minimoItens: t.replace(/\D/g, '') })} />
+          <CampoRotulado label="Mínimo de alimentos para concluir" keyboardType="numeric" maxLength={1} value={String(extra.minimoItens ?? '')} onChangeText={(t) => setExtra({ minimoItens: t.replace(/\D/g, '') })} />
         </View>
       </View>
 
@@ -381,7 +381,7 @@ function EditorPrato({ extra, setExtra }: { extra: Record<string, any>; setExtra
             <View key={i} style={styles.itemClassifique}>
               <View style={styles.linha}>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <LabeledInput label="" placeholder="Ex.: Uma proteína" value={c.texto ?? ''} maxLength={80} onChangeText={(t) => setExtra({ criterios: trocar(criterios, i, { ...c, texto: t }) })} />
+                  <CampoRotulado label="" placeholder="Ex.: Uma proteína" value={c.texto ?? ''} maxLength={80} onChangeText={(t) => setExtra({ criterios: trocar(criterios, i, { ...c, texto: t }) })} />
                 </View>
                 <Mini label="✕" perigo onPress={() => setExtra({ criterios: tirar(criterios, i) })} />
               </View>
@@ -392,10 +392,10 @@ function EditorPrato({ extra, setExtra }: { extra: Record<string, any>; setExtra
               </View>
               <View style={styles.linha}>
                 <View style={{ flex: 1 }}>
-                  <LabeledInput label="Mínimo" keyboardType="numeric" maxLength={1} value={String(c.minimo ?? '')} onChangeText={(t) => setExtra({ criterios: trocar(criterios, i, { ...c, minimo: t.replace(/\D/g, '') }) })} />
+                  <CampoRotulado label="Mínimo" keyboardType="numeric" maxLength={1} value={String(c.minimo ?? '')} onChangeText={(t) => setExtra({ criterios: trocar(criterios, i, { ...c, minimo: t.replace(/\D/g, '') }) })} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <LabeledInput label="Máximo (opcional)" keyboardType="numeric" maxLength={1} value={String(c.maximo ?? '')} onChangeText={(t) => setExtra({ criterios: trocar(criterios, i, { ...c, maximo: t.replace(/\D/g, '') }) })} />
+                  <CampoRotulado label="Máximo (opcional)" keyboardType="numeric" maxLength={1} value={String(c.maximo ?? '')} onChangeText={(t) => setExtra({ criterios: trocar(criterios, i, { ...c, maximo: t.replace(/\D/g, '') }) })} />
                 </View>
               </View>
             </View>
@@ -416,15 +416,15 @@ const criarEstilos = (t: TemaPainel) => ({
   linhaBotoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   numero: { fontFamily: typography.bold, fontSize: 14, color: t.texto, minWidth: 20, textAlign: 'center' },
   mini: {
-    minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderRadius: 12, borderWidth: 2, borderColor: t.cardBorda,
+    minHeight: 44, minWidth: 44, paddingHorizontal: 12, borderRadius: 12, borderWidth: t.borda, borderColor: t.cardBorda,
     alignItems: 'center', justifyContent: 'center', backgroundColor: t.card,
   },
   miniPerigo: { borderColor: t.erro },
   miniTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
-  marca: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: t.cardBorda, alignItems: 'center', justifyContent: 'center', marginTop: -10 },
+  marca: { width: 32, height: 32, borderRadius: 16, borderWidth: t.borda, borderColor: t.cardBorda, alignItems: 'center', justifyContent: 'center', marginTop: -10 },
   marcaOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
   marcaCheck: { color: t.botaoTexto, fontFamily: typography.bold, fontSize: 14 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: t.borda, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
   chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
   chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
   itemClassifique: { borderWidth: 1, borderColor: t.linhaSuave, borderRadius: 12, padding: 10, gap: 6 },

@@ -30,7 +30,7 @@ export function CartaoAvaliacao({ titulo, icone, detalhe, situacao, ajuda, child
     <View style={styles.card}>
       <View style={styles.topo}>
         <View style={styles.icone}>
-          <Ionicons name={icone} size={20} color={tema.destaque} />
+          <Ionicons name={icone} size={20} color={tema.destaqueTexto} />
         </View>
         <View style={{ flex: 1, minWidth: 140 }}>
           <View style={styles.linhaTitulo}>
@@ -47,7 +47,7 @@ export function CartaoAvaliacao({ titulo, icone, detalhe, situacao, ajuda, child
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 14, minWidth: 0 } as const,
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 16, gap: 14, minWidth: 0 } as const,
   topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 } as const,
   icone: { width: 40, height: 40, borderRadius: 12, backgroundColor: t.destaqueSuave, alignItems: 'center', justifyContent: 'center' } as const,
   linhaTitulo: { flexDirection: 'row', alignItems: 'center', gap: 8 } as const,

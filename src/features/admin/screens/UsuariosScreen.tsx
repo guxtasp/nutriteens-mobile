@@ -45,13 +45,15 @@ function SeloStatus({ u }: { u: UsuarioAdmin }) {
 export default function UsuariosScreen() {
   const styles = useEstilos(criarEstilos);
   const navigation = useNavigation<any>();
-  const { modo } = useModoPainel();
+  const { largura } = useModoPainel();
   const lista = useListaPaginada<UsuarioAdmin>(
     (p) => listarUsuarios({ busca: p.busca, papel: (p.filtro as Papel) || null, ordem: p.ordem, limite: p.limite, offset: p.offset }),
     { ordemInicial: 'recentes' }
   );
   const abrir = (u: UsuarioAdmin) => navigation.navigate('UsuarioDetalhe', { id: u.id });
-  const tabela = modo !== 'celular';
+  // Tabela de 6 colunas só quando cabe (~900px de janela, já descontado o menu);
+  // abaixo disso, cartões empilhados leem melhor que colunas espremidas.
+  const tabela = largura >= 900;
 
   return (
     <PainelLayout config={ADMIN_PAINEL} titulo="Usuários" subtitulo="Todas as contas do NutriTeens">
@@ -67,10 +69,10 @@ export default function UsuariosScreen() {
 
       <View style={styles.controles}>
         <CampoBusca valor={lista.busca} onChange={lista.setBusca} placeholder="Buscar por apelido, código ou equipe" />
-        <ChipsFiltro opcoes={FILTROS} valor={lista.filtro ?? 'TODOS'} onChange={(c) => lista.setFiltro(c === 'TODOS' ? null : c)} />
+        <ChipsFiltro opcoes={FILTROS} valor={lista.filtro ?? 'TODOS'} onChange={(c) => lista.setFiltro(c === 'TODOS' ? null : c)} rotulo="Filtrar" />
         <View style={styles.linhaOrdem}>
           <AppText style={styles.ordemRotulo}>Ordenar por</AppText>
-          <ChipsFiltro opcoes={ORDENS} valor={lista.ordem} onChange={lista.setOrdem} />
+          <ChipsFiltro opcoes={ORDENS} valor={lista.ordem} onChange={lista.setOrdem} rotulo="Ordenar por" />
         </View>
       </View>
 
@@ -100,7 +102,7 @@ export default function UsuariosScreen() {
           )}
           {lista.itens.map((u) =>
             tabela ? (
-              <Pressable key={u.id} onPress={() => abrir(u)} accessibilityRole="button" style={[styles.linha, styles.linhaDado]}>
+              <Pressable key={u.id} onPress={() => abrir(u)} accessibilityRole="button" accessibilityLabel={`Abrir detalhes de ${nomeExibido(u)}`} style={[styles.linha, styles.linhaDado]}>
                 <View style={styles.cNome}>
                   <AppText style={styles.nome} numberOfLines={1}>{nomeExibido(u)}</AppText>
                   {!!u.apelido && u.papel !== 'ADOLESCENTE' && u.nome !== u.apelido && <AppText style={styles.sub} numberOfLines={1}>@{u.apelido}</AppText>}
@@ -112,7 +114,7 @@ export default function UsuariosScreen() {
                 <AppText style={[styles.td, styles.cData]}>{ultimoAcessoTexto(u.ultimoAcesso)}</AppText>
               </Pressable>
             ) : (
-              <Pressable key={u.id} onPress={() => abrir(u)} accessibilityRole="button" style={styles.card}>
+              <Pressable key={u.id} onPress={() => abrir(u)} accessibilityRole="button" accessibilityLabel={`Abrir detalhes de ${nomeExibido(u)}`} style={styles.card}>
                 <View style={styles.cardTopo}>
                   <AppText style={[styles.nome, { flexShrink: 1 }]} numberOfLines={2}>{nomeExibido(u)}</AppText>
                   <SeloStatus u={u} />
@@ -142,7 +144,7 @@ const criarEstilos = (t: TemaPainel) => ({
   linha: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cabecalho: { paddingHorizontal: 14 },
   linhaDado: {
-    backgroundColor: t.card, borderRadius: 14, borderWidth: 2, borderColor: t.cardBorda,
+    backgroundColor: t.card, borderRadius: 14, borderWidth: t.borda, borderColor: t.cardBorda,
     paddingHorizontal: 14, paddingVertical: 12, minHeight: 56,
   },
   th: { fontFamily: typography.bold, fontSize: 11, color: t.textoSuave, textTransform: 'uppercase' },
@@ -154,7 +156,7 @@ const criarEstilos = (t: TemaPainel) => ({
   cData: { flex: 1.6, minWidth: 0 },
   nome: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
   sub: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
-  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14, gap: 8, minHeight: 48 },
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 14, gap: 8, minHeight: 48 },
   cardTopo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
   cardSelos: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro, textAlign: 'center' },

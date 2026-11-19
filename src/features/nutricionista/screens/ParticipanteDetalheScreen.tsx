@@ -28,10 +28,13 @@ import { AvaliacaoEbia } from '../components/AvaliacaoEbia';
 import { AvaliacaoRecordatorio } from '../components/AvaliacaoRecordatorio';
 import { RegistrosParticipante } from '../components/RegistrosParticipante';
 import { EvolucaoParticipante } from '../components/EvolucaoParticipante';
+import { JornadaIndividual } from '../../../shared/painel/components/JornadaIndividual';
 
-type Aba = 'visao' | 'evolucao' | 'avaliacoes' | 'registros';
+type Aba = 'visao' | 'jornada' | 'evolucao' | 'avaliacoes' | 'registros';
 const ABAS: AbaPainel<Aba>[] = [
   { chave: 'visao', label: 'Visão geral', icone: 'grid-outline' },
+  // uso do app ao longo do tempo (calendário, marcos, recursos, horários)
+  { chave: 'jornada', label: 'Jornada', icone: 'footsteps-outline' },
   { chave: 'evolucao', label: 'Evolução', icone: 'trending-up-outline' },
   { chave: 'avaliacoes', label: 'Avaliações', icone: 'clipboard-outline' },
   { chave: 'registros', label: 'Registros', icone: 'calendar-outline' },
@@ -123,6 +126,7 @@ export default function ParticipanteDetalheScreen({ route }: { route: { params: 
             </>
           )}
 
+          {aba === 'jornada' && <JornadaIndividual id={p.id} />}
           {aba === 'evolucao' && <EvolucaoParticipante id={p.id} />}
 
           {aba === 'avaliacoes' && (
@@ -158,5 +162,5 @@ export default function ParticipanteDetalheScreen({ route }: { route: { params: 
 const criarEstilos = (t: TemaPainel) => ({
   texto: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, lineHeight: 19 } as const,
   alternar: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 } as const,
-  alternarTexto: { fontFamily: typography.bold, fontSize: 13, color: t.destaque } as const,
+  alternarTexto: { fontFamily: typography.bold, fontSize: 13, color: t.destaqueTexto } as const,
 });

@@ -12,7 +12,7 @@ import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { LabeledInput } from '../../../shared/ui/LabeledInput';
+import { CampoRotulado } from '../../../shared/painel/components/Formulario';
 import { typography } from '../../../shared/theme/typography';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { buscarLicaoEditavel, salvarLicaoCompleta, type LicaoEditavel } from '../services/edicaoService';
@@ -249,10 +249,10 @@ export default function EditarLicaoScreen({ config, route }: Props) {
           )}
 
           <CartaoSecao titulo="Lição" ajuda="Título, ícone e XP aparecem para o adolescente. XP é a pontuação ganha ao concluir a lição.">
-            <LabeledInput label="Título" value={titulo} onChangeText={setTitulo} maxLength={LIMITES.titulo} />
-            <LabeledInput label="XP ao concluir" value={xp} onChangeText={(t) => setXp(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={3} />
+            <CampoRotulado label="Título" value={titulo} onChangeText={setTitulo} maxLength={LIMITES.titulo} />
+            <CampoRotulado label="XP ao concluir" value={xp} onChangeText={(t) => setXp(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={3} />
             <View style={{ gap: 6 }}>
-              <LabeledInput label="Ícone (opcional)" value={icone} onChangeText={setIcone} autoCapitalize="none" maxLength={40} placeholder="Ex.: leaf-outline" />
+              <CampoRotulado label="Ícone (opcional)" value={icone} onChangeText={setIcone} autoCapitalize="none" maxLength={40} placeholder="Ex.: leaf-outline" />
               <View style={styles.chips}>
                 {ICONES_SUGERIDOS.map((i) => (
                   <Chip key={i} texto={i} ligado={icone === i} onPress={() => setIcone(i)} />
@@ -261,7 +261,7 @@ export default function EditarLicaoScreen({ config, route }: Props) {
             </View>
             {(tipo === 'conteudo' || habitoTipo) && (
               <>
-                <LabeledInput
+                <CampoRotulado
                   label={habitoTipo ? 'Desafio do dia' : passos.length > 0 ? 'Texto de abertura (opcional)' : 'Texto da lição'}
                   value={texto}
                   onChangeText={setTexto}
@@ -269,7 +269,7 @@ export default function EditarLicaoScreen({ config, route }: Props) {
                   style={campoMultilinha}
                   placeholder={habitoTipo ? 'Ex.: registre a água que você beber hoje.' : 'Escreva o conteúdo que o adolescente vai ler'}
                 />
-                <LabeledInput label="Objetivo (opcional)" value={objetivo} onChangeText={setObjetivo} multiline style={{ minHeight: 64, textAlignVertical: 'top' }} />
+                <CampoRotulado label="Objetivo (opcional)" value={objetivo} onChangeText={setObjetivo} multiline style={{ minHeight: 64, textAlignVertical: 'top' }} />
               </>
             )}
             {habitoTipo && (
@@ -282,7 +282,7 @@ export default function EditarLicaoScreen({ config, route }: Props) {
                     ))}
                   </View>
                 </View>
-                <LabeledInput label="Janela de verificação (horas)" value={janela} onChangeText={(t) => setJanela(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={3} />
+                <CampoRotulado label="Janela de verificação (horas)" value={janela} onChangeText={(t) => setJanela(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={3} />
               </>
             )}
             {errosGerais.length > 0 && (
@@ -379,7 +379,7 @@ const criarEstilos = (t: TemaPainel) => ({
   suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
   rotulo: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: t.borda, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
   chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
   chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
   erros: { backgroundColor: t.selos.erro.fundo + '55', borderRadius: 12, padding: 10, gap: 2 },

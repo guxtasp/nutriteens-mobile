@@ -12,6 +12,10 @@ export interface ItemMenu {
   rotasFilhas?: string[];
   /** mostra um contador ao lado do item (ex.: pedidos pendentes do scanner) */
   selo?: 'SCANNER_PENDENTES';
+  /** grupo do menu (ex.: "Pessoas"); itens seguidos do mesmo grupo ficam sob um só título */
+  secao?: string;
+  /** rótulo curto para o menu compacto do tablet (padrão: o próprio label) */
+  rotuloCurto?: string;
 }
 
 export interface ConfigPainel {
@@ -20,4 +24,6 @@ export interface ConfigPainel {
   /** rota para onde "voltar" cai quando não há histórico */
   rotaInicial: string;
   itens: ItemMenu[];
+  /** rota da lista de receitas deste painel (aba Receitas do Catálogo) */
+  rotaReceitas: string;
 }

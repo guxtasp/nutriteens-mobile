@@ -2,13 +2,15 @@
 // Peças comuns das listas do painel (busca, filtros, selos, linhas de informação).
 // Todas leem as cores do tema do painel (claro/escuro).
 import React from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../ui/AppText';
 import { AppButton } from '../../ui/AppButton';
 import { typography } from '../../theme/typography';
 import type { TemaPainel, TomSelo } from '../tema/paletas';
 import { useEstilos, useTemaPainel } from '../tema/TemaPainelContext';
+import { useModoPainel } from '../hooks/useModoPainel';
+import { ALVO_TOQUE, fonte } from '../painelTheme';
 
 export type { TomSelo };
 
@@ -39,24 +41,53 @@ export function CampoBusca({ valor, onChange, placeholder }: { valor: string; on
 
 export type OpcaoChip = { chave: string; label: string };
 
-export function ChipsFiltro({ opcoes, valor, onChange }: { opcoes: OpcaoChip[]; valor: string; onChange: (chave: string) => void }) {
+export function ChipsFiltro({
+  opcoes,
+  valor,
+  onChange,
+  rotulo,
+}: {
+  opcoes: OpcaoChip[];
+  valor: string;
+  onChange: (chave: string) => void;
+  /** nome do grupo, lido por leitores de tela (ex.: "Filtrar por papel") */
+  rotulo?: string;
+}) {
   const styles = useEstilos(criarEstilos);
+  const { modo } = useModoPainel();
+  const chips = opcoes.map((o) => {
+    const ativo = o.chave === valor;
+    return (
+      <Pressable
+        key={o.chave}
+        onPress={() => onChange(o.chave)}
+        accessibilityRole="radio"
+        accessibilityState={{ selected: ativo, checked: ativo }}
+        accessibilityLabel={rotulo ? `${rotulo}: ${o.label}` : o.label}
+        style={[styles.chip, ativo && styles.chipAtivo]}
+      >
+        <AppText style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>{o.label}</AppText>
+      </Pressable>
+    );
+  });
+  // No celular os chips rolam na horizontal: com 5-6 opções, quebrar linha empurrava a
+  // lista para fora da tela. Do tablet para cima cabem quebrando normalmente.
+  if (modo === 'celular' && opcoes.length > 3) {
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipsRolagem}
+        style={styles.chipsTrilho}
+        accessibilityRole="radiogroup"
+      >
+        {chips}
+      </ScrollView>
+    );
+  }
   return (
-    <View style={styles.chips}>
-      {opcoes.map((o) => {
-        const ativo = o.chave === valor;
-        return (
-          <Pressable
-            key={o.chave}
-            onPress={() => onChange(o.chave)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: ativo }}
-            style={[styles.chip, ativo && styles.chipAtivo]}
-          >
-            <AppText style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>{o.label}</AppText>
-          </Pressable>
-        );
-      })}
+    <View style={styles.chips} accessibilityRole="radiogroup">
+      {chips}
     </View>
   );
 }
@@ -106,7 +137,16 @@ export function RodapeLista({ mostrados, total, temMais, carregando, onMais }: {
   );
 }
 
-export function VazioPainel({ titulo, texto }: { titulo: string; texto: string }) {
+export function VazioPainel({
+  titulo,
+  texto,
+  acao,
+}: {
+  titulo: string;
+  texto: string;
+  /** próximo passo sugerido (ex.: limpar filtros, criar o primeiro item) */
+  acao?: { label: string; onPress: () => void };
+}) {
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
   return (
@@ -114,32 +154,45 @@ export function VazioPainel({ titulo, texto }: { titulo: string; texto: string }
       <Ionicons name="file-tray-outline" size={28} color={tema.textoSuave} />
       <AppText style={styles.vazioTitulo}>{titulo}</AppText>
       <AppText style={styles.vazioTexto}>{texto}</AppText>
+      {!!acao && (
+        <AppButton
+          label={acao.label}
+          fullWidth={false}
+          size="compact"
+          outlineColor={tema.texto}
+          textColor={tema.texto}
+          style={{ paddingHorizontal: 18, minHeight: ALVO_TOQUE, marginTop: 6 }}
+          onPress={acao.onPress}
+        />
+      )}
     </View>
   );
 }
 
 const criarEstilos = (t: TemaPainel) => ({
   busca: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, paddingHorizontal: 14, borderRadius: 14,
-    borderWidth: 2, borderColor: t.cardBorda, backgroundColor: t.card,
+    flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, paddingHorizontal: 14, borderRadius: 12,
+    borderWidth: t.borda, borderColor: t.campoBorda, backgroundColor: t.card,
   } as const,
-  buscaInput: { flex: 1, minWidth: 0, fontFamily: typography.regular, fontSize: 14, color: t.textoCorpo, paddingVertical: 8 } as const,
+  buscaInput: { flex: 1, minWidth: 0, fontFamily: typography.regular, fontSize: fonte.corpo, color: t.textoCorpo, paddingVertical: 8 } as const,
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as const,
+  chipsTrilho: { flexGrow: 0 } as const,
+  chipsRolagem: { gap: 8, paddingRight: 8 } as const,
   chip: {
-    minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.chipBorda,
+    minHeight: ALVO_TOQUE, paddingHorizontal: 14, borderRadius: 22, borderWidth: t.borda, borderColor: t.chipBorda,
     backgroundColor: t.chipFundo, alignItems: 'center', justifyContent: 'center',
   } as const,
   chipAtivo: { backgroundColor: t.chipAtivoFundo, borderColor: t.chipAtivoFundo } as const,
-  chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.chipTexto } as const,
+  chipTexto: { fontFamily: typography.semiBold, fontSize: fonte.legenda, color: t.chipTexto } as const,
   chipTextoAtivo: { color: t.chipAtivoTexto } as const,
   selo: { alignSelf: 'flex-start', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 3 } as const,
-  seloTexto: { fontFamily: typography.bold, fontSize: 11 } as const,
-  linhaInfo: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: t.linhaSuave } as const,
-  linhaRotulo: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave } as const,
-  linhaValor: { fontFamily: typography.semiBold, fontSize: 13, color: t.textoCorpo, flexShrink: 1, textAlign: 'right' } as const,
+  seloTexto: { fontFamily: typography.bold, fontSize: fonte.selo } as const,
+  linhaInfo: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.linhaSuave } as const,
+  linhaRotulo: { fontFamily: typography.regular, fontSize: fonte.apoio, color: t.textoSuave } as const,
+  linhaValor: { fontFamily: typography.semiBold, fontSize: fonte.apoio, color: t.textoCorpo, flexShrink: 1, textAlign: 'right' } as const,
   rodape: { alignItems: 'center', gap: 10, paddingVertical: 12 } as const,
-  rodapeTexto: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave } as const,
-  vazio: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 32, alignItems: 'center', gap: 6 } as const,
-  vazioTitulo: { fontFamily: typography.bold, fontSize: 14, color: t.texto } as const,
-  vazioTexto: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, textAlign: 'center' } as const,
+  rodapeTexto: { fontFamily: typography.regular, fontSize: fonte.legenda, color: t.textoSuave } as const,
+  vazio: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 32, alignItems: 'center', gap: 6 } as const,
+  vazioTitulo: { fontFamily: typography.bold, fontSize: fonte.corpo, color: t.texto } as const,
+  vazioTexto: { fontFamily: typography.regular, fontSize: fonte.apoio, color: t.textoSuave, textAlign: 'center', maxWidth: 480 } as const,
 });

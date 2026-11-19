@@ -9,6 +9,7 @@ import { painel } from '../../../shared/painel/painelTheme';
 import type { Papel } from '../utils/regrasAprovacao';
 import type { TemaPainel } from '../../../shared/painel/tema/paletas';
 import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
+import { AvisoPainel } from '../../../shared/painel/components/Formulario';
 
 /** O que acontece com o status ao editar (espelha fluxo_alteracao_relevante no banco). */
 export function textoAvisoEdicao(papel: Papel | null): string {
@@ -38,8 +39,9 @@ export function BarraSalvar(p: {
   const styles = useEstilos(criarEstilos);
   return (
     <View style={{ gap: 8 }}>
-      {!!p.erro && <AppText style={styles.erro}>{p.erro}</AppText>}
-      {!!p.mensagem && <AppText style={styles.ok}>{p.mensagem}</AppText>}
+      {/* erro de banco chega cru: AvisoPainel traduz (erroAmigavel) e não mostra o texto técnico */}
+      {!!p.erro && <AvisoPainel tom="erro" texto={p.erro} />}
+      {!!p.mensagem && <AvisoPainel tom="ok" texto={p.mensagem} />}
       <View style={styles.linha}>
         <AppButton
           label={p.ocupado ? 'SALVANDO…' : p.rotulo}

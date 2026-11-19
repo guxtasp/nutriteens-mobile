@@ -11,7 +11,7 @@ import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { EstadoCarregando, EstadoErro } from '../../../shared/painel/components/EstadosPainel';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
-import { LabeledInput } from '../../../shared/ui/LabeledInput';
+import { CampoRotulado } from '../../../shared/painel/components/Formulario';
 import { typography } from '../../../shared/theme/typography';
 import type { ConfigPainel } from '../../../shared/painel/types';
 import { buscarReceitaEditavel, listarAlimentosBusca, listarPratos, salvarReceitaCompleta, type ReceitaEditavel } from '../services/edicaoService';
@@ -60,7 +60,7 @@ function BuscaAlimento({ rotulo, somentePratos, onEscolher }: { rotulo: string; 
 
   return (
     <View style={{ gap: 6 }}>
-      <LabeledInput label={rotulo} value={busca} onChangeText={setBusca} placeholder="Digite para buscar" />
+      <CampoRotulado label={rotulo} value={busca} onChangeText={setBusca} placeholder="Digite para buscar" />
       {!!erro && <AppText style={styles.erro}>{erro}</AppText>}
       <View style={styles.chips}>
         {lista.map((i) => <Chip key={i.id} texto={i.nome} ligado={false} onPress={() => { onEscolher(i); setBusca(''); }} />)}
@@ -202,13 +202,13 @@ export default function EditarReceitaScreen({ config, route }: Props) {
           </CartaoSecao>
 
           <CartaoSecao titulo="Dados da receita">
-            <LabeledInput label="Título" value={titulo} onChangeText={setTitulo} maxLength={LIMITES_RECEITA.titulo.max} />
+            <CampoRotulado label="Título" value={titulo} onChangeText={setTitulo} maxLength={LIMITES_RECEITA.titulo.max} />
             <View style={styles.linha}>
               <View style={{ flex: 1, minWidth: 130 }}>
-                <LabeledInput label="Tempo (minutos)" value={tempo} onChangeText={(t) => setTempo(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={4} />
+                <CampoRotulado label="Tempo (minutos)" value={tempo} onChangeText={(t) => setTempo(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={4} />
               </View>
               <View style={{ flex: 1, minWidth: 130 }}>
-                <LabeledInput label="Porções" value={porcoes} onChangeText={(t) => setPorcoes(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={2} />
+                <CampoRotulado label="Porções" value={porcoes} onChangeText={(t) => setPorcoes(t.replace(/\D/g, ''))} keyboardType="numeric" maxLength={2} />
               </View>
             </View>
             <View style={{ gap: 6 }}>
@@ -218,7 +218,7 @@ export default function EditarReceitaScreen({ config, route }: Props) {
               </View>
             </View>
             <CampoImagem rotulo="Foto da receita (opcional)" valor={fotoUrl} onChange={setFotoUrl} />
-            <LabeledInput label="Modo de preparo (resumo)" value={modo} onChangeText={setModo} multiline style={campoMultilinha} maxLength={LIMITES_RECEITA.modo.max} />
+            <CampoRotulado label="Modo de preparo (resumo)" value={modo} onChangeText={setModo} multiline style={campoMultilinha} maxLength={LIMITES_RECEITA.modo.max} />
           </CartaoSecao>
 
           <CartaoSecao titulo="Ingredientes" subtitulo={`${ingredientes.length} ingrediente(s)`} ajuda="Alimento do catálogo + quantidade em texto (ex.: 2 xícaras). Aparecem para o adolescente em ordem alfabética.">
@@ -226,7 +226,7 @@ export default function EditarReceitaScreen({ config, route }: Props) {
               <View key={`${i.alimentoId}-${k}`} style={styles.linha}>
                 <AppText style={[styles.rotulo, { flexBasis: 120, flexGrow: 1 }]}>{i.nome || 'Alimento'}</AppText>
                 <View style={{ flex: 1, minWidth: 140 }}>
-                  <LabeledInput label="" placeholder="Quantidade" value={i.quantidade} maxLength={LIMITES_RECEITA.quantidade} onChangeText={(t) => setIngredientes((a) => trocar(a, k, { quantidade: t }))} />
+                  <CampoRotulado label="" placeholder="Quantidade" value={i.quantidade} maxLength={LIMITES_RECEITA.quantidade} onChangeText={(t) => setIngredientes((a) => trocar(a, k, { quantidade: t }))} />
                 </View>
                 <MiniBotao label="✕" perigo acessibilidade="Remover ingrediente" onPress={() => setIngredientes((a) => tirar(a, k))} />
               </View>
@@ -246,8 +246,8 @@ export default function EditarReceitaScreen({ config, route }: Props) {
                   <MiniBotao label="↓" acessibilidade="Mover passo para baixo" desativado={k === passos.length - 1} onPress={() => setPassos((a) => moverPasso(a, k, 1))} />
                   <MiniBotao label="REMOVER" perigo onPress={() => setPassos((a) => tirar(a, k))} />
                 </View>
-                <LabeledInput label="Título" value={p.titulo} maxLength={LIMITES_RECEITA.passoTitulo} onChangeText={(t) => setPassos((a) => trocar(a, k, { titulo: t }))} />
-                <LabeledInput label="Descrição" value={p.descricao} multiline style={{ minHeight: 70, textAlignVertical: 'top' }} maxLength={LIMITES_RECEITA.passoDescricao} onChangeText={(t) => setPassos((a) => trocar(a, k, { descricao: t }))} />
+                <CampoRotulado label="Título" value={p.titulo} maxLength={LIMITES_RECEITA.passoTitulo} onChangeText={(t) => setPassos((a) => trocar(a, k, { titulo: t }))} />
+                <CampoRotulado label="Descrição" value={p.descricao} multiline style={{ minHeight: 70, textAlignVertical: 'top' }} maxLength={LIMITES_RECEITA.passoDescricao} onChangeText={(t) => setPassos((a) => trocar(a, k, { descricao: t }))} />
                 <CampoImagem compacto rotulo="Foto do passo (opcional)" valor={p.fotoUrl} onChange={(u) => setPassos((a) => trocar(a, k, { fotoUrl: u }))} />
               </View>
             ))}
@@ -293,11 +293,11 @@ const criarEstilos = (t: TemaPainel) => ({
   suave: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
   erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
+  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: t.borda, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
   chipOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
   chipTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  passo: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 8 },
+  passo: { borderWidth: t.borda, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 8 },
   foto: { width: '100%', maxWidth: 320, height: 180, borderRadius: 12, backgroundColor: t.superficieSuave },
   botaoPequeno: { paddingHorizontal: 14, minHeight: 44 },
   erros: { backgroundColor: t.selos.erro.fundo + '55', borderRadius: 12, padding: 10, gap: 2 },

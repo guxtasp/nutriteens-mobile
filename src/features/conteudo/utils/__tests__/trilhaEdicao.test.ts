@@ -1,4 +1,5 @@
 import {
+  etapaAtualTrilha, rotuloTema, rotuloTipoLicao,
   avisoOrdemTrilha,
   idsAposMover,
   lerXpBonus,
@@ -99,5 +100,24 @@ describe('idsAposMover / textoConfirmaExclusao', () => {
     expect(textoConfirmaExclusao('LICAO', 'Treino')).toMatch(/lição "Treino"/);
     expect(textoConfirmaExclusao('MODULO', 'Base', 3)).toMatch(/3 lição/);
     expect(textoConfirmaExclusao('MODULO', 'Vazio')).not.toMatch(/lição\(ões\)/);
+  });
+});
+
+
+describe('apresentação do editor de trilha', () => {
+  it('traduz o tipo da lição', () => {
+    expect(rotuloTipoLicao('conteudo')).toBe('Leitura');
+    expect(rotuloTipoLicao('quiz')).toBe('Quiz');
+    expect(rotuloTipoLicao('atividade_rastreavel')).toBe('Prática real');
+    expect(rotuloTipoLicao('outro_tipo')).toBe('outro tipo');
+  });
+  it('acha a etapa da montagem', () => {
+    expect(etapaAtualTrilha(null)).toBe('dados');
+    expect(etapaAtualTrilha({ modulos: [] })).toBe('modulos');
+    expect(etapaAtualTrilha({ modulos: [{ licoes: [1] }, { licoes: [] }] })).toBe('licoes');
+    expect(etapaAtualTrilha({ modulos: [{ licoes: [1] }] })).toBe('revisao');
+  });
+  it('formata o tema', () => {
+    expect(rotuloTema('ALIMENTACAO_SAUDAVEL')).toBe('Alimentacao saudavel');
   });
 });

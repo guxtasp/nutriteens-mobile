@@ -1,22 +1,40 @@
 // src/features/admin/screens/AlimentoFormScreen.tsx
-// Cadastro/edição de um alimento, em seções: o que é, como se classifica, onde aparece e
-// nutrientes. Em telas largas as seções ficam em duas colunas. A gravação não mudou.
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Switch, TextInput, View, useWindowDimensions } from 'react-native';
+// Cadastro/edição de um alimento ou prato do catálogo (Administração e Nutricionista).
+//
+// Decisões de UX:
+//  - Etapas visíveis para prato (Dados → Ingredientes → Receita): antes era preciso salvar, ler
+//    um alerta e rolar até achar os ingredientes.
+//  - Depois de criar, a tela passa a EDITAR o item salvo (antes, salvar de novo criava um
+//    prato duplicado, porque a tela continuava em modo "novo").
+//  - Validação no próprio campo + lista do que falta na barra fixa de ações; resultado das
+//    operações em faixa na tela (sem alertas que somem) e "Cadastrar outro" para lotes.
+//  - Sair com alterações não salvas pede confirmação.
+//  - Níveis de nutrientes: só a nutricionista edita. O service grava sempre a fonte
+//    REVISADO_NUTRICIONISTA; quando o administrador editava, o dado ficava marcado como
+//    revisado sem ter sido (regra 6 do AGENTS.md). O administrador vê os níveis só para leitura.
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Switch, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { avisar, confirmar } from '../../../shared/ui/dialogo';
+import { confirmar } from '../../../shared/ui/dialogo';
 import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { typography } from '../../../shared/theme/typography';
-import { painel } from '../../../shared/painel/painelTheme';
+import { PainelLayout } from '../../../shared/painel/PainelLayout';
 import { CartaoSecao } from '../../../shared/painel/components/CartaoSecao';
 import { Selo, type TomSelo } from '../../../shared/painel/components/ControlesLista';
+import {
+  AvisoPainel, CampoTexto, EtapasCadastro, OpcoesMultipla, OpcoesUnica, RotuloCampo, type TomAviso,
+} from '../../../shared/painel/components/Formulario';
+import { ALVO_TOQUE, fonte } from '../../../shared/painel/painelTheme';
+import type { ConfigPainel } from '../../../shared/painel/types';
 import {
   Alimento, ClassificacaoNova, GrupoAlimentar, NivelNutriente, NivelAtencao, NutrienteChave, NutrienteAtencaoChave,
   NutrientesAlimento, FonteNutrientes, TipoRefeicaoRecordatorio,
   criarAlimento, atualizarAlimento, excluirAlimento, buscarNutrientesDoAlimento, salvarNutrientesDoAlimento,
   buscarReceitaDoAlimento, type Receita,
 } from '../services/alimentosAdminService';
+import { obterPapelAtual } from '../../conteudo/services/conteudoService';
+import type { Papel } from '../../conteudo/utils/regrasAprovacao';
 import IngredientesPratoSection from '../components/IngredientesPratoSection';
 import { ROTULO_GRUPO, ROTULO_NOVA, ROTULO_REFEICAO } from '../utils/filtrosAlimentosAdmin';
 import type { TemaPainel } from '../../../shared/painel/tema/paletas';
@@ -39,6 +57,7 @@ const NIVEIS_NUTRIENTE: { valor: NivelNutriente; rotulo: string }[] = [
 const NIVEIS_ATENCAO: { valor: NivelAtencao; rotulo: string }[] = [
   { valor: 'BAIXO', rotulo: 'Baixo' }, { valor: 'MODERADO', rotulo: 'Moderado' }, { valor: 'ALTO', rotulo: 'Alto' },
 ];
+const ROTULO_NIVEL: Record<string, string> = Object.fromEntries([...NIVEIS_NUTRIENTE, ...NIVEIS_ATENCAO].map((n) => [n.valor, n.rotulo]));
 
 const VITAMINAS: { chave: NutrienteChave; rotulo: string }[] = [
   { chave: 'vitamina_a', rotulo: 'Vitamina A' }, { chave: 'vitamina_c', rotulo: 'Vitamina C' }, { chave: 'vitamina_d', rotulo: 'Vitamina D' },
@@ -53,6 +72,15 @@ const MACROS: { chave: NutrienteChave; rotulo: string }[] = [{ chave: 'proteina'
 const ATENCAO: { chave: NutrienteAtencaoChave; rotulo: string }[] = [
   { chave: 'sodio', rotulo: 'Sódio' }, { chave: 'carboidrato', rotulo: 'Carboidrato' }, { chave: 'lipideos', rotulo: 'Gordura total' },
 ];
+type ChaveNutriente = NutrienteChave | NutrienteAtencaoChave;
+const GRUPOS_NUTRIENTES: { titulo: string; itens: { chave: ChaveNutriente; rotulo: string }[]; niveis: { valor: string; rotulo: string }[]; ajuda?: string }[] = [
+  { titulo: 'Vitaminas', itens: VITAMINAS, niveis: NIVEIS_NUTRIENTE },
+  { titulo: 'Minerais', itens: MINERAIS, niveis: NIVEIS_NUTRIENTE },
+  { titulo: 'Proteína e fibra', itens: MACROS, niveis: NIVEIS_NUTRIENTE },
+  { titulo: 'Sódio, carboidrato e gordura total', itens: ATENCAO, niveis: NIVEIS_ATENCAO, ajuda: 'Escala de quantidade: mais alto não é benefício, é só mais presente.' },
+];
+const TODOS_NUTRIENTES = GRUPOS_NUTRIENTES.flatMap((g) => g.itens);
+const TOTAL_NUTRIENTES = VITAMINAS.length + MINERAIS.length + MACROS.length + ATENCAO.length;
 
 type ClassificacaoEbia = 'SEGURANCA_ALIMENTAR' | 'INSEGURANCA_LEVE' | 'INSEGURANCA_MODERADA' | 'INSEGURANCA_GRAVE';
 const NIVEIS_EBIA: { valor: ClassificacaoEbia; rotulo: string }[] = [
@@ -62,67 +90,74 @@ const NIVEIS_EBIA: { valor: ClassificacaoEbia; rotulo: string }[] = [
   { valor: 'INSEGURANCA_GRAVE', rotulo: 'Todos (padrão)' },
 ];
 
-/** botões lado a lado onde só um fica ligado; tocar no ligado desliga (quando `limpavel`) */
-function Segmentado<T extends string>({ opcoes, valor, onChange, limpavel }: { opcoes: { valor: T; rotulo: string }[]; valor: T | null | undefined; onChange: (v: T | null) => void; limpavel?: boolean }) {
-  const styles = useEstilos(criarEstilos);
-  return (
-    <View style={styles.segmentado} accessibilityRole="radiogroup">
-      {opcoes.map((o) => {
-        const on = valor === o.valor;
-        return (
-          <Pressable key={o.valor} onPress={() => onChange(on && limpavel ? null : o.valor)} accessibilityRole="radio" accessibilityState={{ selected: on }} style={[styles.seg, on && styles.segOn]}>
-            <AppText style={[styles.segTexto, on && styles.segTextoOn]}>{o.rotulo}</AppText>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
+type AlimentoParam = Alimento & { nivel_maximo_ebia?: ClassificacaoEbia };
+type Props = { config: ConfigPainel; navigation: any; route: { params?: { alimento?: AlimentoParam; novoPrato?: boolean } } };
+
+type Campos = {
+  nome: string;
+  ehPratoComposto: boolean;
+  classificacao: ClassificacaoNova | null;
+  acessivelEbia: boolean;
+  nivelMaximoEbia: ClassificacaoEbia;
+  grupos: GrupoAlimentar[];
+  refeicoes: TipoRefeicaoRecordatorio[];
+};
+
+function camposIniciais(existente: AlimentoParam | undefined, novoPrato: boolean): Campos {
+  return {
+    nome: existente?.nome ?? '',
+    ehPratoComposto: existente?.eh_prato_composto ?? novoPrato,
+    classificacao: existente?.classificacao_nova ?? null,
+    acessivelEbia: existente?.acessivel_ebia ?? true,
+    nivelMaximoEbia: existente?.nivel_maximo_ebia ?? 'INSEGURANCA_GRAVE',
+    grupos: existente?.grupos_alimentares ?? [],
+    refeicoes: existente?.tipos_refeicao_recordatorio ?? [],
+  };
 }
 
-function Chip({ texto, ligado, onPress }: { texto: string; ligado: boolean; onPress: () => void }) {
-  const { tema } = useTemaPainel();
-  const styles = useEstilos(criarEstilos);
-  return (
-    <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: ligado }} style={[styles.chip, ligado && styles.chipOn]}>
-      {ligado && <Ionicons name="checkmark" size={14} color={tema.texto} />}
-      <AppText style={[styles.chipTexto, ligado && { color: tema.texto }]}>{texto}</AppText>
-    </Pressable>
-  );
-}
+/** Foto comparável dos campos, para saber se há alteração não salva. */
+const assinatura = (c: Campos, n: NutrientesAlimento) =>
+  JSON.stringify({ ...c, nome: c.nome.trim(), grupos: [...c.grupos].sort(), refeicoes: [...c.refeicoes].sort(), n });
 
-function LinhaNutriente({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
-  const styles = useEstilos(criarEstilos);
-  return (
-    <View style={styles.linhaNutriente}>
-      <AppText style={styles.rotuloNutriente}>{rotulo}</AppText>
-      {children}
-    </View>
-  );
-}
-
-export default function AlimentoFormScreen({ navigation, route }: any) {
+export default function AlimentoFormScreen({ config, navigation, route }: Props) {
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
   const { width } = useWindowDimensions();
-  const duasColunas = width >= 1150;
-  const existente: (Alimento & { nivel_maximo_ebia?: ClassificacaoEbia }) | undefined = route.params?.alimento;
-  const [idSalvo, setIdSalvo] = useState<string | null>(existente?.id ?? null);
+  const util = width >= 1024 ? width - 256 : width >= 700 ? width - 92 : width;
+  const duasColunas = util >= 960;
+  const existente = route.params?.alimento;
+  const novoPrato = route.params?.novoPrato === true;
 
-  const [nome, setNome] = useState(existente?.nome ?? '');
-  const [ehPratoComposto, setEhPratoComposto] = useState(existente?.eh_prato_composto ?? route.params?.novoPrato === true);
-  const [classificacao, setClassificacao] = useState<ClassificacaoNova | null>(existente?.classificacao_nova ?? null);
-  const [acessivelEbia, setAcessivelEbia] = useState(existente?.acessivel_ebia ?? true);
-  const [nivelMaximoEbia, setNivelMaximoEbia] = useState<ClassificacaoEbia>(existente?.nivel_maximo_ebia ?? 'INSEGURANCA_GRAVE');
-  const [grupos, setGrupos] = useState<Set<GrupoAlimentar>>(new Set(existente?.grupos_alimentares ?? []));
-  const [refeicoes, setRefeicoes] = useState<Set<TipoRefeicaoRecordatorio>>(new Set(existente?.tipos_refeicao_recordatorio ?? []));
+  const [papel, setPapel] = useState<Papel | null>(null);
+  const [idSalvo, setIdSalvo] = useState<string | null>(existente?.id ?? null);
+  const [campos, setCampos] = useState<Campos>(() => camposIniciais(existente, novoPrato));
   const [salvando, setSalvando] = useState(false);
   const [tentouSalvar, setTentouSalvar] = useState(false);
+  const [aviso, setAviso] = useState<{ tom: TomAviso; texto: string; titulo?: string; outro?: boolean } | null>(null);
 
   const [nutrientes, setNutrientes] = useState<NutrientesAlimento>({});
   const [nutrientesFonte, setNutrientesFonte] = useState<FonteNutrientes>(null);
   const [carregandoNutrientes, setCarregandoNutrientes] = useState(!!existente);
   const [nutrientesAbertos, setNutrientesAbertos] = useState(false);
-  const [receita, setReceita] = useState<Receita | null | undefined>(undefined); // undefined = carregando
+  const [receita, setReceita] = useState<Receita | null | undefined>(existente?.eh_prato_composto ? undefined : null);
+  const [qtdIngredientes, setQtdIngredientes] = useState(0);
+  const [salvo, setSalvo] = useState(() => assinatura(camposIniciais(existente, novoPrato), {}));
+
+  const scrollRef = useRef<ScrollView>(null);
+  const yIngredientes = useRef(0);
+  // liberado depois de excluir: a saída não deve perguntar "sair sem salvar?"
+  const saidaLiberada = useRef(false);
+
+  const ehNutricionista = papel === 'NUTRICIONISTA';
+  const editando = !!idSalvo;
+  const { nome, ehPratoComposto, classificacao, acessivelEbia, nivelMaximoEbia } = campos;
+  const grupos = useMemo(() => new Set(campos.grupos), [campos.grupos]);
+  const refeicoes = useMemo(() => new Set(campos.refeicoes), [campos.refeicoes]);
+  const sujo = assinatura(campos, nutrientes) !== salvo;
+
+  useEffect(() => {
+    obterPapelAtual().then(setPapel).catch(() => setPapel(null));
+  }, []);
 
   useEffect(() => {
     if (!existente) return;
@@ -132,8 +167,10 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
         if (!ativo) return;
         setNutrientes(n);
         setNutrientesFonte(fonte);
+        setSalvo(assinatura(camposIniciais(existente, novoPrato), n));
         if (fonte === 'INFERIDO_POR_GRUPO') setNutrientesAbertos(true); // precisa de revisão
       })
+      .catch(() => ativo && setAviso({ tom: 'aviso', texto: 'Não foi possível carregar os nutrientes deste alimento. Os outros dados podem ser editados normalmente.' }))
       .finally(() => ativo && setCarregandoNutrientes(false));
     if (existente.eh_prato_composto) {
       buscarReceitaDoAlimento(existente.id).then((r) => ativo && setReceita(r)).catch(() => ativo && setReceita(null));
@@ -141,26 +178,43 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
     return () => { ativo = false; };
   }, [existente?.id]);
 
-  const preenchidos = useMemo(() => Object.values(nutrientes).filter((v) => v != null).length, [nutrientes]);
-  const totalNutrientes = VITAMINAS.length + MINERAIS.length + MACROS.length + ATENCAO.length;
+  // Prevenção de erro: sair com alterações não salvas pede confirmação.
+  useEffect(() => {
+    const sair = navigation.addListener('beforeRemove', (e: any) => {
+      if (!sujo || salvando || saidaLiberada.current) return;
+      e.preventDefault();
+      confirmar('Sair sem salvar?', 'As alterações feitas neste alimento serão perdidas.', { confirmar: 'Sair sem salvar', destrutivo: true })
+        .then((ok) => ok && navigation.dispatch(e.data.action));
+    });
+    return sair;
+  }, [navigation, sujo, salvando]);
 
-  const alternar = <T,>(set: Set<T>, setar: (s: Set<T>) => void, v: T) => {
-    const n = new Set(set);
-    n.has(v) ? n.delete(v) : n.add(v);
-    setar(n);
-  };
+  const set = <K extends keyof Campos>(k: K, v: Campos[K]) => setCampos((c) => ({ ...c, [k]: v }));
+  const alternarLista = <K extends 'grupos' | 'refeicoes'>(k: K, v: Campos[K][number]) =>
+    setCampos((c) => {
+      const lista = c[k] as string[];
+      return { ...c, [k]: lista.includes(v) ? lista.filter((x) => x !== v) : [...lista, v] };
+    });
   const definirNivel = (chave: NutrienteChave | NutrienteAtencaoChave, nivel: NivelNutriente | NivelAtencao | null) =>
     setNutrientes((a) => ({ ...a, [chave]: nivel }));
 
+  const preenchidos = useMemo(() => Object.values(nutrientes).filter((v) => v != null).length, [nutrientes]);
+  const erroNome = tentouSalvar && !nome.trim() ? 'Informe o nome.' : null;
   const faltando: string[] = [];
-  if (nome.trim().length === 0) faltando.push('o nome');
-  if (classificacao === null) faltando.push('a classificação NOVA');
-  if (grupos.size === 0) faltando.push('pelo menos um grupo alimentar');
+  if (nome.trim().length === 0) faltando.push('nome');
+  if (classificacao === null) faltando.push('classificação NOVA');
+  if (grupos.size === 0) faltando.push('grupo alimentar');
   const podeSalvar = faltando.length === 0;
+  const rotuloItem = ehPratoComposto ? 'prato' : 'alimento';
 
-  async function salvar() {
-    if (!podeSalvar || !classificacao) { setTentouSalvar(true); return; }
+  async function salvar(): Promise<boolean> {
+    if (!podeSalvar || !classificacao) {
+      setTentouSalvar(true);
+      setAviso({ tom: 'aviso', titulo: 'Faltam informações', texto: `Preencha: ${faltando.join(', ')}.` });
+      return false;
+    }
     setSalvando(true);
+    setAviso(null);
     try {
       const payload = {
         nome: nome.trim(),
@@ -168,270 +222,408 @@ export default function AlimentoFormScreen({ navigation, route }: any) {
         classificacao_nova: classificacao,
         acessivel_ebia: acessivelEbia,
         nivel_maximo_ebia: nivelMaximoEbia,
-        grupos_alimentares: Array.from(grupos),
-        tipos_refeicao_recordatorio: Array.from(refeicoes),
+        grupos_alimentares: campos.grupos,
+        tipos_refeicao_recordatorio: campos.refeicoes,
       };
-      let idParaNutrientes: string | null;
-      if (existente) {
-        await atualizarAlimento(existente.id, payload as any);
-        setIdSalvo(existente.id);
-        idParaNutrientes = existente.id;
+      let id = idSalvo;
+      if (id) {
+        await atualizarAlimento(id, payload as any);
       } else {
         const novo = await criarAlimento(payload as any);
-        setIdSalvo(novo?.id ?? null);
-        idParaNutrientes = novo?.id ?? null;
+        id = novo?.id ?? null;
+        setIdSalvo(id);
       }
-      // só grava alimento_nutrientes se pelo menos um nível foi marcado
-      if (idParaNutrientes && Object.values(nutrientes).some((v) => v != null)) {
-        await salvarNutrientesDoAlimento(idParaNutrientes, nutrientes);
+      // só a nutricionista grava níveis (ver cabeçalho); e só se algum foi marcado
+      if (id && ehNutricionista && Object.values(nutrientes).some((v) => v != null)) {
+        await salvarNutrientesDoAlimento(id, nutrientes);
+        setNutrientesFonte('REVISADO_NUTRICIONISTA' as FonteNutrientes);
       }
-      if (!ehPratoComposto) navigation.goBack();
-      else avisar('Prato salvo', 'Agora monte o prato: na seção "Ingredientes do prato" (logo abaixo do nome), busque cada alimento, toque em Adicionar e depois em Salvar ingredientes.');
+      setSalvo(assinatura(campos, nutrientes));
+      setTentouSalvar(false);
+      const criou = !editando;
+      if (criou && ehPratoComposto) {
+        setAviso({ tom: 'ok', titulo: 'Prato criado', texto: 'Agora adicione os ingredientes logo abaixo.' });
+        setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, yIngredientes.current - 12), animated: true }), 250);
+      } else if (criou) {
+        setAviso({ tom: 'ok', titulo: 'Alimento cadastrado', texto: `"${nome.trim()}" já está no catálogo.`, outro: true });
+      } else {
+        setAviso({ tom: 'ok', texto: 'Alterações salvas.' });
+      }
+      return true;
     } catch (e: any) {
-      avisar('Erro ao salvar', e.message ?? 'Tente novamente.');
+      setAviso({ tom: 'erro', texto: e?.message ?? '' });
+      return false;
     } finally {
       setSalvando(false);
     }
   }
 
+  function cadastrarOutro() {
+    const vazio = camposIniciais(undefined, ehPratoComposto);
+    setCampos(vazio);
+    setNutrientes({});
+    setNutrientesFonte(null);
+    setIdSalvo(null);
+    setReceita(null);
+    setSalvo(assinatura(vazio, {}));
+    setAviso(null);
+    setTentouSalvar(false);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }
+
   async function confirmarExclusao() {
-    if (!existente) return;
-    const ok = await confirmar('Excluir alimento?', `Isso remove "${existente.nome}" do catálogo.`, { confirmar: 'Excluir', destrutivo: true });
+    if (!idSalvo) return;
+    const ok = await confirmar(`Excluir ${rotuloItem}?`, `"${nome.trim() || 'Sem nome'}" sai do catálogo. Esta ação não pode ser desfeita.`, { confirmar: 'Excluir', destrutivo: true });
     if (!ok) return;
     try {
-      await excluirAlimento(existente.id);
+      await excluirAlimento(idSalvo);
+      saidaLiberada.current = true;
       navigation.goBack();
     } catch (e: any) {
-      avisar('Não foi possível excluir', e.message ?? 'Tente novamente.');
+      setAviso({ tom: 'erro', texto: e?.message ?? '' });
     }
   }
 
   // ---- seções ----
+  const etapasPrato = ehPratoComposto ? (
+    <EtapasCadastro
+      atual={!editando ? 'dados' : qtdIngredientes === 0 ? 'ingredientes' : 'receita'}
+      etapas={[
+        { chave: 'dados', rotulo: 'Dados do prato', feita: editando },
+        { chave: 'ingredientes', rotulo: 'Ingredientes', feita: qtdIngredientes > 0 },
+        { chave: 'receita', rotulo: 'Receita (opcional)', feita: !!receita },
+      ]}
+    />
+  ) : null;
+
   const secaoBasico = (
-    <CartaoSecao titulo="O que é" subtitulo="Nome e tipo do alimento">
-      <View style={{ gap: 6 }}>
-        <AppText style={styles.rotulo}>Nome</AppText>
-        <TextInput value={nome} onChangeText={setNome} placeholder="Ex.: Arroz com feijão" placeholderTextColor={tema.placeholder} style={[styles.input, tentouSalvar && !nome.trim() && styles.inputErro]} maxLength={80} accessibilityLabel="Nome do alimento" />
-      </View>
-      <View style={{ gap: 6 }}>
-        <AppText style={styles.rotulo}>Tipo</AppText>
-        <Segmentado
-          opcoes={[{ valor: 'SIMPLES', rotulo: 'Ingrediente / alimento' }, { valor: 'PRATO', rotulo: 'Prato composto' }]}
-          valor={ehPratoComposto ? 'PRATO' : 'SIMPLES'}
-          onChange={(v) => setEhPratoComposto(v === 'PRATO')}
+    <CartaoSecao titulo="Identificação" subtitulo="Como o item aparece para os adolescentes">
+      <CampoTexto
+        rotulo="Nome"
+        obrigatorio
+        value={nome}
+        onChangeText={(t) => set('nome', t)}
+        placeholder={ehPratoComposto ? 'Ex.: Arroz com feijão' : 'Ex.: Banana prata'}
+        maxLength={80}
+        erro={erroNome}
+        ajuda={`${nome.length}/80 caracteres`}
+      />
+      <View style={{ gap: 8 }}>
+        <RotuloCampo
+          texto="Tipo"
+          ajuda={ehPratoComposto ? 'Feito de outros alimentos do catálogo; pode ter receita.' : 'Registrado sozinho, como fruta, arroz ou leite.'}
         />
-        <AppText style={styles.ajuda}>
-          {ehPratoComposto ? 'Prato composto é feito de outros alimentos (primeiro salve o prato; depois, na seção "Ingredientes do prato", você busca e adiciona cada ingrediente) e pode ter uma receita.' : 'Alimento que se registra sozinho, como fruta, arroz ou leite.'}
-        </AppText>
-      </View>
-      <View style={styles.linhaSwitch}>
-        <View style={{ flex: 1 }}>
-          <AppText style={styles.rotulo}>Acessível no EBIA</AppText>
-          <AppText style={styles.ajuda}>Usado nas regras de acesso conforme a situação alimentar.</AppText>
-        </View>
-        <Switch value={acessivelEbia} onValueChange={setAcessivelEbia} />
+        <OpcoesUnica
+          rotulo="Tipo"
+          opcoes={[
+            { valor: 'SIMPLES', rotulo: 'Ingrediente / alimento', icone: 'nutrition-outline' },
+            { valor: 'PRATO', rotulo: 'Prato composto', icone: 'restaurant-outline' },
+          ]}
+          valor={ehPratoComposto ? 'PRATO' : 'SIMPLES'}
+          onChange={(v) => set('ehPratoComposto', v === 'PRATO')}
+        />
       </View>
     </CartaoSecao>
   );
 
   const secaoClassificacao = (
-    <CartaoSecao titulo="Classificação" subtitulo="NOVA e grupos alimentares (obrigatórios)">
+    <CartaoSecao titulo="Classificação" subtitulo="Segundo o Guia Alimentar (obrigatório)">
       <View style={{ gap: 8 }}>
-        <AppText style={styles.rotulo}>Classificação NOVA</AppText>
-        {CLASSIFICACOES.map((c) => {
-          const on = classificacao === c;
-          return (
-            <Pressable key={c} onPress={() => setClassificacao(c)} accessibilityRole="radio" accessibilityState={{ selected: on }} style={[styles.opcaoNova, on && styles.opcaoNovaOn, tentouSalvar && !classificacao && styles.inputErro]}>
-              <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={20} color={on ? tema.texto : tema.textoSuave} />
-              <View style={{ flex: 1 }}>
-                <AppText style={styles.opcaoNovaTitulo}>{ROTULO_NOVA[c]}</AppText>
-                <AppText style={styles.ajuda}>{DESCRICAO_NOVA[c]}</AppText>
-              </View>
-            </Pressable>
-          );
-        })}
+        <RotuloCampo texto="Nível de processamento (NOVA)" obrigatorio />
+        <View style={[styles.gradeNova, tentouSalvar && !classificacao && styles.blocoErro]} accessibilityRole="radiogroup">
+          {CLASSIFICACOES.map((c) => {
+            const on = classificacao === c;
+            return (
+              <Pressable
+                key={c}
+                onPress={() => set('classificacao', c)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: on, selected: on }}
+                accessibilityLabel={`${ROTULO_NOVA[c]}. ${DESCRICAO_NOVA[c]}`}
+                style={[styles.opcaoNova, on && styles.opcaoNovaOn]}
+              >
+                <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={20} color={on ? tema.destaqueTexto : tema.textoSuave} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <AppText style={styles.opcaoNovaTitulo}>{ROTULO_NOVA[c]}</AppText>
+                  <AppText style={styles.ajuda}>{DESCRICAO_NOVA[c]}</AppText>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+        {tentouSalvar && !classificacao && <AppText style={styles.erroCampo}>Escolha o nível de processamento.</AppText>}
       </View>
       <View style={{ gap: 8 }}>
-        <AppText style={styles.rotulo}>Grupos alimentares ({grupos.size})</AppText>
-        <View style={[styles.chips, tentouSalvar && grupos.size === 0 && styles.blocoErro]}>
-          {GRUPOS.map((g) => <Chip key={g} texto={ROTULO_GRUPO[g]} ligado={grupos.has(g)} onPress={() => alternar(grupos, setGrupos, g)} />)}
-        </View>
+        <RotuloCampo texto={`Grupos alimentares (${grupos.size} marcado${grupos.size === 1 ? '' : 's'})`} obrigatorio ajuda="Marque todos que se aplicam." />
+        <OpcoesMultipla
+          rotulo="Grupos alimentares"
+          opcoes={GRUPOS.map((g) => ({ valor: g, rotulo: ROTULO_GRUPO[g] }))}
+          valores={grupos}
+          onAlternar={(g) => alternarLista('grupos', g)}
+          erro={tentouSalvar && grupos.size === 0}
+        />
+        {tentouSalvar && grupos.size === 0 && <AppText style={styles.erroCampo}>Marque pelo menos um grupo.</AppText>}
       </View>
     </CartaoSecao>
   );
 
   const secaoOnde = (
-    <CartaoSecao titulo="Onde aparece" subtitulo="Recordatório da triagem e acesso por EBIA" ajuda="Define em quais refeições do recordatório o alimento é uma opção, e até qual nível de insegurança alimentar ele aparece na busca do adolescente (uso interno: o adolescente nunca vê isso).">
-      <View style={{ gap: 8 }}>
-        <AppText style={styles.rotulo}>Recordatório: em quais refeições?</AppText>
-        <AppText style={styles.ajuda}>Sem nenhuma marcada, o alimento não aparece no recordatório (continua na busca do dia a dia).</AppText>
-        <View style={styles.chips}>
-          {REFEICOES.map((r) => <Chip key={r} texto={ROTULO_REFEICAO[r]} ligado={refeicoes.has(r)} onPress={() => alternar(refeicoes, setRefeicoes, r)} />)}
-        </View>
-      </View>
-      <View style={{ gap: 8 }}>
-        <AppText style={styles.rotulo}>Aparece na busca para quem tem</AppText>
-        <Segmentado opcoes={NIVEIS_EBIA} valor={nivelMaximoEbia} onChange={(v) => v && setNivelMaximoEbia(v)} />
-      </View>
-    </CartaoSecao>
-  );
-
-  const secaoReceita = existente?.eh_prato_composto ? (
-    <CartaoSecao titulo="Receita" subtitulo={receita === undefined ? 'Verificando...' : receita ? 'Este prato tem receita' : 'Este prato ainda não tem receita'}>
-      {receita ? (
-        <>
-          <AppText style={styles.rotulo}>{receita.titulo}</AppText>
-          <View style={{ flexDirection: 'row' }}>
-            <AppButton label="ABRIR RECEITA" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botaoPequeno} onPress={() => navigation.navigate('EditarReceita', { receitaId: receita.id })} />
-          </View>
-        </>
-      ) : receita === null ? (
-        <>
-          <AppText style={styles.ajuda}>Na tela da receita, escolha este prato para ligar os dois.</AppText>
-          <View style={{ flexDirection: 'row' }}>
-            <AppButton label="CRIAR RECEITA" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botaoPequeno} onPress={() => navigation.navigate('EditarReceita')} />
-          </View>
-        </>
-      ) : null}
-    </CartaoSecao>
-  ) : null;
-
-  const secaoNutrientes = (
     <CartaoSecao
-      titulo="Nutrientes"
-      subtitulo={`${preenchidos} de ${totalNutrientes} preenchidos (opcional)`}
-      direita={
-        <Pressable onPress={() => setNutrientesAbertos((a) => !a)} accessibilityRole="button" accessibilityState={{ expanded: nutrientesAbertos }} hitSlop={8} style={styles.alternar}>
-          <AppText style={styles.alternarTexto}>{nutrientesAbertos ? 'Recolher' : 'Preencher'}</AppText>
-          <Ionicons name={nutrientesAbertos ? 'chevron-up' : 'chevron-down'} size={14} color={tema.texto} />
-        </Pressable>
-      }
+      titulo="Onde aparece"
+      subtitulo="Recordatório da triagem e busca do dia a dia"
+      ajuda="Define em quais refeições do recordatório o alimento é uma opção, e até qual nível de insegurança alimentar ele aparece na busca do adolescente (uso interno: o adolescente nunca vê isso)."
     >
-      {nutrientesFonte === 'INFERIDO_POR_GRUPO' && (
-        <View style={styles.avisoInferido}>
-          <Ionicons name="alert-circle" size={18} color="#8A5A00" />
-          <AppText style={styles.avisoInferidoTexto}>Cadastrado por um adolescente: os níveis foram estimados pelo grupo alimentar e ninguém revisou. Confirme ou ajuste.</AppText>
+      <View style={{ gap: 8 }}>
+        <RotuloCampo texto="Recordatório: em quais refeições?" ajuda="Sem nenhuma marcada, o alimento fica fora do recordatório (continua na busca do dia a dia)." />
+        <OpcoesMultipla
+          rotulo="Refeições do recordatório"
+          opcoes={REFEICOES.map((r) => ({ valor: r, rotulo: ROTULO_REFEICAO[r] }))}
+          valores={refeicoes}
+          onAlternar={(r) => alternarLista('refeicoes', r)}
+        />
+      </View>
+      <View style={{ gap: 8 }}>
+        <RotuloCampo texto="Aparece na busca para quem tem" />
+        <OpcoesUnica rotulo="Nível máximo de insegurança alimentar" opcoes={NIVEIS_EBIA} valor={nivelMaximoEbia} onChange={(v) => v && set('nivelMaximoEbia', v)} />
+      </View>
+      <View style={styles.linhaSwitch}>
+        <View style={{ flex: 1 }}>
+          <RotuloCampo texto="Acessível no EBIA" ajuda="Usado nas regras de acesso conforme a situação alimentar." />
         </View>
-      )}
-      {carregandoNutrientes ? (
-        <ActivityIndicator color={tema.texto} />
-      ) : !nutrientesAbertos ? (
-        <AppText style={styles.ajuda}>Toque em "Preencher" para informar vitaminas, minerais, proteína, fibra, sódio, carboidrato e gordura.</AppText>
-      ) : (
-        <>
-          <AppText style={styles.subLabel}>Vitaminas</AppText>
-          {VITAMINAS.map(({ chave, rotulo }) => (
-            <LinhaNutriente key={chave} rotulo={rotulo}><Segmentado opcoes={NIVEIS_NUTRIENTE} valor={nutrientes[chave] as NivelNutriente | null | undefined} limpavel onChange={(v) => definirNivel(chave, v)} /></LinhaNutriente>
-          ))}
-          <AppText style={styles.subLabel}>Minerais</AppText>
-          {MINERAIS.map(({ chave, rotulo }) => (
-            <LinhaNutriente key={chave} rotulo={rotulo}><Segmentado opcoes={NIVEIS_NUTRIENTE} valor={nutrientes[chave] as NivelNutriente | null | undefined} limpavel onChange={(v) => definirNivel(chave, v)} /></LinhaNutriente>
-          ))}
-          <AppText style={styles.subLabel}>Proteína e fibra</AppText>
-          {MACROS.map(({ chave, rotulo }) => (
-            <LinhaNutriente key={chave} rotulo={rotulo}><Segmentado opcoes={NIVEIS_NUTRIENTE} valor={nutrientes[chave] as NivelNutriente | null | undefined} limpavel onChange={(v) => definirNivel(chave, v)} /></LinhaNutriente>
-          ))}
-          <AppText style={styles.subLabel}>Sódio, carboidrato e gordura total</AppText>
-          <AppText style={styles.ajuda}>Escala de quantidade: mais alto não é benefício, é só mais presente.</AppText>
-          {ATENCAO.map(({ chave, rotulo }) => (
-            <LinhaNutriente key={chave} rotulo={rotulo}><Segmentado opcoes={NIVEIS_ATENCAO} valor={nutrientes[chave] as NivelAtencao | null | undefined} limpavel onChange={(v) => definirNivel(chave, v)} /></LinhaNutriente>
-          ))}
-        </>
-      )}
+        <Switch
+          value={acessivelEbia}
+          onValueChange={(v) => set('acessivelEbia', v)}
+          trackColor={{ true: tema.destaqueTexto, false: tema.chipBorda }}
+          thumbColor={tema.card}
+          accessibilityLabel="Acessível no EBIA"
+        />
+      </View>
     </CartaoSecao>
   );
 
   const secaoIngredientes = ehPratoComposto ? (
-    <CartaoSecao titulo="Ingredientes do prato" subtitulo={idSalvo ? 'Busque, adicione e salve' : 'Passo 1: toque em "Cadastrar alimento" no fim da página'}>
-      <IngredientesPratoSection pratoId={idSalvo} />
+    <View onLayout={(e) => { yIngredientes.current = e.nativeEvent.layout.y; }}>
+      <CartaoSecao titulo="Ingredientes do prato" subtitulo={editando ? 'Busque no catálogo, ajuste as proporções e salve' : 'Disponível depois de salvar os dados do prato'}>
+        {editando ? (
+          <IngredientesPratoSection pratoId={idSalvo} onQuantidade={setQtdIngredientes} />
+        ) : (
+          <AvisoPainel tom="info" texto="Preencha os dados obrigatórios e salve. Em seguida, os ingredientes aparecem aqui." acao={{ rotulo: 'Salvar e continuar', onPress: () => { salvar(); } }} />
+        )}
+      </CartaoSecao>
+    </View>
+  ) : null;
+
+  const secaoReceita = ehPratoComposto && editando ? (
+    <CartaoSecao titulo="Receita" subtitulo={receita === undefined ? 'Verificando…' : receita ? 'Este prato tem receita' : 'Opcional: ensina a preparar o prato'}>
+      {receita === undefined ? (
+        <ActivityIndicator color={tema.destaqueTexto} />
+      ) : receita ? (
+        <View style={styles.linhaReceita}>
+          <Ionicons name="book" size={18} color={tema.destaqueTexto} />
+          <AppText style={[styles.opcaoNovaTitulo, { flex: 1 }]}>{receita.titulo}</AppText>
+          <AppButton label="ABRIR RECEITA" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botaoPequeno} onPress={() => navigation.navigate('EditarReceita', { receitaId: receita.id })} />
+        </View>
+      ) : (
+        <View style={{ gap: 8 }}>
+          <AppText style={styles.ajuda}>Na tela da receita, escolha este prato para ligar os dois. A receita passa pela aprovação da nutricionista.</AppText>
+          <View style={{ flexDirection: 'row' }}>
+            <AppButton label="+ CRIAR RECEITA" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} style={styles.botaoPequeno} onPress={() => navigation.navigate('EditarReceita')} />
+          </View>
+        </View>
+      )}
     </CartaoSecao>
   ) : null;
 
+  const preenchidosTexto = `${preenchidos} de ${TOTAL_NUTRIENTES} preenchidos`;
+  const secaoNutrientes = (
+    <CartaoSecao
+      titulo="Nutrientes"
+      subtitulo={ehNutricionista ? `${preenchidosTexto} (opcional)` : preenchidosTexto}
+      ajuda="Níveis categóricos (não são quantidades). Fonte dos valores de referência: TACO."
+      direita={
+        ehNutricionista ? (
+          <Pressable onPress={() => setNutrientesAbertos((a) => !a)} accessibilityRole="button" accessibilityState={{ expanded: nutrientesAbertos }} style={styles.alternar}>
+            <AppText style={styles.alternarTexto}>{nutrientesAbertos ? 'Recolher' : 'Preencher'}</AppText>
+            <Ionicons name={nutrientesAbertos ? 'chevron-up' : 'chevron-down'} size={16} color={tema.destaqueTexto} />
+          </Pressable>
+        ) : undefined
+      }
+    >
+      <View style={styles.barraProgresso} accessibilityLabel={preenchidosTexto}>
+        <View style={[styles.barraProgressoCheia, { width: `${Math.round((preenchidos / TOTAL_NUTRIENTES) * 100)}%` }]} />
+      </View>
+      {nutrientesFonte === 'INFERIDO_POR_GRUPO' && (
+        <AvisoPainel tom="aviso" texto="Os níveis foram estimados pelo grupo alimentar e ainda não foram revisados. Confirme ou ajuste." />
+      )}
+      {nutrientesFonte === 'REVISADO_NUTRICIONISTA' && <Selo texto="Revisado pela nutricionista" tom="ok" />}
+      {carregandoNutrientes ? (
+        <ActivityIndicator color={tema.destaqueTexto} />
+      ) : !ehNutricionista ? (
+        <>
+          <AvisoPainel tom="info" texto="Os níveis de nutrientes são definidos e revisados pela nutricionista. Aqui você só consulta." />
+          {preenchidos > 0 && (
+            <View style={styles.chipsLeitura}>
+              {TODOS_NUTRIENTES
+                .filter(({ chave }) => nutrientes[chave] != null)
+                .map(({ chave, rotulo }) => <Selo key={chave} texto={`${rotulo}: ${ROTULO_NIVEL[String(nutrientes[chave])] ?? nutrientes[chave]}`} tom="neutro" />)}
+            </View>
+          )}
+        </>
+      ) : !nutrientesAbertos ? (
+        <AppText style={styles.ajuda}>Toque em "Preencher" para informar vitaminas, minerais, proteína, fibra, sódio, carboidrato e gordura.</AppText>
+      ) : (
+        GRUPOS_NUTRIENTES.map((g) => (
+          <View key={g.titulo} style={{ gap: 4 }}>
+            <AppText style={styles.subLabel}>{g.titulo}</AppText>
+            {!!g.ajuda && <AppText style={styles.ajuda}>{g.ajuda}</AppText>}
+            {g.itens.map(({ chave, rotulo }) => (
+              <View key={chave} style={styles.linhaNutriente}>
+                <AppText style={styles.rotuloNutriente}>{rotulo}</AppText>
+                <View style={styles.segmentado} accessibilityRole="radiogroup" accessibilityLabel={rotulo}>
+                  {g.niveis.map((o) => {
+                    const on = nutrientes[chave] === o.valor;
+                    return (
+                      <Pressable
+                        key={o.valor}
+                        onPress={() => definirNivel(chave, on ? null : (o.valor as any))}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: on, selected: on }}
+                        accessibilityLabel={`${rotulo}: ${o.rotulo}`}
+                        style={[styles.seg, on && styles.segOn]}
+                      >
+                        <AppText style={[styles.segTexto, on && styles.segTextoOn]}>{o.rotulo}</AppText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+          </View>
+        ))
+      )}
+    </CartaoSecao>
+  );
+
+  const titulo = existente || editando ? (ehPratoComposto ? 'Editar prato' : 'Editar alimento') : ehPratoComposto ? 'Novo prato' : 'Novo alimento';
+
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={styles.resumo}>
-        <View style={{ flex: 1, minWidth: 180 }}>
-          <AppText style={styles.resumoNome} numberOfLines={2}>{nome.trim() || (existente ? 'Alimento' : 'Novo alimento')}</AppText>
-          <View style={styles.selos}>
-            <Selo texto={ehPratoComposto ? 'Prato composto' : 'Ingrediente'} tom="neutro" />
-            {classificacao && <Selo texto={ROTULO_NOVA[classificacao]} tom={TOM_NOVA[classificacao]} />}
-            {refeicoes.size > 0 && <Selo texto={`Recordatório (${refeicoes.size})`} tom="info" />}
+    <PainelLayout config={config} titulo={titulo} subtitulo="Catálogo · os campos com * são obrigatórios" voltar rolagem={false}>
+      <View style={{ flex: 1 }}>
+        <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.resumo}>
+            <View style={[styles.resumoIcone, ehPratoComposto && styles.resumoIconePrato]}>
+              <Ionicons name={ehPratoComposto ? 'restaurant' : 'nutrition'} size={22} color={ehPratoComposto ? tema.selos.aviso.texto : tema.destaqueTexto} />
+            </View>
+            <View style={{ flex: 1, minWidth: 180, gap: 6 }}>
+              <AppText style={styles.resumoNome} numberOfLines={2}>{nome.trim() || (ehPratoComposto ? 'Prato sem nome' : 'Alimento sem nome')}</AppText>
+              <View style={styles.selos}>
+                <Selo texto={ehPratoComposto ? 'Prato composto' : 'Ingrediente'} tom="neutro" />
+                {classificacao && <Selo texto={ROTULO_NOVA[classificacao]} tom={TOM_NOVA[classificacao]} />}
+                {refeicoes.size > 0 && <Selo texto={`Recordatório (${refeicoes.size})`} tom="info" />}
+                {editando && sujo && <Selo texto="Alterações não salvas" tom="aviso" />}
+              </View>
+            </View>
+          </View>
+
+          {etapasPrato}
+
+          {!!aviso && (
+            <AvisoPainel
+              tom={aviso.tom}
+              titulo={aviso.titulo}
+              texto={aviso.texto}
+              onFechar={() => setAviso(null)}
+              acao={aviso.outro ? { rotulo: `Cadastrar outro ${rotuloItem}`, onPress: cadastrarOutro } : undefined}
+            />
+          )}
+
+          <View style={duasColunas ? styles.duas : styles.uma}>
+            <View style={duasColunas ? styles.col : styles.uma}>
+              {secaoBasico}
+              {secaoIngredientes}
+              {secaoClassificacao}
+              {secaoOnde}
+            </View>
+            <View style={duasColunas ? styles.col : styles.uma}>
+              {secaoReceita}
+              {secaoNutrientes}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Barra fixa: a ação principal fica sempre à mão, mesmo com o formulário longo */}
+        <View style={styles.barraAcoes}>
+          <View style={{ flex: 1, minWidth: 160 }}>
+            {podeSalvar ? (
+              <AppText style={styles.statusOk}>
+                {sujo ? (editando ? 'Há alterações para salvar.' : 'Pronto para salvar.') : editando ? 'Tudo salvo.' : 'Preencha os dados.'}
+              </AppText>
+            ) : (
+              <AppText style={styles.statusFalta}>Falta: {faltando.join(', ')}</AppText>
+            )}
+          </View>
+          <View style={styles.acoes}>
+            {editando && (
+              <AppButton label="EXCLUIR" fullWidth={false} size="compact" outlineColor={tema.erro} textColor={tema.erro} disabled={salvando} style={styles.botao} onPress={confirmarExclusao} />
+            )}
+            <AppButton label={editando ? 'VOLTAR' : 'CANCELAR'} fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} disabled={salvando} style={styles.botao} onPress={() => navigation.goBack()} />
+            <AppButton
+              label={salvando ? 'SALVANDO…' : editando ? 'SALVAR' : ehPratoComposto ? 'SALVAR E CONTINUAR' : `CADASTRAR ${rotuloItem.toUpperCase()}`}
+              fullWidth={false}
+              size="compact"
+              backgroundColor={tema.botaoFundo}
+              textColor={tema.botaoTexto}
+              shadowColor={tema.botaoSombra}
+              disabled={salvando || (editando && !sujo)}
+              style={styles.botao}
+              onPress={() => { salvar(); }}
+            />
           </View>
         </View>
       </View>
-
-      <View style={duasColunas ? styles.duas : styles.uma}>
-        <View style={duasColunas ? styles.col : styles.uma}>
-          {secaoBasico}
-          {secaoIngredientes}
-          {secaoClassificacao}
-          {secaoOnde}
-          {secaoReceita}
-        </View>
-        <View style={duasColunas ? styles.col : styles.uma}>
-          {secaoNutrientes}
-        </View>
-      </View>
-
-      {tentouSalvar && !podeSalvar && (
-        <View style={styles.erros}>
-          <AppText style={styles.erroTexto}>Falta informar: {faltando.join(', ')}.</AppText>
-        </View>
-      )}
-
-      <View style={styles.acoes}>
-        <AppButton
-          label={salvando ? 'SALVANDO...' : existente ? 'SALVAR ALTERAÇÕES' : 'CADASTRAR ALIMENTO'}
-          fullWidth={false} size="compact"
-          backgroundColor={podeSalvar ? tema.texto : '#B8B8B8'} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra}
-          disabled={salvando} style={styles.botao} onPress={salvar}
-        />
-        <AppButton label="CANCELAR" fullWidth={false} size="compact" outlineColor={tema.texto} textColor={tema.texto} disabled={salvando} style={styles.botao} onPress={() => navigation.goBack()} />
-        {existente && (
-          <AppButton label="EXCLUIR" fullWidth={false} size="compact" outlineColor="#D64545" textColor="#D64545" shadowColor="transparent" style={[styles.botao, { marginLeft: 'auto' }]} onPress={confirmarExclusao} />
-        )}
-      </View>
-    </ScrollView>
+    </PainelLayout>
   );
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  root: { flex: 1, backgroundColor: painel.fundo },
-  content: { padding: 20, paddingBottom: 60, gap: 16 },
-  resumo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  resumoNome: { fontFamily: typography.bold, fontSize: 22, color: t.texto },
-  selos: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  content: { paddingBottom: 24, gap: 16 },
+  resumo: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  resumoIcone: { width: 48, height: 48, borderRadius: 14, backgroundColor: t.destaqueSuave, alignItems: 'center', justifyContent: 'center' },
+  resumoIconePrato: { backgroundColor: t.alertaSuave },
+  resumoNome: { fontFamily: typography.bold, fontSize: 20, color: t.texto },
+  selos: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   uma: { gap: 16 },
   duas: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
   col: { flex: 1, minWidth: 0, gap: 16 },
-  rotulo: { fontFamily: typography.bold, fontSize: 13, color: t.texto },
-  subLabel: { fontFamily: typography.bold, fontSize: 12, color: t.texto, marginTop: 6, opacity: 0.8 },
-  ajuda: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, lineHeight: 17 },
-  input: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontFamily: typography.regular, fontSize: 15, color: t.texto, backgroundColor: t.card },
-  inputErro: { borderColor: t.erro },
+  subLabel: { fontFamily: typography.bold, fontSize: fonte.legenda, color: t.textoSuave, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8 },
+  ajuda: { fontFamily: typography.regular, fontSize: fonte.legenda, color: t.textoSuave, lineHeight: 17 },
+  erroCampo: { fontFamily: typography.medium, fontSize: fonte.legenda, color: t.erro },
   blocoErro: { borderWidth: 2, borderColor: t.erro, borderRadius: 12, padding: 6 },
-  linhaSwitch: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  segmentado: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  seg: { minHeight: 38, paddingHorizontal: 12, borderRadius: 10, borderWidth: 2, borderColor: t.cardBorda, justifyContent: 'center', backgroundColor: t.card },
-  segOn: { backgroundColor: t.destaqueSuave, borderColor: t.texto },
-  segTexto: { fontFamily: typography.semiBold, fontSize: 12, color: t.textoSuave },
-  segTextoOn: { color: t.texto, fontFamily: typography.bold },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 38, paddingHorizontal: 12, borderRadius: 19, borderWidth: 2, borderColor: t.cardBorda, backgroundColor: t.card },
-  chipOn: { backgroundColor: t.destaqueSuave, borderColor: t.texto },
-  chipTexto: { fontFamily: typography.semiBold, fontSize: 12, color: t.textoSuave },
-  opcaoNova: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, borderWidth: 2, borderColor: t.cardBorda },
-  opcaoNovaOn: { borderColor: t.texto, backgroundColor: t.destaqueSuave },
-  opcaoNovaTitulo: { fontFamily: typography.bold, fontSize: 13, color: t.texto },
-  linhaNutriente: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: t.linhaSuave },
-  rotuloNutriente: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto, minWidth: 110 },
-  alternar: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  alternarTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
-  avisoInferido: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: t.alertaSuave, borderRadius: 10, padding: 10 },
-  avisoInferidoTexto: { flex: 1, fontFamily: typography.regular, fontSize: 12, color: t.selos.aviso.texto, lineHeight: 17 },
-  erros: { backgroundColor: t.selos.erro.fundo, borderRadius: 12, padding: 12 },
-  erroTexto: { fontFamily: typography.semiBold, fontSize: 13, color: t.erro },
-  acoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center' },
-  botao: { paddingHorizontal: 20, minHeight: 46 },
-  botaoPequeno: { paddingHorizontal: 14, minHeight: 44 },
+  linhaSwitch: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: ALVO_TOQUE },
+  gradeNova: { gap: 8 },
+  opcaoNova: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: ALVO_TOQUE + 8, padding: 12, borderRadius: 12, borderWidth: t.borda, borderColor: t.cardBorda, backgroundColor: t.card },
+  opcaoNovaOn: { borderColor: t.destaqueTexto, borderWidth: 2, backgroundColor: t.destaqueSuave },
+  opcaoNovaTitulo: { fontFamily: typography.bold, fontSize: fonte.apoio, color: t.texto },
+  linhaReceita: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
+  barraProgresso: { height: 6, borderRadius: 3, backgroundColor: t.linhaSuave, overflow: 'hidden' },
+  barraProgressoCheia: { height: 6, borderRadius: 3, backgroundColor: t.destaque },
+  chipsLeitura: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  linhaNutriente: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: t.linhaSuave },
+  rotuloNutriente: { fontFamily: typography.semiBold, fontSize: fonte.apoio, color: t.texto, minWidth: 120 },
+  segmentado: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, backgroundColor: t.superficieSuave, borderRadius: 10, padding: 3 },
+  seg: { minHeight: 38, paddingHorizontal: 12, borderRadius: 8, justifyContent: 'center' },
+  segOn: { backgroundColor: t.chipAtivoFundo },
+  segTexto: { fontFamily: typography.semiBold, fontSize: fonte.legenda, color: t.chipTexto },
+  segTextoOn: { color: t.chipAtivoTexto },
+  alternar: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: ALVO_TOQUE, paddingHorizontal: 6 },
+  alternarTexto: { fontFamily: typography.bold, fontSize: fonte.apoio, color: t.destaqueTexto },
+  barraAcoes: {
+    flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, paddingTop: 12, marginTop: 4,
+    borderTopWidth: 1, borderTopColor: t.cardBorda, backgroundColor: t.fundo,
+  },
+  statusOk: { fontFamily: typography.medium, fontSize: fonte.apoio, color: t.textoSuave },
+  statusFalta: { fontFamily: typography.semiBold, fontSize: fonte.apoio, color: t.alertaTexto },
+  acoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  botao: { paddingHorizontal: 18, minHeight: ALVO_TOQUE },
+  botaoPequeno: { paddingHorizontal: 14, minHeight: ALVO_TOQUE },
 }) as const;

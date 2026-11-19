@@ -40,7 +40,7 @@ export function IntroSecao({ titulo, linhas }: Props) {
         <Pressable style={styles.fundo} onPress={() => setAberto(false)}>
           <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
             <View style={styles.topo}>
-              <Ionicons name="bulb-outline" size={22} color={tema.destaque} />
+              <Ionicons name="bulb-outline" size={22} color={tema.destaqueTexto} />
               <AppText style={styles.titulo}>{titulo}</AppText>
               <Pressable onPress={() => setAberto(false)} accessibilityRole="button" accessibilityLabel="Fechar" hitSlop={10}>
                 <Ionicons name="close" size={22} color={tema.textoSuave} />
@@ -68,7 +68,7 @@ const criarEstilos = (t: TemaPainel) => ({
   botao: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: 10, borderRadius: 18, backgroundColor: t.card, borderWidth: 1, borderColor: t.cardBorda, marginBottom: 12 } as const,
   botaoTexto: { fontFamily: typography.medium, fontSize: 13, color: t.info } as const,
   fundo: { flex: 1, backgroundColor: 'rgba(10, 28, 39, 0.55)', alignItems: 'center', justifyContent: 'center', padding: 20 } as const,
-  card: { width: '100%', maxWidth: 520, backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 18, gap: 12 } as const,
+  card: { width: '100%', maxWidth: 520, backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 18, gap: 12 } as const,
   topo: { flexDirection: 'row', alignItems: 'center', gap: 8 } as const,
   titulo: { flex: 1, fontFamily: typography.bold, fontSize: 16, color: t.texto } as const,
   linhaItem: { flexDirection: 'row', gap: 8 } as const,

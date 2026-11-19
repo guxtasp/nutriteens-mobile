@@ -27,7 +27,8 @@ export function HeroPainel({ saudacao, papel, resumo, atalhos }: Props) {
   const navigation = useNavigation<any>();
   const { tema } = useTemaPainel();
   const styles = useEstilos(criarEstilos);
-  const gradiente: [string, string] = tema.nome === 'escuro' ? ['#16352A', '#0F2119'] : ['#155946', '#1F7A5C'];
+  // mesmo verde-tinta do menu, para o topo do dashboard conversar com a navegação
+  const gradiente: [string, string] = tema.nome === 'escuro' ? [tema.superficieSuave, tema.card] : [tema.menuFundo, colors.primaryDark];
   return (
     <LinearGradient colors={gradiente} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
       <View style={styles.topo}>
@@ -61,14 +62,14 @@ const criarEstilos = (t: TemaPainel) => ({
   topo: { flexDirection: 'row', alignItems: 'center', gap: 8 } as const,
   selo: { width: 30, height: 30, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' } as const,
   papel: { fontFamily: typography.medium, fontSize: 12, color: 'rgba(255,255,255,0.78)' } as const,
-  saudacao: { fontFamily: typography.bold, fontSize: 24, color: colors.white, marginTop: 4 } as const,
-  resumo: { fontFamily: typography.regular, fontSize: 13, color: 'rgba(255,255,255,0.86)', lineHeight: 19 } as const,
+  saudacao: { fontFamily: typography.bold, fontSize: 22, color: colors.white, marginTop: 4 } as const,
+  resumo: { fontFamily: typography.regular, fontSize: 14, color: 'rgba(255,255,255,0.9)', lineHeight: 20 } as const,
   atalhos: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 } as const,
   atalho: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: 14,
     borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.14)',

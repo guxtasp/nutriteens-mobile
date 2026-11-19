@@ -19,6 +19,7 @@ import type { TemaPainel } from '../../../shared/painel/tema/paletas';
 import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { ADMIN_PAINEL } from '../navigation/adminMenu';
 import { UsoSemanalUsuario } from '../components/UsoSemanalUsuario';
+import { JornadaIndividual } from '../../../shared/painel/components/JornadaIndividual';
 import { DetalheUsuarioAdmin, buscarUsuario, labelPapel } from '../services/usuariosAdminService';
 
 export default function UsuarioDetalheScreen({ route }: { route: { params: { id: string } } }) {
@@ -100,6 +101,8 @@ export default function UsuarioDetalheScreen({ route }: { route: { params: { id:
           ) : null}
 
           {u.papel === 'ADOLESCENTE' && <UsoSemanalUsuario id={u.id} />}
+          {/* jornada: só dados de uso (sem alimentação nem saúde), como o resto desta tela */}
+          {u.papel === 'ADOLESCENTE' && <JornadaIndividual id={u.id} />}
 
           {u.papel !== 'ADOLESCENTE' && (
             <CartaoSecao titulo="Trabalho com conteúdos" ajuda="Quantos conteúdos esta pessoa criou e quantos revisou no fluxo de aprovação.">

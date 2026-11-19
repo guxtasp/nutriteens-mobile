@@ -92,7 +92,7 @@ export default function NutricionistasScreen() {
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 16, gap: 8, minWidth: 0 },
+  card: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 16, gap: 8, minWidth: 0 },
   nome: { fontFamily: typography.bold, fontSize: 16, color: t.texto },
   meta: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },
   numeros: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 6 },

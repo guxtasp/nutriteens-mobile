@@ -20,7 +20,7 @@ export function ListaAtividades({ itens, vazio = 'Nada por aqui ainda.' }: { ite
       {itens.map((it, i) => (
         <View key={it.chave} style={[styles.linha, i > 0 && styles.divisor]}>
           <View style={styles.icone}>
-            <Ionicons name={it.icone} size={16} color={tema.destaque} />
+            <Ionicons name={it.icone} size={16} color={tema.destaqueTexto} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <AppText style={styles.titulo} numberOfLines={2}>

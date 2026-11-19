@@ -123,3 +123,34 @@ export function textoConfirmaExclusao(nivel: 'MODULO' | 'LICAO', titulo: string,
     ? `Excluir o módulo "${titulo}", as ${qtdLicoes} lição(ões) e todos os passos? Isso não pode ser desfeito.`
     : `Excluir o módulo "${titulo}"? Isso não pode ser desfeito.`;
 }
+
+// ---- apresentação do editor de trilha ----
+
+/** Nome do tipo de lição para quem edita (o banco guarda códigos como "atividade_rastreavel"). */
+export function rotuloTipoLicao(tipo: string): string {
+  switch (tipo) {
+    case 'conteudo': return 'Leitura';
+    case 'quiz': return 'Quiz';
+    case 'atividade_rastreavel': return 'Prática real';
+    default: return tipo.replace(/_/g, ' ');
+  }
+}
+
+export type EtapaTrilha = 'dados' | 'modulos' | 'licoes' | 'revisao';
+
+/**
+ * Em que etapa a montagem da trilha está: sem trilha salva → dados; sem módulo → módulos;
+ * algum módulo sem lição → lições; tudo montado → enviar para revisão.
+ */
+export function etapaAtualTrilha(trilha: { modulos: { licoes: unknown[] }[] } | null): EtapaTrilha {
+  if (!trilha) return 'dados';
+  if (trilha.modulos.length === 0) return 'modulos';
+  if (trilha.modulos.some((m) => m.licoes.length === 0)) return 'licoes';
+  return 'revisao';
+}
+
+/** Tema do banco (ex.: "ALIMENTACAO_SAUDAVEL") como texto de chip ("Alimentacao saudavel"). */
+export function rotuloTema(tema: string): string {
+  const t = tema.replace(/_/g, ' ').toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}

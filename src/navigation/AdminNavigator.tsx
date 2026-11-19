@@ -11,7 +11,8 @@ import UsuariosScreen from '../features/admin/screens/UsuariosScreen';
 import UsuarioDetalheScreen from '../features/admin/screens/UsuarioDetalheScreen';
 import NutricionistasScreen from '../features/admin/screens/NutricionistasScreen';
 import ModeracaoScreen from '../features/admin/screens/ModeracaoScreen';
-import ConfiguracoesScreen from '../features/admin/screens/ConfiguracoesScreen';
+import ConfiguracoesScreen from '../shared/painel/screens/ConfiguracoesScreen';
+import GuiaCriacaoScreen from '../features/conteudo/screens/GuiaCriacaoScreen';
 import DesafiosScreen from '../shared/painel/screens/DesafiosScreen';
 import EditarTrilhaScreen from '../features/conteudo/screens/EditarTrilhaScreen';
 import EditarLicaoScreen from '../features/conteudo/screens/EditarLicaoScreen';
@@ -47,12 +48,13 @@ export type AdminStackParamList = {
   AdminExportar: undefined;
   AdminAuditoria: undefined;
   AdminConfiguracoes: undefined;
+  GuiaCriacao: { passo?: number } | undefined;
   ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string; origem?: string };
   LicaoPreview: { licaoId: string; origem?: string; aba?: 'uso' | 'revisao' };
   TrilhaPreview: { trilhaId: string; origem?: string };
   ReceitaPreview: { receitaId: string; origem?: string };
   UsuarioDetalhe: { id: string };
-  EditarTrilha: { trilhaId?: string; origem?: string } | undefined;
+  EditarTrilha: { trilhaId?: string; origem?: string; criada?: boolean } | undefined;
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
   EditarReceita: { receitaId?: string; origem?: string } | undefined;
   EditarTroca: { trocaId?: string; origem?: string } | undefined;
@@ -73,8 +75,8 @@ function comPainel(Tela: React.ComponentType<any>, titulo: string, opts: { volta
   };
 }
 
-const AlimentosNoPainel = comPainel(AlimentosListScreen, 'Catálogo');
-const AlimentoFormNoPainel = comPainel(AlimentoFormScreen, 'Alimento', { voltar: true });
+const AlimentosNoPainel = (props: any) => <AlimentosListScreen config={ADMIN_PAINEL} {...props} />;
+const AlimentoFormNoPainel = (props: any) => <AlimentoFormScreen config={ADMIN_PAINEL} {...props} />;
 const MetricasNoPainel = () => <AnalyticsScreen config={ADMIN_PAINEL} />;
 const DetalheNoPainel = (props: any) => <ConteudoDetalheScreen config={ADMIN_PAINEL} route={props.route} />;
 const LicaoPreviewNoPainel = comPainel(LicaoPreviewScreen, 'Lição', { voltar: true });
@@ -93,6 +95,9 @@ const TrilhaPreview = (props: any) => <TrilhaPreviewScreen config={ADMIN_PAINEL}
 const ReceitaPreview = (props: any) => <ReceitaPreviewScreen config={ADMIN_PAINEL} route={props.route} />;
 const ImagensJogos = () => <ImagensJogosScreen config={ADMIN_PAINEL} />;
 const EditarTroca = (props: any) => <EditarTrocaScreen config={ADMIN_PAINEL} route={props.route} />;
+const Configuracoes = () => <ConfiguracoesScreen config={ADMIN_PAINEL} papel="ADMINISTRADOR" />;
+// "Como criar" estava no menu, mas a rota não existia: tocar no item dava erro de navegação.
+const GuiaCriacao = (props: any) => <GuiaCriacaoScreen config={ADMIN_PAINEL} route={props.route} />;
 
 export default function AdminNavigator() {
   return (
@@ -115,7 +120,8 @@ export default function AdminNavigator() {
       <Stack.Screen name="Metricas" component={MetricasNoPainel} />
       <Stack.Screen name="AdminExportar" component={Exportar} />
       <Stack.Screen name="AdminAuditoria" component={Auditoria} />
-      <Stack.Screen name="AdminConfiguracoes" component={ConfiguracoesScreen} />
+      <Stack.Screen name="AdminConfiguracoes" component={Configuracoes} />
+      <Stack.Screen name="GuiaCriacao" component={GuiaCriacao} />
       <Stack.Screen name="ConteudoDetalhe" component={DetalheNoPainel} />
       <Stack.Screen name="LicaoPreview" component={LicaoPreviewNoPainel} />
       <Stack.Screen name="EditarTrilha" component={EditarTrilha} />

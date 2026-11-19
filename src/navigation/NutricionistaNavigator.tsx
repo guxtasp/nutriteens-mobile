@@ -20,6 +20,10 @@ import TrilhaPreviewScreen from '../features/conteudo/screens/TrilhaPreviewScree
 import ReceitaPreviewScreen from '../features/conteudo/screens/ReceitaPreviewScreen';
 import EditarReceitaScreen from '../features/conteudo/screens/EditarReceitaScreen';
 import EditarTrocaScreen from '../features/conteudo/screens/EditarTrocaScreen';
+import ConfiguracoesScreen from '../shared/painel/screens/ConfiguracoesScreen';
+import GuiaCriacaoScreen from '../features/conteudo/screens/GuiaCriacaoScreen';
+import AlimentosListScreen from '../features/admin/screens/AlimentosListScreen';
+import AlimentoFormScreen from '../features/admin/screens/AlimentoFormScreen';
 import NutricionistaDashboardScreen from '../features/nutricionista/dashboard/screens/NutricionistaDashboardScreen';
 
 export type NutricionistaStackParamList = {
@@ -28,18 +32,22 @@ export type NutricionistaStackParamList = {
   NutriAprovacoes: undefined;
   ConteudoList: undefined;
   NutriReceitas: undefined;
+  AlimentosList: { aba?: 'ALIMENTOS' | 'PRATOS' } | undefined;
+  AlimentoForm: { alimento?: any; novoPrato?: boolean } | undefined;
   NutriTrilhas: undefined;
   NutriTrocas: undefined;
   NutriProdutosScanner: undefined;
   NutriDesafios: undefined;
   NutriAnalytics: undefined;
   NutriExportar: undefined;
+  NutriConfiguracoes: undefined;
+  GuiaCriacao: { passo?: number } | undefined;
   ConteudoDetalhe: { tipo: 'TRILHA' | 'RECEITA' | 'TROCA'; conteudoId: string; origem?: string };
   LicaoPreview: { licaoId: string; origem?: string; aba?: 'uso' | 'revisao' };
   TrilhaPreview: { trilhaId: string; origem?: string };
   ReceitaPreview: { receitaId: string; origem?: string };
   ParticipanteDetalhe: { id: string };
-  EditarTrilha: { trilhaId?: string; origem?: string } | undefined;
+  EditarTrilha: { trilhaId?: string; origem?: string; criada?: boolean } | undefined;
   EditarLicao: { licaoId?: string; moduloId?: string; proximaOrdem?: number; origem?: string; tipoNovo?: 'conteudo' | 'quiz' | 'atividade_rastreavel' };
   EditarReceita: { receitaId?: string; origem?: string } | undefined;
   EditarTroca: { trocaId?: string; origem?: string } | undefined;
@@ -61,7 +69,11 @@ const DetalheNoPainel = (props: any) => <ConteudoDetalheScreen config={NUTRICION
 const LicaoPreviewNoPainel = comPainel(LicaoPreviewScreen, 'Lição');
 const Aprovacoes = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Aprovações" subtitulo="Aguardando sua decisão ou publicação" fila />;
 const Conteudos = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Conteúdos" subtitulo="Todo o conteúdo educativo e nutricional" />;
-const Receitas = () => <ReceitasListaScreen config={NUTRICIONISTA_PAINEL} />;
+const Receitas = () => <ReceitasListaScreen config={NUTRICIONISTA_PAINEL} abasCatalogo />;
+// Catálogo de alimentos e pratos: as mesmas telas da Administração (escrita liberada no banco
+// por migration_catalogo_nutricionista.sql)
+const Alimentos = (props: any) => <AlimentosListScreen config={NUTRICIONISTA_PAINEL} {...props} />;
+const AlimentoForm = (props: any) => <AlimentoFormScreen config={NUTRICIONISTA_PAINEL} {...props} />;
 const Trilhas = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Trilhas" subtitulo="Revisão das trilhas educativas" tipo="TRILHA" />;
 const Trocas = () => <FluxoConteudoScreen config={NUTRICIONISTA_PAINEL} titulo="Alternativas" subtitulo="Revise as justificativas das alternativas alimentares" tipo="TROCA" />;
 const Desafios = () => <DesafiosScreen config={NUTRICIONISTA_PAINEL} />;
@@ -74,6 +86,9 @@ const ReceitaPreview = (props: any) => <ReceitaPreviewScreen config={NUTRICIONIS
 const EditarTroca = (props: any) => <EditarTrocaScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 const ProdutosScanner = () => <SolicitacoesScannerScreen config={NUTRICIONISTA_PAINEL} />;
 const Analytics = () => <AnalyticsScreen config={NUTRICIONISTA_PAINEL} />;
+const Configuracoes = () => <ConfiguracoesScreen config={NUTRICIONISTA_PAINEL} papel="NUTRICIONISTA" />;
+// "Como criar" estava no menu, mas a rota não existia: tocar no item dava erro de navegação.
+const GuiaCriacao = (props: any) => <GuiaCriacaoScreen config={NUTRICIONISTA_PAINEL} route={props.route} />;
 
 export default function NutricionistaNavigator() {
   return (
@@ -84,12 +99,16 @@ export default function NutricionistaNavigator() {
       <Stack.Screen name="NutriAprovacoes" component={Aprovacoes} />
       <Stack.Screen name="ConteudoList" component={Conteudos} />
       <Stack.Screen name="NutriReceitas" component={Receitas} />
+      <Stack.Screen name="AlimentosList" component={Alimentos} />
+      <Stack.Screen name="AlimentoForm" component={AlimentoForm} />
       <Stack.Screen name="NutriTrilhas" component={Trilhas} />
       <Stack.Screen name="NutriProdutosScanner" component={ProdutosScanner} />
       <Stack.Screen name="NutriTrocas" component={Trocas} />
       <Stack.Screen name="NutriDesafios" component={Desafios} />
       <Stack.Screen name="NutriAnalytics" component={Analytics} />
       <Stack.Screen name="NutriExportar" component={Exportar} />
+      <Stack.Screen name="NutriConfiguracoes" component={Configuracoes} />
+      <Stack.Screen name="GuiaCriacao" component={GuiaCriacao} />
       <Stack.Screen name="ConteudoDetalhe" component={DetalheNoPainel} />
       <Stack.Screen name="LicaoPreview" component={LicaoPreviewNoPainel} />
       <Stack.Screen name="EditarTrilha" component={EditarTrilha} />

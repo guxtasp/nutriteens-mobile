@@ -1,44 +1,58 @@
 // src/features/conteudo/components/IlustracaoGuia.tsx
 // Desenhos simples (só Views) que acompanham cada passo do guia "Como criar".
+// A moldura segue a marca NutriTeens e o tema do painel (claro/escuro). As cores por categoria
+// (azul/verde/laranja/roxo) aparecem SÓ onde representam os blocos do editor, para a pessoa
+// reconhecer as mesmas peças quando for montar a lição.
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../shared/ui/AppText';
 import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
+import type { TemaPainel } from '../../../shared/painel/tema/paletas';
+import { useEstilos, useTemaPainel } from '../../../shared/painel/tema/TemaPainelContext';
 import { COR_CATEGORIA, type CategoriaBloco } from '../utils/blocos';
 import type { IlustracaoGuia as Tipo } from '../utils/guiaCriacao';
 
 const cor = (c: CategoriaBloco) => COR_CATEGORIA[c];
 
-function Linha({ w = '100%', c = '#E3E8E5', h = 10 }: { w?: number | `${number}%`; c?: string; h?: number }) {
-  return <View style={{ width: w, height: h, borderRadius: h / 2, backgroundColor: c }} />;
+function Linha({ w = '100%', c, h = 10 }: { w?: number | `${number}%`; c?: string; h?: number }) {
+  const { tema } = useTemaPainel();
+  return <View style={{ width: w, height: h, borderRadius: h / 2, backgroundColor: c ?? tema.linhaSuave }} />;
 }
 
-function MiniBloco({ c, texto, largura }: { c: CategoriaBloco; texto: string; largura?: number }) {
+function MiniBloco({ c, texto }: { c: CategoriaBloco; texto: string }) {
+  const styles = useEstilos(criarEstilos);
   return (
-    <View style={[styles.miniBloco, { backgroundColor: cor(c).fundo, borderColor: cor(c).borda, width: largura }]}>
+    <View style={[styles.miniBloco, { backgroundColor: cor(c).fundo, borderColor: cor(c).borda }]}>
       <View style={[styles.miniEncaixe, { backgroundColor: cor(c).fundo, borderColor: cor(c).borda }]} />
       <AppText numberOfLines={1} style={styles.miniBlocoTexto}>{texto}</AppText>
     </View>
   );
 }
 
-function Ficha({ texto, ligada, c = '#4C97FF' }: { texto: string; ligada?: boolean; c?: string }) {
+/** Ficha "ligada" usa a marca por padrão; `c` só para fichas que imitam os blocos do editor. */
+function Ficha({ texto, ligada, c }: { texto: string; ligada?: boolean; c?: string }) {
+  const styles = useEstilos(criarEstilos);
+  const fundo = c ?? colors.primary;
+  const textoLigado = c ? colors.white : colors.primaryDark;
   return (
-    <View style={[styles.ficha, ligada && { backgroundColor: c, borderColor: c }]}>
-      <AppText style={[styles.fichaTexto, ligada && { color: colors.white }]}>{texto}</AppText>
+    <View style={[styles.ficha, ligada && { backgroundColor: fundo, borderColor: fundo }]}>
+      <AppText style={[styles.fichaTexto, ligada && { color: textoLigado }]}>{texto}</AppText>
     </View>
   );
 }
 
 function Seta() {
-  return <Ionicons name="arrow-forward" size={18} color="#8A978F" />;
+  const { tema } = useTemaPainel();
+  return <Ionicons name="arrow-forward" size={18} color={tema.textoSuave} />;
 }
 
 export default function IlustracaoGuia({ tipo }: { tipo: Tipo }) {
+  const { tema } = useTemaPainel();
+  const styles = useEstilos(criarEstilos);
   return (
-    <View style={styles.caixa} accessibilityRole="image" accessibilityLabel={`Ilustração: ${tipo}`}>
+    <View style={styles.caixa} accessibilityRole="image" accessibilityLabel={`Ilustração do passo: ${tipo}`}>
       {tipo === 'trilha' && (
         <View style={styles.coluna}>
           <AppText style={styles.rotulo}>Título</AppText>
@@ -60,12 +74,12 @@ export default function IlustracaoGuia({ tipo }: { tipo: Tipo }) {
             <View key={n} style={styles.moduloLinha}>
               <View style={styles.moduloNumero}><AppText style={styles.moduloNumeroTexto}>{i + 1}</AppText></View>
               <AppText numberOfLines={1} style={[styles.campoTexto, { flex: 1 }]}>{n}</AppText>
-              <AppText style={styles.setas}>↑ ↓</AppText>
+              <Ionicons name="swap-vertical" size={16} color={tema.textoSuave} />
             </View>
           ))}
           <View style={[styles.moduloLinha, styles.tracejado]}>
-            <Ionicons name="add" size={18} color={cor('pergunta').borda} />
-            <AppText style={[styles.campoTexto, { color: cor('pergunta').borda }]}>ADICIONAR MÓDULO</AppText>
+            <Ionicons name="add" size={18} color={tema.destaqueTexto} />
+            <AppText style={[styles.campoTexto, { color: tema.destaqueTexto }]}>ADICIONAR MÓDULO</AppText>
           </View>
         </View>
       )}
@@ -74,15 +88,15 @@ export default function IlustracaoGuia({ tipo }: { tipo: Tipo }) {
         <View style={styles.coluna}>
           {[['book-outline', 'Ponto de Partida', 'Leitura'], ['help-circle-outline', 'Treino', 'Quiz'], ['water-outline', 'Prática Real', 'Prática real']].map(([ic, nome, tp]) => (
             <View key={nome} style={styles.moduloLinha}>
-              <Ionicons name={ic as any} size={20} color={colors.primaryDark} />
+              <Ionicons name={ic as any} size={20} color={tema.destaqueTexto} />
               <AppText numberOfLines={1} style={[styles.campoTexto, { flex: 1 }]}>{nome}</AppText>
               <AppText style={styles.tipo}>{tp}</AppText>
             </View>
           ))}
           <View style={styles.linha}>
-            <Ficha texto="+ LEITURA" ligada c={cor('conteudo').fundo} />
-            <Ficha texto="+ QUIZ" ligada c={cor('pergunta').fundo} />
-            <Ficha texto="+ PRÁTICA" ligada c={cor('semNota').fundo} />
+            <Ficha texto="+ LEITURA" ligada />
+            <Ficha texto="+ QUIZ" ligada />
+            <Ficha texto="+ PRÁTICA" ligada />
           </View>
         </View>
       )}
@@ -118,9 +132,9 @@ export default function IlustracaoGuia({ tipo }: { tipo: Tipo }) {
           <View style={styles.celular}>
             <View style={styles.celularTopo} />
             <View style={styles.celularCartao}>
-              <Linha w="70%" c={cor('conteudo').fundo} />
-              <Linha w="95%" />
-              <Linha w="80%" />
+              <Linha w="70%" c={colors.primary} />
+              <Linha w="95%" c={colors.trilhaNoBloqueadoFace} />
+              <Linha w="80%" c={colors.trilhaNoBloqueadoFace} />
             </View>
             <View style={styles.aoVivo}><AppText style={styles.aoVivoTexto}>AO VIVO</AppText></View>
           </View>
@@ -132,14 +146,14 @@ export default function IlustracaoGuia({ tipo }: { tipo: Tipo }) {
           <View style={styles.linha}>
             <Ficha texto="Rascunho" />
             <Seta />
-            <Ficha texto="Revisão" ligada c={cor('semNota').fundo} />
+            <Ficha texto="Revisão" ligada c={tema.alertaTexto} />
             <Seta />
-            <Ficha texto="Publicada" ligada c={cor('pergunta').fundo} />
+            <Ficha texto="Publicada" ligada />
           </View>
           <View style={styles.linha}>
-            <View style={[styles.no, { backgroundColor: cor('pergunta').fundo }]}><Ionicons name="checkmark" size={18} color={colors.white} /></View>
+            <View style={[styles.no, { backgroundColor: colors.primary }]}><Ionicons name="checkmark" size={18} color={colors.primaryDark} /></View>
             <Seta />
-            <View style={[styles.no, { backgroundColor: '#D7DCD9' }]}><Ionicons name="lock-closed" size={16} color="#8A978F" /></View>
+            <View style={[styles.no, { backgroundColor: tema.chipBorda }]}><Ionicons name="lock-closed" size={16} color={tema.textoSuave} /></View>
             <AppText style={styles.tipo}>a Trilha 2 abre quando a 1 termina</AppText>
           </View>
         </View>
@@ -148,32 +162,34 @@ export default function IlustracaoGuia({ tipo }: { tipo: Tipo }) {
   );
 }
 
-const styles = StyleSheet.create({
-  caixa: { backgroundColor: '#F7FAF2', borderRadius: 18, borderWidth: 1.5, borderColor: '#CFE8B5', padding: 14, minHeight: 168, justifyContent: 'center' },
+const criarEstilos = (t: TemaPainel) => ({
+  caixa: { backgroundColor: t.superficieSuave, borderRadius: 16, borderWidth: t.borda, borderColor: t.cardBorda, padding: 16, minHeight: 168, justifyContent: 'center' },
   coluna: { gap: 8 },
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   linhaTopo: { flexDirection: 'row', gap: 12 },
-  rotulo: { fontFamily: typography.semiBold, fontSize: 11, color: '#6B7A72' },
-  campo: { borderWidth: 2, borderColor: '#D7DCD9', backgroundColor: colors.white, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
-  campoTexto: { fontFamily: typography.semiBold, fontSize: 13, color: colors.primaryDark },
-  ficha: { borderWidth: 2, borderColor: '#D7DCD9', backgroundColor: colors.white, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5 },
-  fichaTexto: { fontFamily: typography.bold, fontSize: 11, color: colors.primaryDark },
-  moduloLinha: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.white, borderWidth: 2, borderColor: '#D7DCD9', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
-  tracejado: { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: '#389438' },
-  moduloNumero: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#59C059', alignItems: 'center', justifyContent: 'center' },
-  moduloNumeroTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.white },
-  setas: { fontFamily: typography.bold, fontSize: 13, color: '#8A978F' },
-  tipo: { fontFamily: typography.regular, fontSize: 11, color: '#6B7A72', flexShrink: 1 },
+  rotulo: { fontFamily: typography.semiBold, fontSize: 11, color: t.textoSuave },
+  campo: { borderWidth: t.borda, borderColor: t.campoBorda, backgroundColor: t.card, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7 },
+  campoTexto: { fontFamily: typography.semiBold, fontSize: 13, color: t.texto },
+  ficha: { borderWidth: t.borda, borderColor: t.chipBorda, backgroundColor: t.card, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5 },
+  fichaTexto: { fontFamily: typography.bold, fontSize: 11, color: t.texto },
+  moduloLinha: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.card, borderWidth: t.borda, borderColor: t.cardBorda, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
+  tracejado: { borderStyle: 'dashed', backgroundColor: 'transparent', borderColor: t.destaqueTexto },
+  moduloNumero: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  moduloNumeroTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark },
+  tipo: { fontFamily: typography.regular, fontSize: 11, color: t.textoSuave, flexShrink: 1 },
   miniBloco: { borderWidth: 2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, marginTop: 4 },
   miniEncaixe: { position: 'absolute', top: -7, left: 14, width: 22, height: 7, borderTopLeftRadius: 5, borderTopRightRadius: 5, borderWidth: 2, borderBottomWidth: 0 },
   miniBlocoTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.white },
-  paleta: { gap: 6, alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 2, borderColor: '#D7DCD9', padding: 8 },
+  paleta: { gap: 6, alignItems: 'center', backgroundColor: t.card, borderRadius: 12, borderWidth: t.borda, borderColor: t.cardBorda, padding: 8 },
   pecaPaleta: { width: 44, height: 26, borderRadius: 8, borderWidth: 2, borderBottomWidth: 4, alignItems: 'center', justifyContent: 'center' },
   pecaTexto: { fontFamily: typography.bold, fontSize: 14, color: colors.white },
-  celular: { width: 96, height: 138, borderRadius: 16, borderWidth: 3, borderColor: colors.primaryDark, backgroundColor: colors.white, padding: 8, gap: 8, alignItems: 'center' },
-  celularTopo: { width: 28, height: 4, borderRadius: 2, backgroundColor: '#D7DCD9' },
-  celularCartao: { width: '100%', gap: 6, backgroundColor: '#EAF2FF', borderRadius: 10, padding: 8 },
-  aoVivo: { backgroundColor: '#59C059', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
-  aoVivoTexto: { fontFamily: typography.bold, fontSize: 9, color: colors.white },
+  celular: { width: 96, height: 138, borderRadius: 16, borderWidth: 3, borderColor: t.texto, backgroundColor: colors.white, padding: 8, gap: 8, alignItems: 'center' },
+  celularTopo: { width: 28, height: 4, borderRadius: 2, backgroundColor: TEMAS_CELULAR.trilho },
+  celularCartao: { width: '100%', gap: 6, backgroundColor: TEMAS_CELULAR.cartao, borderRadius: 10, padding: 8 },
+  aoVivo: { backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
+  aoVivoTexto: { fontFamily: typography.bold, fontSize: 9, color: colors.primaryDark },
   no: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-});
+}) as const;
+
+// O "celular" do desenho imita o app do adolescente, que é sempre claro: não segue o tema do painel.
+const TEMAS_CELULAR = { trilho: colors.trilhaNoBloqueadoBorda, cartao: colors.exercicioAcertoFundo };

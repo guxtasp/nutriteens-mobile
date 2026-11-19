@@ -228,17 +228,17 @@ export default function ModeracaoScreen() {
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  item: { borderWidth: 2, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 6 },
+  item: { borderWidth: t.borda, borderColor: t.cardBorda, borderRadius: 14, padding: 12, gap: 6 },
   topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   denunciado: { fontFamily: typography.bold, fontSize: 14, color: t.texto },
   quando: { fontFamily: typography.regular, fontSize: 11, color: t.textoSuave, marginLeft: 'auto' },
   motivo: { fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo, lineHeight: 19 },
   rotulo: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
   opcoes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  opcao: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 2, borderColor: t.cardBorda, backgroundColor: t.card, justifyContent: 'center' },
+  opcao: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: t.borda, borderColor: t.cardBorda, backgroundColor: t.card, justifyContent: 'center' },
   opcaoOn: { backgroundColor: t.botaoFundo, borderColor: t.texto },
   opcaoTexto: { fontFamily: typography.bold, fontSize: 12, color: t.texto },
-  input: { minHeight: 64, borderWidth: 2, borderColor: t.cardBorda, borderRadius: 12, padding: 10, fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo, textAlignVertical: 'top' },
+  input: { minHeight: 64, borderWidth: t.borda, borderColor: t.campoBorda, borderRadius: 12, padding: 10, fontFamily: typography.regular, fontSize: 13, color: t.textoCorpo, textAlignVertical: 'top' },
   erro: { fontFamily: typography.regular, fontSize: 12, color: t.erro },
   resolucao: { backgroundColor: t.superficieSuave, borderRadius: 12, padding: 10, gap: 3 },
   resolucaoTitulo: { fontFamily: typography.bold, fontSize: 13, color: t.texto },

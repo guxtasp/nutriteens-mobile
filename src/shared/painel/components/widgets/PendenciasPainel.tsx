@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../../ui/AppText';
 import { typography } from '../../../theme/typography';
+import { colors } from '../../../theme/colors';
 import { formatarNumero } from '../../formatadores';
 import type { IconeNome } from '../../types';
 import type { TemaPainel } from '../../tema/paletas';
@@ -22,7 +23,7 @@ export function PendenciasPainel({ itens }: { itens: Pendencia[] }) {
   if (abertas.length === 0) {
     return (
       <View style={styles.tudoEmDia}>
-        <Ionicons name="checkmark-circle" size={32} color={tema.destaque} />
+        <Ionicons name="checkmark-circle" size={32} color={tema.destaqueTexto} />
         <AppText style={styles.tudoTitulo}>Tudo em dia</AppText>
         <AppText style={styles.tudoTexto}>Nenhuma aprovação ou pedido esperando por você agora.</AppText>
       </View>
@@ -39,7 +40,7 @@ export function PendenciasPainel({ itens }: { itens: Pendencia[] }) {
           style={styles.linha}
         >
           <View style={styles.icone}>
-            <Ionicons name={p.icone} size={18} color={tema.alerta} />
+            <Ionicons name={p.icone} size={18} color={tema.alertaTexto} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <AppText style={styles.titulo} numberOfLines={1}>
@@ -60,12 +61,12 @@ export function PendenciasPainel({ itens }: { itens: Pendencia[] }) {
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  linha: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, padding: 10, borderRadius: 14, backgroundColor: t.superficieSuave } as const,
+  linha: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, padding: 12, borderRadius: 12, backgroundColor: t.superficieSuave, borderWidth: t.borda, borderColor: t.cardBorda } as const,
   icone: { width: 36, height: 36, borderRadius: 12, backgroundColor: t.alertaSuave, alignItems: 'center', justifyContent: 'center' } as const,
   titulo: { fontFamily: typography.bold, fontSize: 13, color: t.texto } as const,
-  detalhe: { fontFamily: typography.regular, fontSize: 11, color: t.textoSuave, marginTop: 1 } as const,
+  detalhe: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, marginTop: 1 } as const,
   contador: { minWidth: 28, height: 28, paddingHorizontal: 8, borderRadius: 14, backgroundColor: t.alerta, alignItems: 'center', justifyContent: 'center' } as const,
-  contadorTexto: { fontFamily: typography.bold, fontSize: 12, color: '#1B1B1B' } as const,
+  contadorTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.textOnLight } as const,
   tudoEmDia: { alignItems: 'center', gap: 4, paddingVertical: 20 } as const,
   tudoTitulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto } as const,
   tudoTexto: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave, textAlign: 'center' } as const,

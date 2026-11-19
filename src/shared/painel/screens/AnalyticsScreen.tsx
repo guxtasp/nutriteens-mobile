@@ -1,9 +1,12 @@
 // src/shared/painel/screens/AnalyticsScreen.tsx
 // Analytics de utilização (Admin e Nutricionista). Só agregados; sem dados pessoais.
+// Duas abas: Visão geral (uso do dia a dia, funis, eficácia) e Jornada (uso ao longo do tempo).
 import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { PainelLayout } from '../PainelLayout';
 import { IntroSecao } from '../components/IntroSecao';
+import { AbasPainel } from '../components/AbasPainel';
+import { JornadaAnalytics } from './JornadaAnalytics';
 import { CartaoKpi } from '../components/CartaoKpi';
 import { CartaoSecao } from '../components/CartaoSecao';
 import { Colunas } from '../components/Colunas';
@@ -32,6 +35,8 @@ function pct(parte: number, base: number): string {
 export default function AnalyticsScreen({ config }: { config: ConfigPainel }) {
   const styles = useEstilos(criarEstilos);
   const [escolha, setEscolha] = useState<EscolhaPeriodo>({ tipo: 'dias', dias: 30 });
+  // "Jornada": uso progressivo (estágios, turmas, adoção, horários); carrega só quando aberta
+  const [aba, setAba] = useState<'geral' | 'jornada'>('geral');
   const intervalo = useMemo(
     () => (escolha.tipo === 'dias' ? ultimosDias(escolha.dias) : escolha.intervalo),
     [escolha]
@@ -53,7 +58,17 @@ export default function AnalyticsScreen({ config }: { config: ConfigPainel }) {
       subtitulo="Uso do aplicativo e se ele está funcionando (dados agregados)"
       acao={<FiltroPeriodoPersonalizado valor={escolha} onChange={setEscolha} />}
     >
-      {erro ? (
+      <AbasPainel<'geral' | 'jornada'>
+        ativa={aba}
+        onChange={setAba}
+        abas={[
+          { chave: 'geral', label: 'Visão geral', icone: 'stats-chart-outline' },
+          { chave: 'jornada', label: 'Jornada e progressão', icone: 'trending-up-outline' },
+        ]}
+      />
+      {aba === 'jornada' ? (
+        <JornadaAnalytics intervalo={intervalo} />
+      ) : erro ? (
         <EstadoErro mensagem={erro} onTentar={recarregar} />
       ) : carregando && !dados ? (
         <EstadoCarregando />
@@ -295,7 +310,7 @@ export default function AnalyticsScreen({ config }: { config: ConfigPainel }) {
 }
 
 const criarEstilos = (t: TemaPainel) => ({
-  aviso: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14 },
+  aviso: { backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 14 },
   secaoTitulo: { fontFamily: typography.bold, fontSize: 15, color: t.texto },
   secaoSub: { fontFamily: typography.bold, fontSize: 13, color: t.textoSuave },
   avisoTexto: { fontFamily: typography.regular, fontSize: 12, color: t.textoSuave },

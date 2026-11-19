@@ -103,10 +103,10 @@ export function EvolucaoParticipante({ id }: { id: string }) {
 
 const criarEstilos = (t: TemaPainel) => ({
   texto: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave } as const,
-  aviso: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: 2, borderColor: t.cardBorda, padding: 14 } as const,
+  aviso: { fontFamily: typography.regular, fontSize: 13, color: t.textoSuave, backgroundColor: t.card, borderRadius: t.cardRaio, borderWidth: t.borda, borderColor: t.cardBorda, padding: 14 } as const,
   tendencia: { fontFamily: typography.medium, fontSize: 12, marginTop: 8 } as const,
   bom: { color: t.selos.ok.texto } as const,
-  atencao: { color: t.alerta } as const,
+  atencao: { color: t.alertaTexto } as const,
   neutro: { color: t.textoSuave } as const,
   linha: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.linhaSuave, flexWrap: 'wrap' } as const,
   data: { fontFamily: typography.bold, fontSize: 12, color: t.textoSuave, minWidth: 72 } as const,
