@@ -7,18 +7,28 @@ import { typography } from '../theme/typography';
 import { useTypewriter } from '../hooks/useTyperwriter';
 
 interface SpeechBubbleProps {
-  text: string;
+  text?: string;
   typewriter?: boolean; // se false, mostra o texto inteiro direto (sem digitação)
   onFinishTyping?: () => void;
   style?: object;
   // 'left': balão ao lado do Bróxis (mascote à esquerda, mesma linha) — usar no EBIA e Recordatório.
   // 'bottom': balão abaixo do Bróxis (mascote em cima, layout empilhado).
   tailPosition?: 'left' | 'bottom';
+  // Conteúdo próprio no lugar de `text` (ex.: duas falas com pesos diferentes no mesmo balão).
+  // Com children, não há digitação: quem chama controla o que aparece.
+  children?: React.ReactNode;
 }
 
 // Bolha de fala do Bróxis. Quando `typewriter` está ativo, o texto some
 // gradualmente como se estivesse sendo digitado; tocar na bolha pula pro final.
-export function SpeechBubble({ text, typewriter = true, onFinishTyping, style, tailPosition = 'bottom' }: SpeechBubbleProps) {
+export function SpeechBubble({
+  text = '',
+  typewriter = true,
+  onFinishTyping,
+  style,
+  tailPosition = 'bottom',
+  children,
+}: SpeechBubbleProps) {
   const { displayedText, isDone, skipToEnd } = useTypewriter(text, {
     onDone: onFinishTyping,
   });
@@ -32,9 +42,11 @@ export function SpeechBubble({ text, typewriter = true, onFinishTyping, style, t
       transition={{ type: 'timing', duration: 250 }}
       style={[styles.bubble, style]}
     >
+      {children ?? (
         <Pressable onPress={typewriter && !isDone ? skipToEnd : undefined}>
           <AppText style={styles.text}>{shownText}</AppText>
         </Pressable>
+      )}
       <View style={tailPosition === 'left' ? styles.tailLeft : styles.tailBottom} />
     </MotiView>
   );
@@ -45,7 +57,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#D9D9D9',
+    borderColor: colors.bordaBalao,
     paddingHorizontal: 20,
     paddingVertical: 16,
     maxWidth: 320,
@@ -69,7 +81,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 10,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#D9D9D9',
+    borderTopColor: colors.bordaBalao,
   },
   tailLeft: {
     position: 'absolute',
@@ -83,6 +95,6 @@ const styles = StyleSheet.create({
     borderRightWidth: 10,
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
-    borderRightColor: '#D9D9D9',
+    borderRightColor: colors.bordaBalao,
   },
 });

@@ -15,6 +15,8 @@ import { OpcaoSimNao } from '../components/OpcaoSimNao';
 import { useEbiaPergunta } from '../hooks/useEbiaPergunta';
 import { colors } from '../../../../../shared/theme/colors';
 import { typography } from '../../../../../shared/theme/typography';
+import { layout } from '../../../../../shared/theme/layout';
+import { respiroInferior } from '../../../../../shared/utils/areaSegura';
 
 export default function EbiaPerguntaScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
@@ -59,7 +61,7 @@ export default function EbiaPerguntaScreen({ navigation, route }: any) {
         fullWidth
         disabled={selecionado === null || salvando}
         onPress={avancar}
-        style={styles.continueButton}
+        style={[styles.continueButton, { marginBottom: respiroInferior(insets.bottom, layout.rodapeBotaoMargemInferior) }]}
       />
     </View>
   );
@@ -93,8 +95,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
+  // margem de baixo vem de respiroInferior (soma a barra do Android); o 70 virou a base em layout
   continueButton: {
     marginTop: 'auto',
-    marginBottom: 70,
   },
 });

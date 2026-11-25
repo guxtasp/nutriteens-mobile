@@ -6,8 +6,7 @@
 //  - rede ou Open Food Facts fora do ar        -> "tentar de novo" (NÃO pede cadastro: não sabemos se existe)
 //  - código ilegível (dígito verificador)      -> escanear de novo
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,6 +14,8 @@ import type { AdolescenteStackParamList } from '../../../../navigation/Adolescen
 import { AppText } from '../../../../shared/ui/AppText';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
+import { TelaBase } from '../../../../shared/ui/TelaBase';
+import { RodapeAcoes } from '../../../../shared/ui/RodapeAcoes';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { AlternativasLista } from '../../trocas/components/TrocaLista';
@@ -51,10 +52,20 @@ export default function ResultadoScannerScreen() {
   const novaLeitura = useCallback(() => navigation.goBack(), [navigation]);
 
   return (
-    <SafeAreaView style={styles.tela}>
-      <ScreenHeader titulo="Resultado" onVoltar={novaLeitura} />
-
-      <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
+    // rodapé no fluxo (RodapeAcoes): antes era absoluto e ficava atrás da barra de 3 botões do Android
+    <TelaBase
+      fundo={colors.white}
+      cabecalho={<ScreenHeader titulo="Resultado" onVoltar={novaLeitura} />}
+      rolavel
+      conteudoStyle={styles.conteudo}
+      rodape={
+        res !== null ? (
+          <RodapeAcoes>
+            <AppButton label="Escanear outro produto" onPress={novaLeitura} />
+          </RodapeAcoes>
+        ) : undefined
+      }
+    >
         {res === null && <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 48 }} />}
 
         {res?.status === 'encontrado' && <Encontrado produto={res.produto} />}
@@ -110,14 +121,7 @@ export default function ResultadoScannerScreen() {
             />
           </View>
         )}
-      </ScrollView>
-
-      {res !== null && (
-        <View style={styles.rodape}>
-          <AppButton label="Escanear outro produto" onPress={novaLeitura} />
-        </View>
-      )}
-    </SafeAreaView>
+    </TelaBase>
   );
 }
 
@@ -222,9 +226,7 @@ function Alternativas({ categoria }: { categoria: NonNullable<ProdutoScanner['ca
 }
 
 const styles = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: colors.white },
-  conteudo: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120 },
-  rodape: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 20, backgroundColor: colors.white },
+  conteudo: { paddingHorizontal: 20, paddingTop: 8 },
   bloco: { alignItems: 'center', gap: 14, marginTop: 24 },
   tituloBloco: { fontFamily: typography.bold, fontSize: 17, color: colors.primaryDark, textAlign: 'center' },
   texto: { fontFamily: typography.regular, fontSize: 14, lineHeight: 20, color: '#5A6B63' },

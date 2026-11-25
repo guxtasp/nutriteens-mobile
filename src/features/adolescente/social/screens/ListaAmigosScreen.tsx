@@ -18,6 +18,7 @@ import { turma, HOJE } from '../theme/turma';
 import AbasSegmentadas from '../components/AbasSegmentadas';
 import { AvatarSocialView } from '../components/AvatarSocialView';
 import { EnviarCartinhaSheet } from '../components/EnviarCartinhaSheet';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Nav = NativeStackNavigationProp<AdolescenteStackParamList>;
 
@@ -36,6 +37,8 @@ function inicial(apelido: string): string {
 }
 
 export default function ListaAmigosScreen() {
+  // edges só em cima: o fim da rolagem soma a barra do Android (ver shared/utils/areaSegura.ts)
+  const respiroFim = useRespiroInferior(40);
   const navigation = useNavigation<Nav>();
   const [busca, setBusca] = useState('');
   const [buscaAplicada, setBuscaAplicada] = useState('');
@@ -177,7 +180,7 @@ export default function ListaAmigosScreen() {
           onEndReached={carregarMais}
           onEndReachedThreshold={0.6}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={estilos.lista}
+          contentContainerStyle={[estilos.lista, { paddingBottom: respiroFim }]}
           ListFooterComponent={
             carregandoMais ? <AppText style={estilos.rodape}>Carregando mais amigos...</AppText> : null
           }
@@ -194,7 +197,7 @@ const estilos = StyleSheet.create({
   topo: { paddingHorizontal: 20, gap: 12, marginBottom: 6 },
   busca: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, paddingHorizontal: 14, borderRadius: 16, backgroundColor: colors.white, borderWidth: 1, borderColor: turma.borda },
   buscaInput: { flex: 1, fontFamily: typography.regular, fontSize: 15, color: colors.primaryDark, paddingVertical: 8 },
-  lista: { paddingHorizontal: 20, paddingBottom: 40 },
+  lista: { paddingHorizontal: 20 },
   letra: { fontFamily: typography.bold, fontSize: 14, color: turma.textoSuave, marginTop: 16, marginBottom: 6 },
   linha: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, paddingHorizontal: 12, marginBottom: 8, borderRadius: 18, backgroundColor: colors.white, borderWidth: 1, borderColor: turma.borda },
   anel: { padding: 2, borderRadius: 26, borderWidth: 2, borderColor: 'transparent' },

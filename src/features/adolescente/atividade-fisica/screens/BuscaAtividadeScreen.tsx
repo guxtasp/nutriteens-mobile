@@ -8,6 +8,7 @@ import type { AdolescenteStackParamList } from '../../../../navigation/Adolescen
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { layout } from '../../../../shared/theme/layout';
 import { buscarAtividades, buscarContextoAtividadeHoje, AtividadeCatalogo } from '../services/atividadeService';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { formatarDataISO } from '../../../../shared/utils/data';
@@ -124,7 +125,8 @@ export default function BuscaAtividadeScreen() {
             autoFocus
           />
         </View>
-        <Pressable onPress={() => navigation.goBack()}>
+        {/* cabeçalho de busca (padrão "campo + Cancelar"), mantido de propósito; alvo de toque ≥ 44 */}
+        <Pressable onPress={() => navigation.goBack()} style={styles.cancelarToque} accessibilityRole="button" accessibilityLabel="Cancelar e voltar">
           <AppText style={styles.cancelar}>Cancelar</AppText>
         </Pressable>
       </View>
@@ -161,7 +163,7 @@ export default function BuscaAtividadeScreen() {
       {mostrarResultados && (
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: layout.folgaFinalRolagem }}
           keyboardShouldPersistTaps="handled"
         >
           {lista.map((atividade) => (
@@ -262,6 +264,7 @@ const styles = StyleSheet.create({
   },
   buscaTexto: { flex: 1, fontFamily: typography.regular, fontSize: 14, color: colors.primaryDark },
   cancelar: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
+  cancelarToque: { minHeight: layout.alvoToqueMin, justifyContent: 'center' },
   filtrosBloco: { paddingHorizontal: 20, paddingBottom: 4 },
   limparFiltros: { fontFamily: typography.bold, fontSize: 13, color: colors.primaryDark, textDecorationLine: 'underline', marginTop: 12 },
   buscasRecentesBloco: { paddingHorizontal: 20, gap: 10 },

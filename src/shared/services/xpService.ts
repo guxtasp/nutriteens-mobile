@@ -11,6 +11,8 @@ import { supabase } from '../../lib/supabase';
  *   missao_diaria     referência = id de `missoes_diarias`
  *   missao_periodica  referência = `<codigo>|<AAAA-MM-DD do início do período>`
  *   marco_sequencia   referência = data de hoje (AAAA-MM-DD)
+ *   troca_avaliada    referência = id da troca (contou como foi uma troca guardada; 1x por troca)
+ *   teste_nutriente   referência = chave do nutriente (teste rápido de vitaminas; 1x por nutriente)
  */
 export type OrigemXp =
   | 'licao'
@@ -18,7 +20,9 @@ export type OrigemXp =
   | 'bonus_trilha'
   | 'missao_diaria'
   | 'missao_periodica'
-  | 'marco_sequencia';
+  | 'marco_sequencia'
+  | 'troca_avaliada'
+  | 'teste_nutriente';
 
 /**
  * Pede ao servidor para conceder o XP de uma ação. Devolve o XP concedido agora

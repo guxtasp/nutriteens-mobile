@@ -23,6 +23,8 @@ export type IngredienteCasa = {
 };
 
 const idsDe = (lista: IngredienteCasa[]): Set<string> => new Set(lista.flatMap((i) => i.ids ?? [i.id]));
+/** ids que a despensa cobre (para pontuar uma receita avulsa, ex.: nas salvas). */
+export const idsDaDespensa = idsDe;
 
 type Dif = 'FACIL' | 'MEDIO' | 'DIFICIL' | string | null;
 

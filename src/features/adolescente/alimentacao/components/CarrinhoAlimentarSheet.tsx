@@ -7,6 +7,7 @@ import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { ItemCarrinhoAlimento } from '../types/alimentacao';
 import SeletorDiaRegistro from '../../_shared/components/SeletorDiaRegistro';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Props = {
   visivel: boolean;
@@ -25,6 +26,8 @@ type Props = {
 export default function CarrinhoAlimentosSheet({
   visivel, itens, onFechar, onIncrementar, onDecrementar, onRemover, onRegistrar, registrando, diaRegistro, onMudarDia,
 }: Props) {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(32);
   const [montado, setMontado] = useState(visivel);
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -51,13 +54,13 @@ export default function CarrinhoAlimentosSheet({
   if (!montado) return null;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={onFechar}>
+    <Modal navigationBarTranslucent statusBarTranslucent visible transparent animationType="none" onRequestClose={onFechar}>
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onFechar}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
       </Pressable>
 
       <Animated.View style={[styles.sheetWrapper, { transform: [{ translateY: sheetTranslateY }] }]}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, { paddingBottom: respiroFolha }]} onPress={() => {}}>
           <View style={styles.puxador} />
 
           <View style={styles.cabecalho}>
@@ -111,7 +114,7 @@ export default function CarrinhoAlimentosSheet({
 const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheetWrapper: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  sheet: { backgroundColor: colors.white ?? '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32 },
+  sheet: { backgroundColor: colors.white ?? '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
   puxador: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D9E2E8', alignSelf: 'center', marginBottom: 16 },
   cabecalho: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 6 },

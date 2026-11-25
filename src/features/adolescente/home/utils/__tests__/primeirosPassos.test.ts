@@ -75,3 +75,20 @@ describe('dentroDaJanelaPrimeirosPassos', () => {
     expect(dentroDaJanelaPrimeirosPassos('2026-02-31', '2026-03-01')).toBe(false);
   });
 });
+
+describe('passosRecemFeitos e falaPrimeirosPassos', () => {
+  const { passosRecemFeitos, falaPrimeirosPassos } = require('../primeirosPassos');
+  it('só aponta o que virou feito agora', () => {
+    const antes = [{ id: 'agua', feito: true }, { id: 'atividade', feito: false }, { id: 'refeicao', feito: false }];
+    const depois = [{ id: 'agua', feito: true }, { id: 'atividade', feito: true }, { id: 'refeicao', feito: false }];
+    expect(passosRecemFeitos(antes, depois)).toEqual(['atividade']);
+    expect(passosRecemFeitos(null, depois)).toEqual([]);
+    expect(passosRecemFeitos(depois, depois)).toEqual([]);
+  });
+  it('fala comemora sem cobrar', () => {
+    expect(falaPrimeirosPassos({ feitos: 4, total: 5, completo: false }, true)).toMatch(/Só mais um/);
+    expect(falaPrimeirosPassos({ feitos: 2, total: 5, completo: false }, true)).toMatch(/Faltam 3/);
+    expect(falaPrimeirosPassos({ feitos: 0, total: 5, completo: false }, false)).toMatch(/coisinha/);
+    expect(falaPrimeirosPassos({ feitos: 5, total: 5, completo: true }, false)).toMatch(/orgulhoso/);
+  });
+});

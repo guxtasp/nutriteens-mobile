@@ -1,57 +1,67 @@
 // src/features/adolescente/alimentacao/screens/SugestoesAlimentaresScreen.tsx
-// "Sugestões alimentares — Escolha a categoria" (RF015). Tocar numa categoria mostra as alternativas
-// (ícone + nome).
-import React, { useCallback, useState } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+// Hub de trocas "Bateu vontade de quê?" (RF015 + HANDOFF_REBRAND fase 3.1): ideia do dia,
+// grade de categorias e "Minhas ideias pra testar". Tocar numa categoria abre o baralho de cartas.
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
-import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdolescenteStackParamList } from '../../../../navigation/AdolescenteNavigator';
 import { AppText } from '../../../../shared/ui/AppText';
 import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
 import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import CartaoHub from '../components/CartaoHub';
-import { AlternativasLista } from '../../trocas/components/TrocaLista';
-import { listarTrocas } from '../../trocas/services/trocasService';
-import { ICONE_CATEGORIA } from '../../trocas/utils/iconesTrocas';
-import { CATEGORIAS_TROCA, CategoriaTroca, CHAMADA_CATEGORIA, ROTULO_CATEGORIA, ordenarTrocas, semDestinoRepetido, Troca } from '../../trocas/utils/trocas';
+import TileCategoria from '../../trocas/components/TileCategoria';
+import { useTrocasGuardadas } from '../../trocas/hooks/useTrocasGuardadas';
+import { ICONE_CATEGORIA, iconeDoDestino } from '../../trocas/utils/iconesTrocas';
+import { escolherIdeiaDoDia } from '../../trocas/utils/avaliacaoTrocas';
+import {
+  CATEGORIAS_TROCA,
+  CategoriaTroca,
+  noLugarDe,
+  ROTULO_CATEGORIA,
+  semDestinoRepetido,
+} from '../../trocas/utils/trocas';
 
 type Nav = NativeStackNavigationProp<AdolescenteStackParamList, 'SugestoesAlimentares'>;
 type Rota = RouteProp<AdolescenteStackParamList, 'SugestoesAlimentares'>;
 
-function contarOpcoes(trocas: Troca[] | null, c: CategoriaTroca): number {
-  return trocas ? semDestinoRepetido(trocas.filter((t) => t.categoria === c)).length : 0;
+// giro leve alternado dos tiles (graus), na ordem de CATEGORIAS_TROCA
+const GIROS = [-2, 2, 1.5, -1.5, -1, 1, 0];
+
+function hojeLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export default function SugestoesAlimentaresScreen() {
   const alturaBarra = useAlturaBarraAbas();
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<Rota>();
-  const [categoria, setCategoria] = useState<CategoriaTroca | null>(params?.categoria ?? null);
-  const [trocas, setTrocas] = useState<Troca[] | null>(null);
-  const [erro, setErro] = useState(false);
+  const reduzirMovimento = useReduzirMovimento();
   const [menuAberto, setMenuAberto] = useState(false);
+  const { trocas, guardadas, carregado } = useTrocasGuardadas();
 
-  // vindo do retorno da refeição: já abre a categoria daquele item
-  React.useEffect(() => { if (params?.categoria) setCategoria(params.categoria); }, [params?.categoria]);
+  // vindo do retorno da refeição ou do scanner: abre direto o baralho daquela categoria
+  useEffect(() => {
+    if (params?.categoria) {
+      const categoria = params.categoria;
+      navigation.setParams({ categoria: undefined });
+      navigation.navigate('TrocaBaralho', { categoria });
+    }
+  }, [params?.categoria, navigation]);
 
-  useFocusEffect(
-    useCallback(() => {
-      let ativo = true;
-      listarTrocas()
-        .then((l) => { if (ativo) { setTrocas(l); setErro(false); } })
-        .catch((e) => { console.error('Erro ao carregar sugestões:', e); if (ativo) setErro(true); });
-      return () => { ativo = false; };
-    }, [])
-  );
+  const ideia = useMemo(() => escolherIdeiaDoDia(trocas, hojeLocal()), [trocas]);
 
-  function voltar() {
-    if (categoria) setCategoria(null);
-    else navigation.goBack();
+  function quantidade(c: CategoriaTroca): number | null {
+    if (!carregado) return null;
+    return semDestinoRepetido(trocas.filter((t) => t.categoria === c)).length;
   }
 
   function handleSelecionarAcao(opcao: 'alimentacao' | 'agua' | 'atividade') {
@@ -61,50 +71,81 @@ export default function SugestoesAlimentaresScreen() {
     else navigation.navigate('TipoRefeicao');
   }
 
-  const opcoes = categoria
-    ? semDestinoRepetido(ordenarTrocas((trocas ?? []).filter((t) => t.categoria === categoria)))
-    : [];
+  const nomesGuardadas = guardadas.slice(0, 3).map((g) => g.troca.destinoNome).join(', ');
 
   return (
     <SafeAreaView style={styles.tela} edges={['top']}>
-      <ScreenHeader
-        titulo={categoria ? ROTULO_CATEGORIA[categoria] : 'Sugestões alimentares'}
-        subtitulo={categoria ? 'Que tal estas opções?' : 'Escolha a categoria'}
-        onVoltar={voltar}
-      />
+      <ScreenHeader titulo="Trocas" subtitulo="Ideias pra variar o lanche" onVoltar={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={[styles.conteudo, { paddingBottom: alturaBarra + 24 }]} showsVerticalScrollIndicator={false}>
-        {!categoria ? (
-          CATEGORIAS_TROCA.map((c, i) => {
-            const n = contarOpcoes(trocas, c);
-            return (
-              <CartaoHub
-                key={c}
-                tags={n > 0 ? ['TROCAS', `${n} ${n === 1 ? 'OPÇÃO' : 'OPÇÕES'}`] : ['TROCAS']}
-                titulo={ROTULO_CATEGORIA[c]}
-                subtitulo={CHAMADA_CATEGORIA[c]}
-                icone={ICONE_CATEGORIA[c]}
-                onPress={() => setCategoria(c)}
-                atraso={i * 70}
-              />
-            );
-          })
-        ) : (
-          <MotiView key={categoria} from={{ opacity: 0, translateX: 24 }} animate={{ opacity: 1, translateX: 0 }} transition={{ type: 'timing', duration: 280 }}>
-            <AppText style={styles.chamadaDetalhe}>{CHAMADA_CATEGORIA[categoria]}</AppText>
-            {trocas === null && !erro && <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />}
-            {erro && <AppText style={styles.aviso}>Não deu pra carregar as sugestões agora. Tenta de novo daqui a pouco.</AppText>}
-            {trocas !== null && !erro && opcoes.length === 0 && (
-              <AppText style={styles.aviso}>Ainda não temos sugestões nessa categoria. Em breve tem novidade!</AppText>
-            )}
-            {opcoes.length > 0 && (
-              <AlternativasLista
-                categoria={categoria}
-                itens={opcoes.map((t) => ({ id: t.id, nome: t.destinoNome, explicacao: t.frase, dica: t.dica, nutrientes: t.nutrientes, rapida: t.rapida }))}
-              />
-            )}
+      <ScrollView
+        contentContainerStyle={[styles.conteudo, { paddingBottom: alturaBarra + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <MotiView
+          from={{ opacity: reduzirMovimento ? 1 : 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ type: 'timing', duration: 220 }}
+        >
+          <AppText style={styles.titulo} accessibilityRole="header">
+            Bateu vontade de quê?
+          </AppText>
+          <AppText style={styles.apoio}>Toca numa vontade e eu te mostro ideias pra trocar.</AppText>
+        </MotiView>
+
+        {ideia && (
+          <MotiView
+            from={{ opacity: reduzirMovimento ? 1 : 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ type: 'timing', duration: 240, delay: 80 }}
+          >
+          <CartaoHub
+            tags={['IDEIA DO DIA']}
+            corTag={colors.amareloDestaque}
+            titulo={ideia.destinoNome}
+            tituloNatural
+            subtitulo={`${noLugarDe(ideia.categoria)}. ${ideia.frase}`}
+            icone={iconeDoDestino(ideia.destinoNome)}
+            onPress={() => navigation.navigate('TrocaBaralho', { categoria: ideia.categoria, trocaInicialId: ideia.id })}
+          />
           </MotiView>
         )}
+
+        <View style={styles.grade}>
+          {CATEGORIAS_TROCA.map((c, i) => (
+            <TileCategoria
+              key={c}
+              nome={ROTULO_CATEGORIA[c]}
+              icone={ICONE_CATEGORIA[c]}
+              quantidade={quantidade(c)}
+              giro={reduzirMovimento ? 0 : GIROS[i] ?? 0}
+              // número ímpar de categorias: a última ocupa a linha inteira
+              larguraInteira={CATEGORIAS_TROCA.length % 2 === 1 && i === CATEGORIAS_TROCA.length - 1}
+              atraso={120 + i * 40}
+              reduzirMovimento={reduzirMovimento}
+              onPress={() => navigation.navigate('TrocaBaralho', { categoria: c })}
+            />
+          ))}
+        </View>
+
+        <Pressable
+          onPress={() => navigation.navigate('TrocasGuardadas')}
+          style={({ pressed }) => [styles.guardadas, pressed && styles.guardadasPressionada]}
+          accessibilityRole="button"
+          accessibilityLabel={`Minhas ideias pra testar, ${guardadas.length} guardadas`}
+        >
+          <View style={styles.guardadasIcone}>
+            <Ionicons name="bookmark-outline" size={20} color={colors.destaqueTexto} />
+          </View>
+          <View style={styles.flex}>
+            <AppText style={styles.guardadasTitulo}>Minhas ideias pra testar</AppText>
+            <AppText style={styles.guardadasTexto} numberOfLines={1}>
+              {guardadas.length === 0
+                ? 'Nenhuma guardada ainda'
+                : `${guardadas.length} ${guardadas.length === 1 ? 'guardada' : 'guardadas'} · ${nomesGuardadas}`}
+            </AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
+        </Pressable>
       </ScrollView>
 
       <QuickActionsMenu aberto={menuAberto} onFechar={() => setMenuAberto(false)} onSelecionar={handleSelecionarAcao} />
@@ -115,10 +156,31 @@ export default function SugestoesAlimentaresScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
-  tituloBloco: { flex: 1, alignItems: 'center' },
-  titulo: { fontFamily: typography.bold, fontSize: 20, color: colors.primaryDark, textAlign: 'center' },
-  subtitulo: { fontFamily: typography.regular, fontSize: 12, color: '#7A8B94', textAlign: 'center', marginTop: 2 },
-  conteudo: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120, gap: 14 },
-  chamadaDetalhe: { fontFamily: typography.regular, fontSize: 14, color: '#5A6B63', lineHeight: 20, marginBottom: 14 },
-  aviso: { fontFamily: typography.regular, fontSize: 14, color: '#5A6B63', textAlign: 'center', marginTop: 32 },
+  flex: { flex: 1 },
+  conteudo: { paddingHorizontal: 20, paddingTop: 6, gap: 16 },
+  titulo: { fontFamily: typography.bold, fontSize: 28, lineHeight: 32, color: colors.primaryDark },
+  apoio: { fontFamily: typography.regular, fontSize: 14, lineHeight: 20, color: colors.textoSuave, marginTop: 4 },
+  grade: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  guardadas: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 64,
+    borderWidth: 1.5,
+    borderColor: colors.bordaSuave,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  guardadasPressionada: { backgroundColor: colors.superficieSuave },
+  guardadasIcone: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.exercicioAcertoFundo,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guardadasTitulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
+  guardadasTexto: { fontFamily: typography.regular, fontSize: 12, color: colors.textoSuave, marginTop: 1 },
 });

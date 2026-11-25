@@ -1,4 +1,5 @@
 import {
+  recompensaDeFase,
   INTERVALO_VERIFICACAO_MS,
   deveVerificar,
   montarFilaRecompensas,
@@ -94,5 +95,34 @@ describe('tituloRecompensaInsignia', () => {
     expect(tituloRecompensaInsignia('insignia')).toBe('Nova insígnia!');
     expect(tituloRecompensaInsignia('marco')).toBe('Marco alcançado!');
     expect(tituloRecompensaInsignia('conquista')).toBe('Conquista desbloqueada!');
+  });
+});
+
+describe('recompensaDeFase', () => {
+  const fases = [
+    { fase: 'filhote' as const, titulo: 'Broxinho', xpMinimo: 0 },
+    { fase: 'jovem' as const, titulo: 'Broxis', xpMinimo: 500 },
+    { fase: 'adulto' as const, titulo: 'Super Broxis', xpMinimo: 1500 },
+  ];
+
+  it('traz a fase nova, a anterior e a posição', () => {
+    const r = recompensaDeFase(fases, 'adulto');
+    expect(r).toMatchObject({ tipo: 'fase', chave: 'fase:adulto', posicao: 3, total: 3 });
+    if (r?.tipo === 'fase') {
+      expect(r.fase.titulo).toBe('Super Broxis');
+      expect(r.anterior?.fase).toBe('jovem');
+      expect(r.proxima).toBeNull();
+      expect(r.trilha.map((f) => f.fase)).toEqual(['filhote', 'jovem', 'adulto']);
+    }
+  });
+
+  it('no meio da trilha, aponta a próxima meta', () => {
+    const r = recompensaDeFase(fases, 'jovem');
+    expect(r?.tipo === 'fase' && r.proxima?.xpMinimo).toBe(1500);
+  });
+
+  it('a primeira fase não tem anterior', () => {
+    const r = recompensaDeFase(fases, 'filhote');
+    expect(r?.tipo === 'fase' && r.anterior).toBeNull();
   });
 });

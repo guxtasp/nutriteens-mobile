@@ -21,8 +21,11 @@ import {
 } from '../utils/cartinhas';
 import { AvatarSocialView } from './AvatarSocialView';
 import CartinhaArte from './CartinhaArte';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 export default function CartinhasCard() {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(28);
   const [caixa, setCaixa] = useState<CaixaCartinhas | null>(null);
   const [aberta, setAberta] = useState(false);
   const [salvandoLembretes, setSalvandoLembretes] = useState(false);
@@ -93,10 +96,10 @@ export default function CartinhasCard() {
         <Ionicons name="chevron-forward" size={20} color={colors.primaryDark} />
       </TouchableOpacity>
 
-      <Modal visible={aberta} transparent animationType="slide" onRequestClose={fechar}>
+      <Modal navigationBarTranslucent statusBarTranslucent visible={aberta} transparent animationType="slide" onRequestClose={fechar}>
         <View style={estilos.raiz}>
           <Pressable style={estilos.fundo} onPress={fechar} accessibilityLabel="Fechar" />
-          <View style={estilos.caixa}>
+          <View style={[estilos.caixa, { paddingBottom: respiroFolha }]}>
             <View style={estilos.puxador} />
             <AppText style={estilos.caixaTitulo}>Suas cartinhas</AppText>
 
@@ -188,7 +191,7 @@ const estilos = StyleSheet.create({
 
   raiz: { flex: 1, justifyContent: 'flex-end' },
   fundo: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  caixa: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, maxHeight: '85%' },
+  caixa: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
   puxador: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: '#D5DDD8', marginBottom: 14 },
   caixaTitulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark, marginBottom: 8 },
   lista: { flexGrow: 0 },

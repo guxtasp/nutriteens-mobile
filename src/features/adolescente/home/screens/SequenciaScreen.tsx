@@ -24,6 +24,7 @@ import { calcularDesafioBroxis } from '../utils/desafioBroxis';
 import { marcosDaSequencia, numerarSemana, rotuloNivel, type MarcoSequencia } from '../utils/marcosSequencia';
 import ConquistaModal from '../components/ConquistaModal';
 import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
 
 // sombra única dos cartões (mesma do Extrato de pontos)
 const sombra = {
@@ -216,21 +217,15 @@ export default function SequenciaScreen() {
         pointerEvents="none"
       />
 
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            feedbackToque();
-            navigation.goBack();
-          }}
-          style={styles.fechar}
-          accessibilityRole="button"
-          accessibilityLabel="Fechar"
-        >
-          <Ionicons name="close" size={22} color={colors.primaryDark} />
-        </Pressable>
-        <AppText style={styles.tituloHeader}>Sequência</AppText>
-        <View style={styles.fecharEspaco} />
-      </View>
+      {/* cabeçalho padrão (antes era um X de 36 pt, abaixo do alvo de toque de 44) */}
+      <ScreenHeader
+        titulo="Sequência"
+        rotuloVoltar="Fechar"
+        onVoltar={() => {
+          feedbackToque();
+          navigation.goBack();
+        }}
+      />
 
       <ScrollView
         contentContainerStyle={styles.conteudo}
@@ -429,39 +424,11 @@ export default function SequenciaScreen() {
 
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
-  fechar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  fecharEspaco: { width: 36 },
   carregando: { marginTop: 80 },
   vazio: { alignItems: 'center', gap: 12, marginTop: 60, paddingHorizontal: 10 },
   vazioTexto: { fontSize: 14, color: colors.primaryDark, textAlign: 'center' },
   botao: { backgroundColor: colors.primary, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 12 },
   botaoTexto: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
-  tituloHeader: {
-    flex: 1,
-    textAlign: 'center',
-    fontFamily: typography.bold,
-    fontSize: 18,
-    color: colors.primaryDark,
-  },
   conteudo: { paddingHorizontal: 20, paddingBottom: 50, marginTop: 12 },
   blocoFoguinho: { alignItems: 'center', marginTop: 8, marginBottom: 22 },
   circuloFoguinhoWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 12 },

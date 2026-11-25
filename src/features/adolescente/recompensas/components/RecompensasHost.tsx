@@ -3,17 +3,21 @@ import { AppState } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { buscarCartas, marcarCartaVista } from '../../cartas/services/cartasService';
-import { buscarInsignias, marcarInsigniasVistasPorId } from '../../perfil/services/gamificacaoService';
+import { buscarFases, buscarInsignias, buscarXpTotal, marcarInsigniasVistasPorId } from '../../perfil/services/gamificacaoService';
+import { lerFaseVista, salvarFaseVista } from '../../perfil/services/faseVistaService';
+import { calcularEstadoFase, faseParaCelebrar } from '../../perfil/utils/fasesMascote';
 import { useRecompensasStore } from '../store/recompensasStore';
 import {
   deveVerificar,
   montarFilaRecompensas,
   obterRotaAtiva,
+  recompensaDeFase,
   rotaPermiteCelebrar,
   type Recompensa,
 } from '../utils/recompensas';
 import { CartaGanhaModal } from './CartaGanhaModal';
 import { InsigniaGanhaModal } from './InsigniaGanhaModal';
+import { EvolucaoBroxisModal } from './EvolucaoBroxisModal';
 
 /** Espera depois de entrar numa tela antes de comemorar (deixa a transição e a Home assentarem). */
 const ATRASO_APOS_NAVEGAR_MS = 1400;
@@ -24,7 +28,8 @@ type Props = { ativo: boolean };
  * Fica montado uma vez dentro do navegador do adolescente.
  *
  *  - DESCOBRE: ao entrar em telas calmas (e ao voltar de lição, refeição, etc.), pergunta ao
- *    servidor o que o aluno ganhou e ainda não viu (cartas, insígnias, marcos, conquistas).
+ *    servidor o que o aluno ganhou e ainda não viu (cartas, insígnias, marcos, conquistas)
+ *    e se o Broxis subiu de fase (comparando com a última fase vista, guardada no aparelho).
  *    O banco concede por trigger, então o app só "descobre" depois: a fonte da verdade é a
  *    marca `vista` (nova = ganhou e não viu).
  *  - COMEMORA: mostra uma animação por recompensa, uma de cada vez, e só então marca como vista.
@@ -61,13 +66,34 @@ export default function RecompensasHost({ ativo }: Props) {
     ultimaVerificacao.current = Date.now();
     try {
       // uma falha em um lado não pode esconder as recompensas do outro
-      const [cartas, insignias] = await Promise.allSettled([buscarCartas(userId), buscarInsignias(userId)]);
+      const [cartas, insignias, fases, xp, faseVista] = await Promise.allSettled([
+        buscarCartas(userId),
+        buscarInsignias(userId),
+        buscarFases(),
+        buscarXpTotal(userId),
+        lerFaseVista(userId),
+      ]);
       const jaVistas = new Set(useRecompensasStore.getState().vistas);
       const novas = montarFilaRecompensas(
         cartas.status === 'fulfilled' ? cartas.value : [],
         insignias.status === 'fulfilled' ? insignias.value : [],
         jaVistas,
       );
+
+      // evolução do Broxis: entra por último na fila (é o clímax)
+      if (fases.status === 'fulfilled' && xp.status === 'fulfilled') {
+        const atual = calcularEstadoFase(xp.value, fases.value).atual.fase;
+        const vista = faseVista.status === 'fulfilled' ? faseVista.value : null;
+        if (vista === null) {
+          // primeira vez neste aparelho: só registra, sem comemorar uma evolução "antiga"
+          await salvarFaseVista(userId, atual);
+        } else {
+          const celebrar = faseParaCelebrar(atual, vista, fases.value);
+          const recompensa = celebrar ? recompensaDeFase(fases.value, celebrar) : null;
+          if (recompensa && !jaVistas.has(recompensa.chave)) novas.push(recompensa);
+        }
+      }
+
       if (novas.length) enfileirar(novas);
     } catch (e) {
       console.warn('Erro ao verificar recompensas:', e);
@@ -106,7 +132,9 @@ export default function RecompensasHost({ ativo }: Props) {
     async (r: Recompensa) => {
       try {
         if (r.tipo === 'carta') await marcarCartaVista(r.carta.id);
-        else if (userId) await marcarInsigniasVistasPorId(userId, [r.insignia.id]);
+        else if (r.tipo === 'fase') {
+          if (userId) await salvarFaseVista(userId, r.fase.fase);
+        } else if (userId) await marcarInsigniasVistasPorId(userId, [r.insignia.id]);
       } catch (e) {
         console.warn('Erro ao marcar recompensa como vista:', e);
       }
@@ -140,6 +168,24 @@ export default function RecompensasHost({ ativo }: Props) {
   if (!ativo || !atual || !assentou || pausas.length > 0 || !rotaPermiteCelebrar(rota)) return null;
 
   const restantes = fila.length - 1;
+
+  if (atual.tipo === 'fase') {
+    return (
+      <EvolucaoBroxisModal
+        key={atual.chave}
+        fase={atual.fase}
+        anterior={atual.anterior}
+        proxima={atual.proxima}
+        trilha={atual.trilha}
+        posicao={atual.posicao}
+        total={atual.total}
+        restantes={restantes}
+        onContinuar={continuar}
+        onVerPerfil={verNoDestino}
+        onPularTudo={pularTudo}
+      />
+    );
+  }
 
   return atual.tipo === 'carta' ? (
     <CartaGanhaModal

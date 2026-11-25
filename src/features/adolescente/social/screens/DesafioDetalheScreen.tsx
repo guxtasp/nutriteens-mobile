@@ -19,7 +19,6 @@ import { formatarDataISO } from '../../../../shared/utils/data';
 import { feedbackConquista, feedbackToque } from '../../../../shared/audio/feedback';
 import AbasSegmentadas from '../components/AbasSegmentadas';
 import { AvatarSocialView } from '../components/AvatarSocialView';
-import CabecalhoTela from '../components/CabecalhoTela';
 import { FaixaDias, MembrosHoje, ROTA_REGISTRO, ROXO, mensagemErroDesafio } from '../components/DesafioPecas';
 import JardimBotao from '../components/JardimBotao';
 import PodioTurma from '../components/PodioTurma';
@@ -29,6 +28,8 @@ import { ATIVIDADE } from '../theme/turma';
 import { trofeuDoDesafio } from '../utils/trofeu';
 import { listarAmigos, type AmigoSocial } from '../services/socialService';
 import { convidarParaDesafio, listarDesafios, renovarDesafio, sairDoDesafio, sincronizarDesafiosHoje } from '../services/desafioGrupoService';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 import {
   MARCOS, METRICAS_DESAFIO, ativosDoDesafio, diasRestantes, fraseDaMetrica, jaAcabou, marcoAtingido, mensagemConviteDesafio, nomeDaMetrica,
   podeConvidar, textoDoDia, type DesafioGrupo, type MarcoDesafio,
@@ -37,6 +38,8 @@ import {
 type Aba = 'desafio' | 'turma';
 
 export default function DesafioDetalheScreen() {
+  // edges só em cima: o fim da rolagem soma a barra do Android (ver shared/utils/areaSegura.ts)
+  const respiroFim = useRespiroInferior(48);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const id: string | undefined = route.params?.id;
@@ -108,7 +111,7 @@ export default function DesafioDetalheScreen() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <CabecalhoTela titulo={d ? nomeDaMetrica(d.metrica) : 'Desafio'} aoVoltar={voltar} />
+      <ScreenHeader titulo={d ? nomeDaMetrica(d.metrica) : 'Desafio'} onVoltar={voltar} />
 
       {carregando ? <ActivityIndicator color={colors.primaryDark} style={{ marginTop: 40 }} /> : erro ? (
         <View style={estilos.centro}>
@@ -121,7 +124,7 @@ export default function DesafioDetalheScreen() {
           <JardimBotao bloco={false} label="VOLTAR" onPress={voltar} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[estilos.conteudo, { paddingBottom: respiroFim }]} showsVerticalScrollIndicator={false}>
           <View style={estilos.hero}>
             <View style={estilos.iconeMetrica}><Ionicons name={(METRICAS_DESAFIO.find((m) => m.metrica === d.metrica)?.icone ?? 'flag') as any} size={24} color={colors.white} /></View>
             <View style={{ flex: 1 }}>
@@ -254,7 +257,7 @@ export default function DesafioDetalheScreen() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#F6F8F5' },
-  conteudo: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 14 },
+  conteudo: { paddingHorizontal: 16, paddingTop: 4, gap: 14 },
   centro: { alignItems: 'center', gap: 12, marginTop: 40, paddingHorizontal: 24 },
   hero: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconeMetrica: { width: 48, height: 48, borderRadius: 24, backgroundColor: ROXO, alignItems: 'center', justifyContent: 'center' },

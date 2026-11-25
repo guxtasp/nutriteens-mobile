@@ -186,11 +186,21 @@ export default function ProfileScreen() {
           {perfil?.tipoInstituicao && <Linha rotulo="Instituição" valor={perfil.tipoInstituicao} />}
         </View>
 
+        {/* Privacidade e dados (fase 5). "Apagar" fica aqui dentro, nunca ao lado do Sair. */}
+        <View style={styles.secaoTopo}>
+          <AppText style={styles.secaoTitulo} accessibilityRole="header">PRIVACIDADE E DADOS</AppText>
+        </View>
+        <View style={styles.cardPrivacidade}>
+          <LinhaPrivacidade icone="document-text-outline" rotulo="Termos de Uso" onPress={() => navigation.navigate('TermosDeUso', { documento: 'termos' })} />
+          <LinhaPrivacidade icone="shield-outline" rotulo="Política de Privacidade" onPress={() => navigation.navigate('PoliticaPrivacidade', { documento: 'privacidade' })} />
+          <LinhaPrivacidade icone="trash-outline" rotulo="Apagar meus dados" perigo ultima onPress={() => navigation.navigate('ApagarDados')} />
+        </View>
+
         <CreditosApp />
 
         <LogoutButton />
       </ScrollView>
-      <ChatFab />
+      <ChatFab comBarraAbas={false} />
     </SafeAreaView>
   );
 }
@@ -204,7 +214,42 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
+function LinhaPrivacidade({
+  icone,
+  rotulo,
+  onPress,
+  perigo,
+  ultima,
+}: {
+  icone: React.ComponentProps<typeof Ionicons>['name'];
+  rotulo: string;
+  onPress: () => void;
+  perigo?: boolean;
+  ultima?: boolean;
+}) {
+  const cor = perigo ? colors.error : colors.primaryDark;
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.linhaPrivacidade, !ultima && styles.linhaPrivacidadeDivisoria]}
+      accessibilityRole="button"
+      accessibilityLabel={rotulo}
+    >
+      <View style={[styles.iconePrivacidade, { backgroundColor: perigo ? colors.erroSuave : colors.superficieSuave2 }]}>
+        <Ionicons name={icone} size={18} color={cor} />
+      </View>
+      <AppText style={[styles.rotuloPrivacidade, { color: cor }]}>{rotulo}</AppText>
+      <Ionicons name="chevron-forward" size={18} color={cor} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  cardPrivacidade: { backgroundColor: colors.white, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 4, marginBottom: 20 },
+  linhaPrivacidade: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 },
+  linhaPrivacidadeDivisoria: { borderBottomWidth: 1, borderBottomColor: colors.divisoriaLista },
+  iconePrivacidade: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  rotuloPrivacidade: { flex: 1, fontFamily: typography.bold, fontSize: 14 },
   tela: { flex: 1, backgroundColor: FUNDO },
   conteudo: { paddingHorizontal: 20, paddingBottom: 120 },
   titulo: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: typography.bold, color: colors.primaryDark },

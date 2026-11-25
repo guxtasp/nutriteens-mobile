@@ -13,6 +13,7 @@ import ChatFab from '../../_shared/components/ChatFab';
 import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import MissoesWidget from '../../missoes/components/MissoesWidget';
 import CartaoMetricasHome from '../../metricas/components/CartaoMetricasHome';
+import TesteiHomeCard from '../../trocas/components/TesteiHomeCard';
 import CelebracaoSequenciaModal from '../components/CelebracaoSequenciaModal';
 import PerdaSequenciaOverlay from '../components/PerdaSequenciaOverlay';
 import AniversarioModal from '../components/AniversarioModal';
@@ -299,6 +300,9 @@ export default function HomeScreen() {
       </TourAlvo>
       
       <WaterProgressCard mlAtual={mlHoje} mlMeta={metaMl} />
+
+      {/* "Testei?": pergunta rápida e com prazo, por isso no alto (só aparece com troca guardada há 2+ dias) */}
+      <TesteiHomeCard />
 
       {mostrarPrimeirosPassos && (
         <PrimeirosPassosCard

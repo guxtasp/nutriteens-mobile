@@ -7,6 +7,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBarraStatus } from '../../../../shared/hooks/useBarraStatus';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
+import { layout } from '../../../../shared/theme/layout';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from '../../../../shared/audio/haptics';
@@ -125,6 +128,10 @@ export default function ScannerAlimentoScreen() {
   const negada = permissao !== null && !permissao.granted;
   const modoNativo = TEM_LEITOR_NATIVO && !usarPreview;
   const podeLer = permissao?.granted === true && focada && !erroCamera && !modoNativo;
+  // o rodapé fica por cima da câmera (absoluto): o respiro já soma a barra do Android
+  const respiroRodape = useRespiroInferior(36);
+  // câmera em fundo preto: ícones da barra de status claros (só enquanto esta tela está em foco)
+  useBarraStatus('clara');
 
   return (
     <SafeAreaView style={styles.tela}>
@@ -197,7 +204,7 @@ export default function ScannerAlimentoScreen() {
         </View>
       )}
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.rodape}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.rodape, { paddingBottom: respiroRodape }]}>
         {!modoNativo && <AppText style={styles.dica}>{aviso ?? DICA_PREVIEW}</AppText>}
         {modoNativo && !!aviso && <AppText style={styles.dica}>{aviso}</AppText>}
         {__DEV__ && <AppText style={styles.debug}>{ultima ? `Câmera leu → ${ultima}` : (podeLer || modoNativo ? 'Câmera pronta, ainda sem leitura' : 'Câmera parada')}</AppText>}
@@ -226,7 +233,7 @@ export default function ScannerAlimentoScreen() {
 const CANTO = 34;
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#000' },
-  cabecalho: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, gap: 12, marginTop: 30 },
+  cabecalho: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: layout.cabecalhoTelaPaddingH, paddingTop: layout.cabecalhoTelaPaddingTop, gap: 12 },
   titulo: { flex: 1, textAlign: 'center', fontFamily: typography.bold, fontSize: 18, color: '#fff' },
   lanterna: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
   centro: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 14 },
@@ -238,7 +245,7 @@ const styles = StyleSheet.create({
   cDir: { right: 0, borderRightWidth: 4 },
   cTopo: { top: 0, borderTopWidth: 4 },
   cBase: { bottom: 0, borderBottomWidth: 4 },
-  rodape: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 24, paddingBottom: 36, paddingTop: 16, gap: 12, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.55)' },
+  rodape: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 24, paddingTop: 16, gap: 12, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.55)' },
   dica: { fontFamily: typography.regular, fontSize: 14, color: '#fff', textAlign: 'center' },
   debug: { fontFamily: typography.regular, fontSize: 11, color: '#FDE68A', textAlign: 'center' },
   link: { fontFamily: typography.bold, fontSize: 14, color: colors.primary, textDecorationLine: 'underline' },

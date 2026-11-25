@@ -48,6 +48,12 @@ export const NOME_CURTO_CATEGORIA: Record<CategoriaTroca, string> = {
   BISCOITO: 'biscoito',
   SALGADINHO: 'salgadinho',
 };
+/** "No lugar do refrigerante" / "No lugar da refeição" (concorda com o nome curto). */
+export function noLugarDe(categoria: CategoriaTroca): string {
+  const artigo = categoria === 'REFEICAO' ? 'da' : 'do';
+  return `No lugar ${artigo} ${NOME_CURTO_CATEGORIA[categoria]}`;
+}
+
 // Lanche e Refeição são categorias de "ideia" (não classificam alimentos do catálogo):
 // aparecem só na tela de sugestões, nunca no retorno da refeição.
 
@@ -67,6 +73,9 @@ export type Troca = {
   respondidaRecente: boolean;
   dica?: string | null;         // "como fazer": passo prático curto
   nutrientes?: string[];        // colunas de alimento_nutrientes em que o destino é FONTE/ALTO_TEOR
+  // Retorno do "Testei?" (migration_trocas_avaliacao.sql). Só desempate na ordem; nunca exclui.
+  curtidaRecente?: boolean;     // curtiu uma troca com o mesmo destino ou da mesma categoria
+  naoRolouRecente?: boolean;    // disse "não rolou" para ESTA troca há pouco tempo
 };
 
 // colunas de alimento_nutrientes -> rótulo exibido. A ordem é a de prioridade na tela.
@@ -116,6 +125,9 @@ export function ordenarTrocas(trocas: Troca[], ctx: Contexto = {}): Troca[] {
     num(b.destinoAcessivel) - num(a.destinoAcessivel) ||
     num(especifica(b)) - num(especifica(a)) ||
     num(combina(b)) - num(combina(a)) ||
+    // "não rolou" desce e "curti" sobe, mas só depois das regras do RF015 (desempate)
+    num(!!a.naoRolouRecente) - num(!!b.naoRolouRecente) ||
+    num(!!b.curtidaRecente) - num(!!a.curtidaRecente) ||
     num(b.destinoRecente) - num(a.destinoRecente) ||
     (ehLanche ? num(b.rapida) - num(a.rapida) : 0) ||
     a.destinoNome.localeCompare(b.destinoNome, 'pt-BR') ||

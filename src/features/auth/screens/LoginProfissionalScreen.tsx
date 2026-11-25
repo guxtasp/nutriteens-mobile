@@ -32,6 +32,7 @@ import { AppText } from '../../../shared/ui/AppText';
 import { AppButton } from '../../../shared/ui/AppButton';
 import { ErrosCredenciais, mensagemErroLogin, validarCredenciais } from '../utils/loginErros';
 import { LARGURA_ACESSO_PROFISSIONAL } from '../utils/acessoProfissional';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LoginProfissional'>;
 
@@ -204,6 +205,8 @@ export default function LoginProfissionalScreen({ navigation }: Props) {
   const senhaRef = useRef<TextInput | null>(null);
   const temporizador = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { width, height } = useWindowDimensions();
+  // no celular a tela vai por baixo da barra de status e da de navegação (edge-to-edge)
+  const insets = useSafeAreaInsets();
   const dividido = width >= LARGURA_DIVIDIDO;
 
   useEffect(() => () => clearTimeout(temporizador.current), []);
@@ -346,7 +349,7 @@ export default function LoginProfissionalScreen({ navigation }: Props) {
   return (
     <ScrollView
       style={styles.raiz}
-      contentContainerStyle={[styles.conteudo, { minHeight: Math.max(height, 760) }, dividido && styles.conteudoLinha]}
+      contentContainerStyle={[styles.conteudo, { minHeight: Math.max(height, 760), paddingTop: insets.top, paddingBottom: insets.bottom }, dividido && styles.conteudoLinha]}
       keyboardShouldPersistTaps="handled"
     >
       {dividido && <PainelMarca pequeno={width < 1200} />}

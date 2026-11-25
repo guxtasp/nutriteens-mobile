@@ -28,6 +28,7 @@ import {
   type DetalheConteudo,
 } from '../services/fluxoService';
 import { buscarIngredientesDaReceita, obterPapelAtual } from '../services/conteudoService';
+import { RespostasTrocaPainel } from '../components/RespostasTrocaPainel';
 import { CONTEXTO_CATEGORIA, type CategoriaTroca } from '../../adolescente/trocas/utils/trocas';
 import { useCoresTom } from '../hooks/useCoresTom';
 import type { TemaPainel } from '../../../shared/painel/tema/paletas';
@@ -451,6 +452,16 @@ function Detalhe(p: {
               <AppButton label={decideConteudo ? 'IR PARA A DECISÃO →' : 'VER AÇÕES →'} fullWidth={false} size="compact" backgroundColor={tema.botaoFundo} textColor={tema.botaoTexto} shadowColor={tema.botaoSombra} style={styles.botao} onPress={() => setAba('decidir')} />
             </View>
           )}
+        </CartaoSecao>
+      )}
+
+      {aba === 'ler' && dados.tipo === 'TROCA' && (
+        <CartaoSecao
+          titulo="Como os adolescentes responderam"
+          subtitulo={'Respostas do "Testei?" (só números agregados)'}
+          ajuda="Quantas pessoas guardaram esta troca e o que contaram depois de testar. A taxa só aparece com 5 ou mais pessoas."
+        >
+          <RespostasTrocaPainel trocaId={dados.conteudoId} categoria={(dados.corpo as CorpoTroca).categoria as CategoriaTroca} />
         </CartaoSecao>
       )}
 

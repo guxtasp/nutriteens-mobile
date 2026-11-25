@@ -18,10 +18,15 @@ type Props = {
   onPress?: () => void;
   onInfo?: () => void;
   atraso?: number;
+  /** Cor das tags (ex.: amarelo pontual da "IDEIA DO DIA"); uma lista dá uma cor por tag. Padrão: verde do app. */
+  corTag?: string | (string | undefined)[];
+  /** Título sem caixa alta (nome de alimento, frase). */
+  tituloNatural?: boolean;
 };
 
-export default function CartaoHub({ tags, titulo, subtitulo, icone, ativo = true, onPress, onInfo, atraso = 0 }: Props) {
-  const corTag = ativo ? colors.primary : '#fff';
+export default function CartaoHub({ tags, titulo, subtitulo, icone, ativo = true, onPress, onInfo, atraso = 0, corTag: corTagProp, tituloNatural }: Props) {
+  const corPadrao = ativo ? colors.primary : '#fff';
+  const corDaTag = (i: number) => (Array.isArray(corTagProp) ? corTagProp[i] : corTagProp) ?? corPadrao;
   return (
     <MotiView
       from={{ opacity: 0, translateY: 18 }}
@@ -37,13 +42,13 @@ export default function CartaoHub({ tags, titulo, subtitulo, icone, ativo = true
       >
         <View style={styles.textos}>
           <View style={styles.tagsLinha}>
-            {tags.map((t) => (
-              <View key={t} style={[styles.tag, { backgroundColor: corTag }]}>
+            {tags.map((t, i) => (
+              <View key={t} style={[styles.tag, { backgroundColor: corDaTag(i) }]}>
                 <AppText style={styles.tagTexto}>{t}</AppText>
               </View>
             ))}
           </View>
-          <AppText style={styles.titulo}>{titulo}</AppText>
+          <AppText style={[styles.titulo, tituloNatural && styles.tituloNatural]}>{titulo}</AppText>
           <AppText style={styles.subtitulo}>{subtitulo}</AppText>
         </View>
 
@@ -71,6 +76,7 @@ const styles = StyleSheet.create({
   tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   tagTexto: { fontFamily: typography.bold, fontSize: 11, color: '#2E3A45' },
   titulo: { fontFamily: typography.bold, fontSize: 20, color: '#fff', marginBottom: 4, textTransform: 'uppercase' },
+  tituloNatural: { textTransform: 'none' },
   subtitulo: { fontFamily: typography.regular, fontSize: 13, lineHeight: 18, color: '#D9E2E8' },
   ilustracao: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   info: { position: 'absolute', top: 7, right: 11 },

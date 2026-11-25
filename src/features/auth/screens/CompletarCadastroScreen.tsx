@@ -18,6 +18,7 @@ import { BackButton } from '../../../shared/ui/BackButton';
 import { LabeledInput } from '../../../shared/ui/LabeledInput';
 import { DateInput } from '../../../shared/ui/DateInput';
 import { CampoSelecao } from '../components/CampoSelecao';
+import { ResumoTermosSheet } from '../../legal/components/ResumoTermosSheet';
 import { Checkbox } from '../../../shared/ui/Checkbox';
 import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { useMessageBanner } from '../../../shared/hooks/useMessageBanner';
@@ -48,6 +49,8 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
   const [dataNascimento, setDataNascimento] = useState('');
   const [tipoEscola, setTipoEscola] = useState<string | null>(null);
   const [aceitouTermos, setAceitouTermos] = useState(false);
+  // os links do checkbox abrem o resumo (v2.0); o texto completo fica a um toque dentro dele
+  const [resumoTermosAberto, setResumoTermosAberto] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleConcluir() {
@@ -165,13 +168,13 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
           label={
             <AppText style={styles.termsText}>
               Li e aceito os{' '}
-              <AppText style={styles.link} onPress={() => navigation.navigate('TermosDeUso')} accessibilityRole="link">
+              <AppText style={styles.link} onPress={() => setResumoTermosAberto(true)} accessibilityRole="link">
                 Termos de Uso
               </AppText>{' '}
               e a{' '}
               <AppText
                 style={styles.link}
-                onPress={() => navigation.navigate('PoliticaPrivacidade')}
+                onPress={() => setResumoTermosAberto(true)}
                 accessibilityRole="link"
               >
                 Política de Privacidade
@@ -191,6 +194,20 @@ export default function CompletarCadastroScreen({ userId, nomeSugerido, onConclu
         </Animated.View>
       </ScrollView>
       </KeyboardAvoidingView>
+
+      <ResumoTermosSheet
+        visivel={resumoTermosAberto}
+        onFechar={() => setResumoTermosAberto(false)}
+        onConcordar={() => {
+          setAceitouTermos(true);
+          setResumoTermosAberto(false);
+        }}
+        onAbrirDocumento={(tipo) => {
+          // fecha antes de navegar: o Modal ficaria por cima da tela do documento
+          setResumoTermosAberto(false);
+          navigation.navigate(tipo === 'termos' ? 'TermosDeUso' : 'PoliticaPrivacidade');
+        }}
+      />
     </View>
   );
 }

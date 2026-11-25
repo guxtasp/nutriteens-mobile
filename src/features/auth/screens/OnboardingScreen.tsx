@@ -22,6 +22,7 @@ import { colors } from '../../../shared/theme/colors';
 import { typography } from '../../../shared/theme/typography';
 import { AppText } from '../../../shared/ui/AppText';
 import { useReduzirMovimento } from '../../../shared/hooks/useReduzirMovimento';
+import { useBarraStatus } from '../../../shared/hooks/useBarraStatus';
 import { acessoProfissionalDisponivel } from '../utils/acessoProfissional';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
@@ -208,6 +209,8 @@ function rise(v: Animated.Value, reduzir: boolean) {
 // ---------- tela ----------
 
 export default function OnboardingScreen({ navigation }: Props) {
+  // fundo verde-escuro: ícones da barra de status claros (só enquanto esta tela está em foco)
+  useBarraStatus('clara');
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reduzir = useReduzirMovimento();

@@ -33,7 +33,7 @@ export default function ChatBroxisSheet({ visivel, onFechar }: Props) {
           <View style={styles.cabecalho}>
             <View style={styles.avatar}>
               <Image
-                source={require('../../../../../assets/img/mascot/broxis-aceno.png')}
+                source={require('../../../../../assets/img/feedback/supercontente.png')}
                 style={styles.avatarImagem}
                 resizeMode="contain"
               />

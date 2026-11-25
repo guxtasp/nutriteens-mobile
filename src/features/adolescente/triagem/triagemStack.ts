@@ -5,14 +5,13 @@
 // saber ou se importar com a posição deles na jornada.
 // Consumido pelo RootNavigator dentro do case 'TRIAGEM' de renderStackLogado().
 
-import TriagemIntroScreen from './screens/TriagemIntroScreen';
-import TriagemApresentacaoScreen from './screens/TriagemApresentacaoScreen';
+import BroxisConversaScreen from './screens/BroxisConversaScreen';
 import RecordatorioRefeicaoScreen from './recordatorio/screens/RecordatorioRefeicaoScreen';
 import EbiaPerguntaScreen from './ebia/screens/EbiaPerguntaScreen';
 
 export const TRIAGEM_SCREENS = [
-  { name: 'TriagemIntro', component: TriagemIntroScreen },
-  { name: 'TriagemApresentacao', component: TriagemApresentacaoScreen },
+  // a rota continua 'TriagemIntro': nenhum outro ponto de navegação precisou mudar
+  { name: 'TriagemIntro', component: BroxisConversaScreen },
   { name: 'RecordatorioRefeicao', component: RecordatorioRefeicaoScreen },
   { name: 'EbiaPergunta', component: EbiaPerguntaScreen },
 ] as const;

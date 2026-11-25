@@ -4,9 +4,14 @@
 //  2) vê as receitas da que mais combina para a que menos combina, com o que tem e o que falta;
 //  3) se não gostar de nenhuma, vê outras receitas mesmo sem combinação.
 // Sem ingrediente nenhum, mostra todas as receitas da mais fácil para a mais difícil.
+//
+// Comunicação: quem chegava não sabia o que fazer. Agora há (a) um indicador de 2 passos no topo,
+// (b) o Bróxis explicando o passo 1 e respondendo a cada ingrediente marcado ("já dá pra fazer 2")
+// e (c) o botão com o número de receitas que a pessoa vai ver. Textos em utils/guiaReceitas.ts.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MotiView } from 'moti';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,6 +19,11 @@ import type { AdolescenteStackParamList } from '../../../../navigation/Adolescen
 import { AppText } from '../../../../shared/ui/AppText';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
+import { SpeechBubble } from '../../../../shared/ui/SpeechBubble';
+import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
+import { feedbackSelecao } from '../../../../shared/audio/feedback';
+import { falaGuiaReceitas, rotuloBotaoReceitas, type ContagemGuia } from '../utils/guiaReceitas';
+import { useReceitasSalvas } from '../hooks/useReceitasSalvas';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
@@ -65,6 +75,7 @@ const ROTULO_DIFICULDADE: Record<string, string> = { FACIL: 'Fácil', MEDIO: 'M�
 const DIFICULDADES: Dificuldade[] = ['FACIL', 'MEDIO', 'DIFICIL'];
 /** quantos ingredientes de cada grupo aparecem antes do "Ver mais" */
 const ATALHOS_VISIVEIS = 7;
+const BROXIS = require('../../../../../assets/img/mascot/broxis-apresentando.png');
 /** quantas receitas de cada seção aparecem antes do "Ver mais" */
 const RECEITAS_VISIVEIS = 3;
 
@@ -72,6 +83,8 @@ export default function ReceitasComIngredientesScreen() {
   const navigation = useNavigation<Nav>();
   const { userId } = useAuth();
   const { adicionarAoCarrinho } = useAlimentacao();
+  const reduzir = useReduzirMovimento();
+  const { salvas, alternar: alternarSalva, ehSalva } = useReceitasSalvas();
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -177,13 +190,73 @@ export default function ReceitasComIngredientesScreen() {
 
   const filtroAtivo = filtroReceitaAtivo(filtro);
 
+  // retorno ao vivo do passo 1: quantas receitas os ingredientes marcados já destravam
+  const contagem: ContagemGuia = useMemo(() => {
+    const combinam = despensa.length > 0 ? receitasQueCombinam(receitas, despensa) : [];
+    return {
+      ingredientes: despensa.length,
+      combinam: combinam.length,
+      agora: separarPorFalta(combinam).agora.length,
+      semReceitas: receitas.length === 0,
+    };
+  }, [receitas, despensa]);
+
+  // ---------- topo: os 2 passos (tocar volta/avança) ----------
+  function renderEtapas() {
+    const itens: { chave: Etapa; numero: number; rotulo: string }[] = [
+      { chave: 'ingredientes', numero: 1, rotulo: 'O que você tem' },
+      { chave: 'resultados', numero: 2, rotulo: 'Escolha a receita' },
+    ];
+    return (
+      <View style={styles.etapas} accessibilityRole="tablist">
+        {itens.map((it, i) => {
+          const ativa = etapa === it.chave;
+          const feita = it.chave === 'ingredientes' && etapa === 'resultados';
+          return (
+            <React.Fragment key={it.chave}>
+              {i > 0 && <View style={[styles.etapaLinha, etapa === 'resultados' && styles.etapaLinhaFeita]} />}
+              <Pressable
+                style={styles.etapa}
+                onPress={() => {
+                  if (ativa) return;
+                  feedbackSelecao();
+                  if (it.chave === 'resultados') setModo('combinam');
+                  setEtapa(it.chave);
+                }}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: ativa }}
+                accessibilityLabel={`Passo ${it.numero}: ${it.rotulo}`}
+              >
+                <View style={[styles.etapaNumero, (ativa || feita) && styles.etapaNumeroAtivo]}>
+                  {feita ? (
+                    <Ionicons name="checkmark" size={14} color={colors.white} />
+                  ) : (
+                    <AppText style={[styles.etapaNumeroTexto, ativa && styles.etapaNumeroTextoAtivo]}>{it.numero}</AppText>
+                  )}
+                </View>
+                <AppText style={[styles.etapaRotulo, ativa && styles.etapaRotuloAtivo]}>{it.rotulo}</AppText>
+              </Pressable>
+            </React.Fragment>
+          );
+        })}
+      </View>
+    );
+  }
+
   // ---------- etapa 1: o que você tem em casa ----------
   function renderChipDespensa(i: IngredienteCasa) {
     return (
-      <Pressable key={i.id} style={styles.chipDespensa} onPress={() => remover(i.id)} accessibilityLabel={`Remover ${i.nome}`}>
-        <AppText style={styles.chipDespensaTexto}>{i.nome}</AppText>
-        <Ionicons name="close" size={14} color={colors.primaryDark} />
-      </Pressable>
+      <MotiView
+        key={i.id}
+        from={reduzir ? { opacity: 1 } : { opacity: 0, scale: 0.6 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', damping: 12, stiffness: 220 }}
+      >
+        <Pressable style={styles.chipDespensa} onPress={() => remover(i.id)} accessibilityLabel={`Remover ${i.nome}`}>
+          <AppText style={styles.chipDespensaTexto}>{i.nome}</AppText>
+          <Ionicons name="close" size={14} color={colors.primaryDark} />
+        </Pressable>
+      </MotiView>
     );
   }
 
@@ -192,7 +265,7 @@ export default function ReceitasComIngredientesScreen() {
     return (
       <View style={styles.voceTem}>
         <View style={styles.voceTemTopo}>
-          <AppText style={styles.voceTemTitulo}>{n > 0 ? `Você tem (${n})` : 'Você ainda não adicionou nada'}</AppText>
+          <AppText style={styles.voceTemTitulo}>{n > 0 ? `Na sua cozinha (${n})` : 'Sua cozinha está vazia'}</AppText>
           {n > 0 && (
             <View style={styles.voceTemAcoes}>
               <Pressable
@@ -213,7 +286,7 @@ export default function ReceitasComIngredientesScreen() {
         </View>
 
         {n === 0 ? (
-          <AppText style={styles.voceTemVazio}>Toque nos ingredientes abaixo ou use a busca.</AppText>
+          <AppText style={styles.voceTemVazio}>O que você marcar aparece aqui. Toque de novo pra tirar.</AppText>
         ) : vocePodeVerTodos ? (
           // aberto: todos os ingredientes quebram de linha, então dá pra ver e tirar qualquer um sem rolar de lado
           <View style={styles.chipsDespensa}>{despensa.map(renderChipDespensa)}</View>
@@ -292,11 +365,27 @@ export default function ReceitasComIngredientesScreen() {
     return (
       <View style={styles.corpo}>
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 16 }}>
+          <View style={styles.guia}>
+            <MotiView
+              key={`broxis-${contagem.combinam}`}
+              from={reduzir || contagem.ingredientes === 0 ? { translateY: 0 } : { translateY: -8 }}
+              animate={{ translateY: 0 }}
+              transition={{ type: 'spring', damping: 6, stiffness: 180 }}
+            >
+              <Image source={BROXIS} style={styles.guiaBroxis} resizeMode="contain" accessibilityElementsHidden importantForAccessibility="no" />
+            </MotiView>
+            <SpeechBubble typewriter={false} tailPosition="left" style={styles.guiaBalao}>
+              <AppText style={styles.guiaTexto} accessibilityLiveRegion="polite">
+                {falaGuiaReceitas(contagem)}
+              </AppText>
+            </SpeechBubble>
+          </View>
+
           <View style={styles.buscaCaixa}>
             <Ionicons name="search" size={20} color="#7A8B94" />
             <TextInput
               style={styles.buscaInput}
-              placeholder="Ex.: ovo, banana, arroz..."
+              placeholder="Procure: ovo, banana, arroz..."
               placeholderTextColor="#7A8B94"
               value={termo}
               onChangeText={setTermo}
@@ -326,7 +415,7 @@ export default function ReceitasComIngredientesScreen() {
 
           {renderVoceTem()}
 
-          <AppText style={styles.secao}>Ingredientes comuns</AppText>
+          <AppText style={styles.secao}>Ou toque no que tem aí</AppText>
           <View style={{ gap: 12 }}>{GRUPOS_CASA.map((g) => renderGrupo(g.chave, g.titulo))}</View>
 
           {semReceitas && (
@@ -337,14 +426,27 @@ export default function ReceitasComIngredientesScreen() {
         </ScrollView>
 
         <AppButton
-          label={despensa.length > 0 ? 'VER RECEITAS' : 'PULAR E VER TODAS AS RECEITAS'}
+          label={rotuloBotaoReceitas(contagem)}
           textColor={colors.primaryDark}
           style={styles.botaoPrimario}
+          disabled={despensa.length === 0}
           onPress={() => {
             setModo('combinam');
             setEtapa('resultados');
           }}
         />
+        {despensa.length === 0 && (
+          <Pressable
+            style={styles.pular}
+            onPress={() => {
+              setModo('combinam');
+              setEtapa('resultados');
+            }}
+            accessibilityRole="button"
+          >
+            <AppText style={styles.link}>Prefiro ver todas as receitas</AppText>
+          </Pressable>
+        )}
       </View>
     );
   }
@@ -366,7 +468,7 @@ export default function ReceitasComIngredientesScreen() {
     const completa = total > 0 && p.faltam.length === 0;
     const mostraBarra = despensa.length > 0 && total > 0;
     return (
-      <Pressable key={r.id} style={styles.cartao} onPress={() => setAberta(p)} accessibilityRole="button">
+      <Pressable style={({ pressed }) => [styles.cartao, pressed && styles.cartaoPressionado]} onPress={() => setAberta(p)} accessibilityRole="button" accessibilityLabel={`${r.titulo}. ${textoStatus(p)}`}>
         {r.foto_url ? (
           <Image source={{ uri: r.foto_url }} style={styles.cartaoFoto} resizeMode="cover" />
         ) : (
@@ -375,7 +477,10 @@ export default function ReceitasComIngredientesScreen() {
           </View>
         )}
         <View style={styles.cartaoCorpo}>
-          <AppText style={styles.cartaoTitulo} numberOfLines={2}>{r.titulo}</AppText>
+          <View style={styles.cartaoTituloLinha}>
+            <AppText style={[styles.cartaoTitulo, styles.flex]} numberOfLines={2}>{r.titulo}</AppText>
+            {ehSalva(r.id) && <Ionicons name="bookmark" size={16} color={colors.destaqueTexto} accessibilityLabel="Salva" />}
+          </View>
           <AppText style={styles.cartaoMeta}>
             {r.tempo_preparo_min ? `${r.tempo_preparo_min} min • ` : ''}
             {ROTULO_DIFICULDADE[r.dificuldade] ?? ''}
@@ -406,7 +511,18 @@ export default function ReceitasComIngredientesScreen() {
           <AppText style={styles.secaoReceitasTitulo}>{titulo}</AppText>
           <AppText style={styles.secaoReceitasContagem}>{lista.length} {lista.length === 1 ? 'receita' : 'receitas'}</AppText>
         </View>
-        <View style={{ gap: 12 }}>{visiveis.map(renderCartao)}</View>
+        <View style={{ gap: 12 }}>
+          {visiveis.map((p, i) => (
+            <MotiView
+              key={p.receita.id}
+              from={reduzir ? { opacity: 1 } : { opacity: 0, translateY: 14 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: 'timing', duration: 280, delay: Math.min(i, 5) * 60 }}
+            >
+              {renderCartao(p)}
+            </MotiView>
+          ))}
+        </View>
         {(escondidas > 0 || (completa && lista.length > RECEITAS_VISIVEIS)) && (
           <Pressable style={styles.verMaisLinha} onPress={() => alternarSecaoCompleta(chave)} accessibilityRole="button">
             <AppText style={styles.linkVerde}>{completa ? 'Ver menos' : `Ver mais ${escondidas}`}</AppText>
@@ -513,6 +629,12 @@ export default function ReceitasComIngredientesScreen() {
         )}
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}>
+          {pontuadas.length > 0 && (
+            <View style={styles.dicaResultados}>
+              <Ionicons name="hand-left-outline" size={16} color={colors.destaqueTexto} />
+              <AppText style={styles.dicaResultadosTexto}>Toque numa receita pra ver o que precisa e o passo a passo.</AppText>
+            </View>
+          )}
           {renderListaReceitas()}
           {modo === 'combinam' && despensa.length > 0 && pontuadas.length > 0 && (
             <Pressable style={styles.botaoSecundario} onPress={() => setModo('outras')}>
@@ -538,6 +660,21 @@ export default function ReceitasComIngredientesScreen() {
         titulo="Receitas com o que tenho"
         subtitulo="Cozinhe com o que já tem em casa"
         onVoltar={() => navigation.goBack()}
+        direita={
+          <Pressable
+            onPress={() => navigation.navigate('ReceitasSalvas')}
+            style={styles.atalhoSalvas}
+            accessibilityRole="button"
+            accessibilityLabel={`Receitas salvas, ${salvas.length}`}
+          >
+            <Ionicons name={salvas.length > 0 ? 'bookmark' : 'bookmark-outline'} size={22} color={colors.primaryDark} />
+            {salvas.length > 0 && (
+              <View style={styles.atalhoSalvasBolinha}>
+                <AppText style={styles.atalhoSalvasNumero}>{salvas.length > 9 ? '9+' : salvas.length}</AppText>
+              </View>
+            )}
+          </Pressable>
+        }
       />
 
       {carregando ? (
@@ -549,10 +686,11 @@ export default function ReceitasComIngredientesScreen() {
             <AppText style={styles.link}>Tentar de novo</AppText>
           </Pressable>
         </View>
-      ) : etapa === 'ingredientes' ? (
-        renderIngredientes()
       ) : (
-        renderResultados()
+        <>
+          {renderEtapas()}
+          {etapa === 'ingredientes' ? renderIngredientes() : renderResultados()}
+        </>
       )}
 
       <ReceitaCasaTela
@@ -560,6 +698,8 @@ export default function ReceitasComIngredientesScreen() {
         temDespensa={despensa.length > 0}
         onFechar={() => setAberta(null)}
         onAdicionarAoRegistro={adicionarAoRegistro}
+        salva={!!aberta && ehSalva(aberta.receita.id)}
+        onAlternarSalva={(r) => alternarSalva(r.id)}
         onEnviarParaAmigo={(r) => {
           // dois Modals ao mesmo tempo falham no iOS: fecha um e abre o outro depois
           setAberta(null);
@@ -574,6 +714,42 @@ export default function ReceitasComIngredientesScreen() {
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
   corpo: { flex: 1, paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16 },
+
+  etapas: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 4, paddingBottom: 4 },
+  etapa: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
+  etapaNumero: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: colors.bordaSuave, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
+  etapaNumeroAtivo: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
+  etapaNumeroTexto: { fontFamily: typography.bold, fontSize: 12, color: colors.textoSuave },
+  etapaNumeroTextoAtivo: { color: colors.white },
+  etapaRotulo: { fontFamily: typography.semiBold, fontSize: 13, color: colors.textoSuave },
+  etapaRotuloAtivo: { fontFamily: typography.bold, color: colors.primaryDark },
+  etapaLinha: { flex: 1, height: 2, borderRadius: 1, backgroundColor: colors.bordaSuave, marginHorizontal: 10 },
+  etapaLinhaFeita: { backgroundColor: colors.primaryDark },
+
+  guia: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  guiaBroxis: { width: 64, height: 76 },
+  guiaBalao: { flex: 1 },
+  guiaTexto: { fontFamily: typography.semiBold, fontSize: 14, lineHeight: 20, color: colors.primaryDark },
+  pular: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  dicaResultados: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.superficieSuave, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 14 },
+  dicaResultadosTexto: { flex: 1, fontFamily: typography.regular, fontSize: 12.5, lineHeight: 17, color: colors.textoCorrido },
+  flex: { flex: 1 },
+  cartaoTituloLinha: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  atalhoSalvas: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  atalhoSalvasBolinha: {
+    position: 'absolute',
+    top: 4,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  atalhoSalvasNumero: { fontFamily: typography.bold, fontSize: 10, color: colors.primaryDark },
+  cartaoPressionado: { backgroundColor: colors.superficieSuave, transform: [{ scale: 0.98 }] },
 
   buscaCaixa: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1.5, borderColor: '#D9E2E8', borderRadius: 28, paddingHorizontal: 18, paddingVertical: 12 },
   buscaInput: { flex: 1, fontFamily: typography.regular, fontSize: 15, color: colors.primaryDark, padding: 0 },

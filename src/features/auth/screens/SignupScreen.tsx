@@ -29,6 +29,7 @@ import { MessageBanner } from '../../../shared/ui/MessageBanner';
 import { CabecalhoCadastro } from '../components/CabecalhoCadastro';
 import { CampoSelecao } from '../components/CampoSelecao';
 import { SairDoCadastroModal } from '../components/SairDoCadastroModal';
+import { ResumoTermosSheet } from '../../legal/components/ResumoTermosSheet';
 import { TIPO_ESCOLA_OPTIONS } from '../constants/tipoEscolaOptions';
 import { GENERO_OPTIONS } from '../constants/generoOptions';
 import { useSignup } from '../hooks/useSignup';
@@ -64,6 +65,8 @@ export default function SignupScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
+  // os links do checkbox abrem o resumo (v2.0); o texto completo fica a um toque dentro dele
+  const [resumoTermosAberto, setResumoTermosAberto] = useState(false);
   const [tecladoAberto, setTecladoAberto] = useState(false);
 
   const { loading, message, type, showMessage, clearMessage, handleSignup } = useSignup();
@@ -309,7 +312,7 @@ export default function SignupScreen({ navigation }: any) {
                       Li e aceito os{' '}
                       <AppText
                         style={styles.link}
-                        onPress={() => navigation.navigate('TermosDeUso')}
+                        onPress={() => setResumoTermosAberto(true)}
                         accessibilityRole="link"
                       >
                         Termos de Uso
@@ -317,7 +320,7 @@ export default function SignupScreen({ navigation }: any) {
                       e a{' '}
                       <AppText
                         style={styles.link}
-                        onPress={() => navigation.navigate('PoliticaPrivacidade')}
+                        onPress={() => setResumoTermosAberto(true)}
                         accessibilityRole="link"
                       >
                         Política de Privacidade
@@ -364,6 +367,20 @@ export default function SignupScreen({ navigation }: any) {
         visible={confirmandoSaida}
         onContinuar={continuarPreenchendo}
         onSair={sairEPerder}
+      />
+
+      <ResumoTermosSheet
+        visivel={resumoTermosAberto}
+        onFechar={() => setResumoTermosAberto(false)}
+        onConcordar={() => {
+          setAceitouTermos(true);
+          setResumoTermosAberto(false);
+        }}
+        onAbrirDocumento={(tipo) => {
+          // fecha antes de navegar: o Modal ficaria por cima da tela do documento
+          setResumoTermosAberto(false);
+          navigation.navigate(tipo === 'termos' ? 'TermosDeUso' : 'PoliticaPrivacidade');
+        }}
       />
     </View>
   );

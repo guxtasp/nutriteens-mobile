@@ -4,7 +4,9 @@
 //  - foto grande no topo e o cartão da receita subindo por cima;
 //  - mostra, ingrediente por ingrediente, o que a pessoa já tem e o que falta;
 //  - o modo de preparo aparece em passos numerados (e abre o "Cozinhar passo a passo" em tela cheia);
-//  - botão fixo embaixo para levar a receita ao registro da refeição.
+//  - botão fixo embaixo para levar a receita ao registro da refeição;
+//  - "Salvar pra fazer depois" (marcador no canto da foto e botão abaixo do "Cozinhar"). Ao salvar,
+//    um aviso diz onde achar depois (Comer > Receitas salvas), pra a pessoa não perder a receita.
 // A receita da Alimentação (ReceitaDetalheSheet) continua como era; só esta tela usa o novo visual.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -14,6 +16,7 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { BackButton } from '../../../../shared/ui/BackButton';
 import { colors } from '../../../../shared/theme/colors';
+import { feedbackSelecao } from '../../../../shared/audio/feedback';
 import { typography } from '../../../../shared/theme/typography';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
 import { buscarPassosDaReceita, type PassoReceita, type ReceitaComIngredientes } from '../../alimentacao/services/receitasService';
@@ -29,6 +32,10 @@ type Props = {
   onFechar: () => void;
   onEnviarParaAmigo?: (receita: ReceitaComIngredientes) => void;
   onAdicionarAoRegistro?: (receita: ReceitaComIngredientes) => void;
+  /** a receita está salva pra fazer depois? */
+  salva?: boolean;
+  /** salva ou tira; devolve true se ficou salva */
+  onAlternarSalva?: (receita: ReceitaComIngredientes) => boolean;
 };
 
 const ROTULO_DIFICULDADE: Record<string, string> = { FACIL: 'Fácil', MEDIO: 'Médio', DIFICIL: 'Difícil' };
@@ -38,8 +45,9 @@ const capitalizar = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const textoIngrediente = (i: IngredienteReceita) =>
   i.quantidadeTexto ? `${i.quantidadeTexto} de ${nomeLegivel(i.nome)}` : capitalizar(nomeLegivel(i.nome));
 
-export default function ReceitaCasaTela({ item, temDespensa, onFechar, onEnviarParaAmigo, onAdicionarAoRegistro }: Props) {
+export default function ReceitaCasaTela({ item, temDespensa, onFechar, onEnviarParaAmigo, onAdicionarAoRegistro, salva, onAlternarSalva }: Props) {
   const insets = useSafeAreaInsets();
+  const [avisoSalva, setAvisoSalva] = useState(false);
   const [passosBanco, setPassosBanco] = useState<PassoReceita[]>([]);
   const [cozinhando, setCozinhando] = useState(false);
   const cozinhouRef = useRef(false);
@@ -51,6 +59,7 @@ export default function ReceitaCasaTela({ item, temDespensa, onFechar, onEnviarP
     // zera ao trocar/fechar a receita: nada da anterior fica "grudado" na próxima
     setPassosBanco([]);
     setCozinhando(false);
+    setAvisoSalva(false);
     cozinhouRef.current = false;
     concluidaRef.current = false;
     if (!receitaId) return;
@@ -85,6 +94,12 @@ export default function ReceitaCasaTela({ item, temDespensa, onFechar, onEnviarP
   const total = r.ingredientes.length;
   const tem = item.tenho.length;
   const tudo = total > 0 && item.faltam.length === 0;
+
+  function alternarSalva() {
+    if (!onAlternarSalva || !item) return;
+    feedbackSelecao();
+    setAvisoSalva(onAlternarSalva(item.receita));
+  }
 
   function cozinhar() {
     cozinhouRef.current = true;
@@ -149,6 +164,24 @@ export default function ReceitaCasaTela({ item, temDespensa, onFechar, onEnviarP
                 onPress={cozinhar}
               />
             )}
+            {!!onAlternarSalva && (
+              <Pressable
+                onPress={alternarSalva}
+                style={[styles.botaoSalvar, salva && styles.botaoSalvarAtivo]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !!salva }}
+                accessibilityLabel={salva ? 'Receita salva. Toque para tirar das salvas' : 'Salvar receita pra fazer depois'}
+              >
+                <Ionicons name={salva ? 'bookmark' : 'bookmark-outline'} size={18} color={colors.primaryDark} />
+                <AppText style={styles.botaoSalvarTexto}>{salva ? 'Salva pra fazer depois' : 'Salvar pra fazer depois'}</AppText>
+              </Pressable>
+            )}
+            {avisoSalva && salva && (
+              <View style={styles.avisoSalva} accessibilityLiveRegion="polite">
+                <Ionicons name="information-circle-outline" size={16} color={colors.destaqueTexto} />
+                <AppText style={styles.avisoSalvaTexto}>Pronto! Ela fica em Comer › Receitas salvas.</AppText>
+              </View>
+            )}
             {!!onEnviarParaAmigo && (
               <AppButton
                 label="Enviar para um amigo"
@@ -203,6 +236,17 @@ export default function ReceitaCasaTela({ item, temDespensa, onFechar, onEnviarP
         </ScrollView>
 
         <BackButton onPress={onFechar} style={{ position: 'absolute', top: insets.top + 8, left: 16 }} />
+        {!!onAlternarSalva && (
+          <Pressable
+            onPress={alternarSalva}
+            style={[styles.marcadorTopo, { top: insets.top + 8 }]}
+            accessibilityRole="button"
+            accessibilityLabel={salva ? 'Tirar das receitas salvas' : 'Salvar receita pra fazer depois'}
+            hitSlop={6}
+          >
+            <Ionicons name={salva ? 'bookmark' : 'bookmark-outline'} size={22} color={colors.primaryDark} />
+          </Pressable>
+        )}
 
         {!!onAdicionarAoRegistro && (
           <View style={[styles.rodape, { paddingBottom: insets.bottom + 12 }]}>
@@ -236,6 +280,32 @@ export default function ReceitaCasaTela({ item, temDespensa, onFechar, onEnviarP
 
 const styles = StyleSheet.create({
   raiz: { flex: 1, backgroundColor: colors.white },
+  marcadorTopo: {
+    position: 'absolute',
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botaoSalvar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 44,
+    marginTop: 10,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.bordaSuave,
+    paddingHorizontal: 14,
+  },
+  botaoSalvarAtivo: { backgroundColor: colors.exercicioAcertoFundo, borderColor: colors.primary },
+  botaoSalvarTexto: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
+  avisoSalva: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  avisoSalvaTexto: { flex: 1, fontFamily: typography.semiBold, fontSize: 12.5, color: colors.destaqueTexto },
   foto: { width: '100%', height: ALTURA_FOTO, backgroundColor: '#E4F2D2' },
   fotoVazia: { alignItems: 'center', justifyContent: 'center' },
   cartao: { marginTop: -28, backgroundColor: colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 24 },

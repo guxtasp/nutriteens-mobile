@@ -10,10 +10,13 @@ import { AvatarSocialView } from './AvatarSocialView';
 import { listarAmigos, type AmigoSocial } from '../services/socialService';
 import { compartilharReceita } from '../services/receitaCompartilhadaService';
 import { mensagemEnvioReceita } from '../utils/receitaCompartilhada';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Props = { receita: { id: string; titulo: string } | null; onFechar: () => void };
 
 export function EnviarReceitaSheet({ receita, onFechar }: Props) {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(32);
   const [amigos, setAmigos] = useState<AmigoSocial[] | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -47,10 +50,10 @@ export function EnviarReceitaSheet({ receita, onFechar }: Props) {
   }
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onFechar}>
+    <Modal navigationBarTranslucent statusBarTranslucent visible transparent animationType="slide" onRequestClose={onFechar}>
       <View style={styles.raiz}>
         <Pressable style={styles.fundo} onPress={onFechar} />
-        <View style={styles.caixa}>
+        <View style={[styles.caixa, { paddingBottom: respiroFolha }]}>
           <View style={styles.puxador} />
           <AppText style={styles.titulo}>Mandar para quem?</AppText>
           <AppText style={styles.sub} numberOfLines={2}>{receita.titulo}</AppText>
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
   fundo: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   // o Pressable pai roubava o gesto de rolagem; agora o fundo é irmão da caixa e a lista tem altura própria
   lista: { flexGrow: 0, maxHeight: 320 },
-  caixa: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 32 },
+  caixa: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
   puxador: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: '#D5DDD8', marginBottom: 14 },
   titulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark },
   sub: { fontSize: 13, color: '#6B7280', marginTop: 2, marginBottom: 12 },

@@ -10,19 +10,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../../shared/theme/colors';
 import ChatBroxisSheet from './ChatBroxisSheet';
 import { useTourAlvo } from '../../tour/TourContext';
+import { useAlturaBarraAbas } from './HomeBottomBar';
+import { layout } from '../../../../shared/theme/layout';
+import { respiroInferior } from '../../../../shared/utils/areaSegura';
 
-// A HomeBottomBar ocupa (padding de baixo 24 + área segura) + ~76 de altura, e é
-// desenhada por cima de tudo (zIndex/elevation 10). O botão do chat precisa ficar
-// acima dela, senão some "escondidinho" atrás da barra.
-const PADDING_BAIXO_BARRA = 24;
-const ALTURA_BARRA = 60;
-const FOLGA_ACIMA_DA_BARRA = 16;
+// A HomeBottomBar é desenhada por cima de tudo (zIndex/elevation 10). O botão do chat fica acima
+// dela, usando a MESMA conta da barra (useAlturaBarraAbas, que já soma a área segura). Em telas sem
+// barra de abas (Perfil), passe comBarraAbas={false}: aí ele só respeita a barra do sistema.
+type Props = { onPress?: () => void; comBarraAbas?: boolean };
 
-export default function ChatFab({ onPress }: { onPress?: () => void }) {
+export default function ChatFab({ onPress, comBarraAbas = true }: Props) {
   const [aberto, setAberto] = useState(false);
   const insets = useSafeAreaInsets();
+  const alturaBarra = useAlturaBarraAbas();
   const refTour = useTourAlvo('chat');
-  const bottom = PADDING_BAIXO_BARRA + ALTURA_BARRA + FOLGA_ACIMA_DA_BARRA + insets.bottom;
+  const bottom = comBarraAbas
+    ? alturaBarra + layout.respiroAcimaDaBarra
+    : respiroInferior(insets.bottom, layout.folgaFinalRolagem);
 
   function handlePress() {
     if (onPress) onPress();
@@ -48,7 +52,7 @@ export default function ChatFab({ onPress }: { onPress?: () => void }) {
           accessibilityLabel="Conversar com o Bróxis"
         >
           <Image
-            source={require('../../../../../assets/img/mascot/broxis-aceno.png')}
+            source={require('../../../../../assets/img/feedback/supercontente.png')}
             style={styles.mascote}
             resizeMode="contain"
           />

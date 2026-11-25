@@ -93,3 +93,28 @@ export function rotuloBotaoPassos(r: Pick<ResumoPrimeirosPassos, 'feitos' | 'pro
   if (!r.proximo) return 'Continuar';
   return r.feitos === 0 ? 'Começar' : 'Próximo passo';
 }
+
+/**
+ * Passos que viraram "feito" entre duas leituras (a pessoa voltou da tela de registro). O cartão
+ * usa isso para comemorar só a linha nova, e não todas de novo a cada visita.
+ */
+export function passosRecemFeitos(
+  antes: readonly Pick<PassoComEstado, 'id' | 'feito'>[] | null,
+  depois: readonly Pick<PassoComEstado, 'id' | 'feito'>[],
+): IdPasso[] {
+  if (!antes) return []; // primeira leitura: nada "acabou de acontecer"
+  const feitosAntes = new Set(antes.filter((p) => p.feito).map((p) => p.id));
+  return depois.filter((p) => p.feito && !feitosAntes.has(p.id)).map((p) => p.id);
+}
+
+/**
+ * Fala do Bróxis no topo do cartão, conforme o andamento. Comemora o passo novo sem cobrar o que
+ * falta. Pendente de revisão da nutricionista (tom).
+ */
+export function falaPrimeirosPassos(r: Pick<ResumoPrimeirosPassos, 'feitos' | 'total' | 'completo'>, acabouDeFazer: boolean): string {
+  if (r.completo) return 'Agora é só seguir no seu ritmo. O Bróxis está orgulhoso!';
+  const faltam = r.total - r.feitos;
+  if (acabouDeFazer) return faltam === 1 ? 'Boa! Só mais um e você fecha tudo.' : `Boa! Mais um feito. Faltam ${faltam}, no seu tempo.`;
+  if (r.feitos === 0) return 'Faça uma coisinha de cada vez. Eu te acompanho!';
+  return 'Tá indo bem! Escolhe o próximo quando quiser.';
+}

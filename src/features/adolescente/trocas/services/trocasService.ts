@@ -2,9 +2,18 @@
 // chega aqui só como um booleano de ordenação; nunca é exibida.
 import { supabase } from '../../../../lib/supabase';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { concederXp } from '../../../../shared/services/xpService';
+import { lerCache, salvarCache } from '../../../../shared/offline/cacheLocal';
 import { categoriaDoAlimento, escolherTrocasRefeicao, CategoriaTroca, OpcaoTroca, Troca } from '../utils/trocas';
+import type {
+  Adiamentos,
+  AvaliacaoTroca,
+  RespostaRegistrada,
+  RespostaTroca,
+  ResumoAvaliacaoTroca,
+} from '../utils/avaliacaoTrocas';
 
-export type RespostaTroca = 'TENTAR' | 'NAO_TENHO';
+export type { RespostaTroca } from '../utils/avaliacaoTrocas';
 
 /** O que o retorno da refeição precisa para mostrar o cartão. */
 export type TrocaSugerida = { categoria: CategoriaTroca; origemNome: string; opcoes: OpcaoTroca[] };
@@ -14,6 +23,7 @@ type Linha = {
   destino_id: string; destino_nome: string; tipos_refeicao: string[] | null; frase: string; rapida: boolean; ordem: number;
   destino_acessivel: boolean; destino_recente: boolean; respondida_recente: boolean;
   dica?: string | null; destino_nutrientes?: string[] | null; // vêm de migration_trocas_justificativas.sql
+  curtida_recente?: boolean; nao_rolou_recente?: boolean;      // vêm de migration_trocas_avaliacao.sql
 };
 
 const paraTroca = (l: Linha): Troca => ({
@@ -22,6 +32,7 @@ const paraTroca = (l: Linha): Troca => ({
   frase: l.frase, rapida: l.rapida, ordem: l.ordem,
   destinoAcessivel: l.destino_acessivel, destinoRecente: l.destino_recente, respondidaRecente: l.respondida_recente,
   dica: l.dica ?? null, nutrientes: l.destino_nutrientes ?? [],
+  curtidaRecente: !!l.curtida_recente, naoRolouRecente: !!l.nao_rolou_recente,
 });
 
 /** Só trocas PUBLICADAS (o banco filtra). Lança erro: a tela decide como mostrar. */
@@ -62,7 +73,69 @@ export async function buscarTrocaDaRefeicao(params: {
 export async function responderTroca(trocaId: string, resposta: RespostaTroca, origem: 'refeicao' | 'aba'): Promise<void> {
   const { error } = await supabase.from('troca_respostas').insert({ troca_id: trocaId, resposta });
   if (error) throw error;
-  registrarEvento(resposta === 'TENTAR' ? 'troca_aceita' : 'troca_recusada', { troca_id: trocaId, origem });
+  // a avaliação do "Testei?" já fica em troca_respostas; o evento continua só para aceitar/recusar
+  if (resposta === 'TENTAR' || resposta === 'NAO_TENHO') {
+    registrarEvento(resposta === 'TENTAR' ? 'troca_aceita' : 'troca_recusada', { troca_id: trocaId, origem });
+  }
+}
+
+/** Respostas do próprio adolescente (a RLS só devolve as dele). Lança erro: a tela decide. */
+export async function listarMinhasRespostas(): Promise<RespostaRegistrada[]> {
+  const { data, error } = await supabase
+    .from('troca_respostas')
+    .select('troca_id, resposta, criado_em')
+    .order('criado_em', { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return ((data ?? []) as { troca_id: string; resposta: RespostaTroca; criado_em: string }[]).map((r) => ({
+    trocaId: r.troca_id,
+    resposta: r.resposta,
+    criadoEm: r.criado_em,
+  }));
+}
+
+/**
+ * Grava como foi a troca guardada e pede o XP ao servidor. O XP vale o mesmo para qualquer
+ * resposta e é concedido uma vez por troca (o servidor confere). Devolve o XP ganho agora
+ * (0 se já tinha ganhado por essa troca ou se o servidor ainda não conhece a origem).
+ */
+export async function avaliarTroca(trocaId: string, avaliacao: AvaliacaoTroca): Promise<number> {
+  await responderTroca(trocaId, avaliacao, 'aba');
+  try {
+    return await concederXp('troca_avaliada', trocaId);
+  } catch (e) {
+    // a resposta já está salva; XP é bônus e não pode fazer a tela mostrar erro
+    console.warn('XP da avaliação da troca não concedido:', e);
+    return 0;
+  }
+}
+
+// "Me lembra amanhã" fica só no aparelho: é um adiamento de lembrete, não um dado de pesquisa.
+const chaveAdiamentos = (userId: string) => `trocas-testei-adiadas:${userId}`;
+
+export async function lerAdiamentosTestei(userId: string): Promise<Adiamentos> {
+  return (await lerCache<Adiamentos>(chaveAdiamentos(userId))) ?? {};
+}
+
+export async function salvarAdiamentosTestei(userId: string, adiamentos: Adiamentos): Promise<void> {
+  await salvarCache(chaveAdiamentos(userId), adiamentos);
+}
+
+/** Painel da nutricionista: contagens agregadas por troca (sem ids de pessoas). */
+export async function buscarResumoAvaliacoes(categoria?: CategoriaTroca): Promise<ResumoAvaliacaoTroca[]> {
+  const { data, error } = await supabase.rpc('trocas_avaliacao_resumo', { p_categoria: categoria ?? null });
+  if (error) throw error;
+  return ((data ?? []) as {
+    troca_id: string; categoria: CategoriaTroca; guardaram: number; curti: number; meio: number; nao_rolou: number; nao_tenho: number;
+  }[]).map((l) => ({
+    trocaId: l.troca_id,
+    categoria: l.categoria,
+    guardaram: Number(l.guardaram),
+    curti: Number(l.curti),
+    meio: Number(l.meio),
+    naoRolou: Number(l.nao_rolou),
+    naoTenho: Number(l.nao_tenho),
+  }));
 }
 
 export function registrarTrocaSugerida(trocaId: string, origem: 'refeicao' | 'aba'): void {

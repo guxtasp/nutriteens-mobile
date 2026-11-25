@@ -39,7 +39,7 @@ import EstatisticaPill from '../../home/components/EstatisticaPill';
 import TabHeader from '../../_shared/components/TabHeader';
 import { SinoNotificacoes } from '../../notificacoes/components/SinoNotificacoes';
 import { layout } from '../../../../shared/theme/layout';
-import HomeBottomBar from '../../_shared/components/HomeBottomBar';
+import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { buscarTrilhasComProgresso, ModuloDaTrilha, Trilha, LicaoDaTrilha } from '../services/trilhaService';
@@ -59,6 +59,8 @@ export default function TrilhaScreen() {
   const { userId } = useAuth();
   const { message, type, showMessage, clearMessage } = useMessageBanner();
   const refTourFaixa = useTourAlvo('trilha-faixa');
+  // a barra de abas mede 96 + inset de baixo: o fim do caminho e o botão "lição atual" ficam acima dela
+  const alturaBarra = useAlturaBarraAbas();
 
   const [menuAberto, setMenuAberto] = useState(false);
   const [carregando, setCarregando] = useState(true);
@@ -466,7 +468,7 @@ export default function TrilhaScreen() {
       ) : (
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={styles.scrollConteudo}
+          contentContainerStyle={{ paddingBottom: alturaBarra + layout.folgaFinalRolagem }}
           onScroll={aoRolar}
           onLayout={(e: LayoutChangeEvent) => {
             alturaScrollRef.current = e.nativeEvent.layout.height;
@@ -486,7 +488,7 @@ export default function TrilhaScreen() {
 
       {!!direcaoAtual && !carregando && (
         <Pressable
-          style={({ pressed }) => [styles.botaoAtual, pressed && styles.botaoAtualPressionado]}
+          style={({ pressed }) => [styles.botaoAtual, { bottom: alturaBarra + layout.respiroAcimaDaBarra }, pressed && styles.botaoAtualPressionado]}
           onPress={irParaAtual}
           accessibilityRole="button"
           accessibilityLabel="Voltar para a lição atual"
@@ -570,7 +572,6 @@ const styles = StyleSheet.create({
   botaoAtual: {
     position: 'absolute',
     alignSelf: 'center',
-    bottom: 112,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -589,7 +590,6 @@ const styles = StyleSheet.create({
   botaoAtualTexto: { fontFamily: typography.bold, fontSize: 14, color: colors.white },
 
   scroll: { flex: 1 },
-  scrollConteudo: { paddingBottom: 104 },
 
   centro: {
     flex: 1,

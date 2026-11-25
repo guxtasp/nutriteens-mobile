@@ -1,94 +1,110 @@
 // src/features/legal/data/textosLegais.ts
 //
-// Texto dos Termos de Uso e da Política de Privacidade (RF004).
+// Texto dos Termos de Uso e da Política de Privacidade (RF004) — VERSÃO 2.0.
 //
-// ⚠️ MINUTA PARA REVISÃO. Escrita em linguagem para adolescentes a partir do que o app faz hoje
-// (cadastro, registros de alimentação/água/atividade, triagem, gamificação, social, scanner).
-// Precisa ser lida e aprovada pelo orientador/jurídico antes de valer. Os trechos entre
-// [COLCHETES] são dados que só a instituição pode preencher/confirmar.
+// ⚠️ MINUTA PARA REVISÃO. Reescrita em linguagem para adolescentes a partir do que o app faz hoje
+// e dos documentos do projeto (protocolo CEP/UFV, CAAE 94172425.4.0000.5153). Precisa ser lida e
+// aprovada pela orientadora/jurídico da UFV antes de valer. Trechos entre [COLCHETES] só a
+// instituição pode preencher/confirmar.
 //
-// Ao aprovar: troque TEXTO_EM_REVISAO para false (some o aviso na tela) e, se o texto mudar de
-// forma relevante, suba VERSAO_TERMOS — é ela que fica gravada em `consentimentos.versao_termo`.
+// Ao aprovar: troque TEXTO_EM_REVISAO para false (some o aviso na tela). VERSAO_TERMOS já está em
+// 2.0: quem aceitou a 1.0 vê o reaceite (ver HANDOFF_REBRAND.md, seção Termos).
 
-export const VERSAO_TERMOS = '1.0';
+export const VERSAO_TERMOS = '2.0';
 export const TEXTO_EM_REVISAO = true;
-export const ATUALIZADO_EM = '[DATA DA VERSÃO]';
+export const ATUALIZADO_EM = '[DATA DA APROVAÇÃO]';
 
 export type SecaoLegal = { titulo: string; paragrafos: string[] };
 export type DocumentoLegal = { titulo: string; intro: string; secoes: SecaoLegal[] };
 export type TipoDocumentoLegal = 'termos' | 'privacidade';
 
+/** Um cartão do resumo "O nosso combinado em 1 minuto". `icone` é um nome do Ionicons. */
+export type ItemResumo = { icone: string; titulo: string; texto: string };
+
 export const TERMOS_DE_USO: DocumentoLegal = {
   titulo: 'Termos de Uso',
   intro:
-    'Estas são as regras para usar o NutriTeens. Escrevemos de um jeito simples para você entender tudo antes de aceitar.',
+    'As regras pra usar o NutriTeens, escritas de um jeito direto. Leia com calma; se tiver dúvida, pergunte pra gente ou pro seu responsável.',
   secoes: [
     {
       titulo: '1. O que é o NutriTeens',
       paragrafos: [
-        'O NutriTeens é um aplicativo de educação alimentar e hábitos saudáveis para adolescentes. Ele tem trilhas de lições, missões, registro de refeições, água e atividade física, e um espaço para conversar com amigos.',
-        'O app é desenvolvido por [NOME DA INSTITUIÇÃO / PROJETO], com orientação de [NOME DO ORIENTADOR / NUTRICIONISTA RESPONSÁVEL].',
+        'É um app educativo sobre alimentação, água e movimento, baseado no Guia Alimentar para a População Brasileira, feito pra adolescentes de 10 a 15 anos.',
+        'Ele faz parte de uma pesquisa de Iniciação Científica (PIBIC/CNPq) do Departamento de Informática da Universidade Federal de Viçosa (UFV). Ainda é uma versão em teste: pode ter falhas e vai mudar com o tempo.',
       ],
     },
     {
-      titulo: '2. O app não substitui um profissional de saúde',
+      titulo: '2. Quem é responsável',
       paragrafos: [
-        'As informações do app são educativas. Elas não são diagnóstico, tratamento nem prescrição de dieta.',
-        'Se você tem alguma condição de saúde, alergia, está em tratamento ou se sente mal com a comida ou com o seu corpo, converse com um médico ou nutricionista. Você também pode falar com um adulto de confiança.',
+        'A UFV, por meio da pesquisadora responsável, Profa. Maria Lúcia Bento Villela. A pesquisa foi aprovada pelo Comitê de Ética da UFV (CAAE 94172425.4.0000.5153).',
       ],
     },
     {
-      titulo: '3. Sua conta',
+      titulo: '3. O app não substitui um profissional de saúde',
       paragrafos: [
-        'Para criar a conta, você informa dados verdadeiros e usa um e-mail que seja seu. Guarde sua senha e não a compartilhe.',
-        '[CONFIRMAR COM O JURÍDICO: idade mínima e necessidade de autorização do responsável — ver RF003.]',
-        'Se achar que alguém entrou na sua conta, avise a gente pelo contato no fim deste texto.',
+        'Tudo aqui é educativo. O app não faz diagnóstico, não passa dieta e não mostra calorias, peso ou ranking.',
+        'Se você tem alguma condição de saúde, alergia ou se sente mal com a comida ou com o seu corpo, converse com um médico, um nutricionista ou um adulto de confiança.',
       ],
     },
     {
-      titulo: '4. Como esperamos que você use o app',
+      titulo: '4. Quem pode usar',
       paragrafos: [
-        'Use o app com respeito. Não vale ofender, ameaçar, expor outras pessoas, enviar conteúdo impróprio ou fingir ser outra pessoa.',
-        'Não tente burlar o sistema: por exemplo, ganhar pontos sem cumprir a atividade, mexer no app de forma indevida ou acessar dados de outras pessoas.',
-        'Quem desrespeitar as regras pode ter recursos limitados ou a conta suspensa.',
+        'Adolescentes que participam da pesquisa, com a autorização do responsável (TCLE) e com o seu próprio "sim" (Termo de Assentimento).',
+        'Participar é voluntário. Você ou seu responsável podem desistir a qualquer momento, sem nenhum prejuízo na escola ou fora dela.',
       ],
     },
     {
-      titulo: '5. Pontos, insígnias e missões',
+      titulo: '5. Sua conta',
       paragrafos: [
-        'XP, sequência, cartas e insígnias servem para motivar você. Eles não têm valor em dinheiro e não podem ser trocados.',
-        'Os pontos são registrados e conferidos pelo servidor do app. Podemos corrigir pontos ganhos por erro ou por uso indevido.',
-        'A meta é cuidar de você, não competir ou se cobrar demais. Se as metas estiverem causando ansiedade, pare e converse com alguém de confiança.',
+        'Use dados verdadeiros e um e-mail seu. Guarde a senha e não compartilhe com ninguém. Se entrar com o Google, usamos só o nome e o e-mail dessa conta.',
+        'Achou que alguém entrou na sua conta? Avise a gente pelo contato no fim deste texto.',
       ],
     },
     {
-      titulo: '6. Amigos e conteúdo que você compartilha',
+      titulo: '6. Combinados de convivência',
       paragrafos: [
-        'Você escolhe se quer usar as funções sociais. Só vê suas informações quem você aceitou como amigo e apenas o que o app mostra no perfil de amigo.',
-        'O que você compartilha (como receitas) continua sendo responsabilidade sua. Podemos remover conteúdo que quebre estas regras.',
+        'Respeito sempre: não vale ofender, ameaçar, expor ninguém, mandar conteúdo impróprio ou fingir ser outra pessoa.',
+        'Não tente burlar o app, como ganhar pontos sem fazer a atividade ou acessar dados de outra pessoa. Quem quebrar os combinados pode ter funções limitadas ou a conta suspensa.',
       ],
     },
     {
-      titulo: '7. Conteúdo do app',
+      titulo: '7. Pontos, cartas e desafios',
       paragrafos: [
-        'Textos, lições, imagens, o mascote Broxis e o design do app pertencem a [NOME DA INSTITUIÇÃO] ou a seus autores. Você pode usá-los dentro do app, para seu aprendizado, mas não pode copiar ou vender.',
+        'XP, sequência, cartas e figurinhas servem pra motivar. Não valem dinheiro e não podem ser trocados por nada.',
+        'Não existe ranking nem comparação com outras pessoas. Se algum desafio te deixar ansioso ou cobrando demais de si, pare e converse com alguém de confiança.',
       ],
     },
     {
-      titulo: '8. Mudanças e disponibilidade',
+      titulo: '8. Turma (amigos)',
       paragrafos: [
-        'O app pode ter falhas, ficar fora do ar para manutenção ou mudar com o tempo. Se estes termos mudarem de forma importante, vamos avisar e pedir um novo aceite.',
+        'Usar a Turma é opcional. Só quem você aceitou vê o seu perfil de amigo, e só o que aparece nele.',
+        'O que você compartilha, como receitas, é responsabilidade sua. Podemos tirar do ar o que quebrar estes combinados.',
       ],
     },
     {
-      titulo: '9. Encerrar sua conta',
+      titulo: '9. Conteúdo do app',
       paragrafos: [
-        'Você pode parar de usar o app quando quiser e pedir a exclusão da conta e dos seus dados pelo contato abaixo.',
+        'Lições, textos, imagens e o Bróxis foram feitos pela equipe do projeto, e os textos sobre alimentação passam por revisão de nutricionista. Você pode usar tudo dentro do app pra aprender, mas não pode copiar ou vender.',
       ],
     },
     {
-      titulo: '10. Contato',
-      paragrafos: ['Dúvidas ou pedidos: [E-MAIL DE CONTATO DO PROJETO].'],
+      titulo: '10. Mudanças',
+      paragrafos: [
+        'Se estes termos mudarem de um jeito importante, a gente avisa no app e pede um novo aceite. A versão e a data ficam no topo.',
+      ],
+    },
+    {
+      titulo: '11. Sair e apagar a conta',
+      paragrafos: [
+        'Você pode parar de usar quando quiser e pedir pra apagar sua conta e seus dados pelo contato abaixo. Seu responsável também pode pedir.',
+      ],
+    },
+    {
+      titulo: '12. Contato',
+      paragrafos: [
+        'Profa. Maria Lúcia Bento Villela (pesquisadora responsável) · maria.villela@ufv.br · (31) 3612-6350 · Departamento de Informática, UFV, Viçosa-MG.',
+        'Dúvida ou reclamação sobre a ética da pesquisa: CEP/UFV (Comitê de Ética em Pesquisa com Seres Humanos) · cep@ufv.br · (31) 3612-2316 · Edifício Arthur Bernardes, piso inferior, Campus UFV.',
+      ],
     },
   ],
 };
@@ -96,81 +112,111 @@ export const TERMOS_DE_USO: DocumentoLegal = {
 export const POLITICA_DE_PRIVACIDADE: DocumentoLegal = {
   titulo: 'Política de Privacidade',
   intro:
-    'Aqui explicamos quais dados do NutriTeens guardamos, para quê, com quem aparecem e como você controla isso. Seguimos a Lei Geral de Proteção de Dados (LGPD).',
+    'Quais dados o NutriTeens guarda, pra quê, quem vê e como você controla isso. Seguimos a Lei Geral de Proteção de Dados (LGPD) e as regras de ética em pesquisa.',
   secoes: [
     {
       titulo: '1. Quem cuida dos seus dados',
       paragrafos: [
-        'O controlador dos dados é [NOME DA INSTITUIÇÃO / CNPJ].',
-        'Encarregado (pessoa para falar sobre seus dados): [NOME E E-MAIL DO ENCARREGADO].',
+        'A Universidade Federal de Viçosa (UFV) é a controladora dos dados, e a pesquisadora responsável é a Profa. Maria Lúcia Bento Villela.',
+        'Encarregado de dados da UFV: [CONFIRMAR NOME E CONTATO DO ENCARREGADO/DPO DA UFV].',
       ],
     },
     {
-      titulo: '2. Quais dados coletamos',
+      titulo: '2. Quais dados guardamos',
       paragrafos: [
-        'Dados do cadastro: nome, e-mail, data de nascimento, gênero, tipo de escola e, se você entrar com o Google, o nome e e-mail dessa conta.',
-        'Dados de saúde e hábitos que você informa: peso, altura, refeições e alimentos registrados, água, atividade física, respostas das perguntas de triagem sobre alimentação e a classificação que o app calcula a partir delas. São dados sensíveis, e tratamos com cuidado extra.',
-        'Dados de uso: lições concluídas, pontos (XP), sequência de dias, missões, cartas e insígnias, além de eventos de uso do app para entendermos quais partes funcionam.',
-        'Dados sociais: seu apelido, avatar, amizades e o que você escolher compartilhar com amigos.',
-        'Dados do aparelho: informações técnicas necessárias para o app funcionar e para enviar lembretes, se você permitir notificações. A câmera só é usada no leitor de código de barras, quando você abre essa função.',
+        'Cadastro: nome, e-mail, data de nascimento, gênero e tipo de escola. Se você entrar com o Google, o nome e o e-mail dessa conta.',
+        'Hábitos que você registra: refeições e alimentos, água, atividade física e o peso que você informa (usado só pra calcular sua meta de água, nunca mostrado como meta de peso).',
+        'Perguntas iniciais: o que você comeu no dia anterior e respostas sobre a alimentação em casa, além do resultado que o app calcula. Esses são dados sensíveis e recebem cuidado extra.',
+        'Uso do app: lições, XP, sequência, cartas e desafios. Os eventos de uso levam só códigos curtos, nunca seu nome, e-mail ou o que você escreveu.',
+        'Turma: apelido, avatar, amizades e o que você escolher compartilhar.',
+        'Câmera: só quando você abre o leitor de código de barras. Fotos de produtos que você enviar ficam guardadas no app.',
       ],
     },
     {
-      titulo: '3. Para que usamos',
+      titulo: '3. Pra que usamos',
       paragrafos: [
-        'Para criar e manter sua conta; mostrar lições e metas adequadas a você; calcular pontos e evolução; permitir recursos com amigos; enviar lembretes que você ativou; manter o app seguro; e melhorar o app.',
-        'Nutricionistas e a equipe responsável podem ver informações dos participantes para acompanhar o projeto: [DESCREVER O QUE O NUTRICIONISTA E O ADMINISTRADOR PODEM VER — CONFIRMAR].',
-        '[CONFIRMAR: uso de dados de forma anônima/agregada em pesquisa e o que é necessário para isso.]',
+        'Pra o app funcionar, sugerir lições e ideias que combinem com você, calcular pontos, mostrar lembretes (agendados no seu próprio celular) e manter tudo seguro.',
+        'Pra pesquisa: a equipe analisa os dados com códigos no lugar do seu nome. Nenhum resultado publicado identifica você.',
+        'Nunca vendemos seus dados e nunca usamos pra propaganda.',
       ],
     },
     {
       titulo: '4. Por que podemos usar (base legal)',
       paragrafos: [
-        '[DEFINIR COM O JURÍDICO: base legal para dados de adolescentes e dados de saúde — consentimento (seu e, quando exigido, do responsável) e outras bases aplicáveis. Ver RF003.]',
+        'Consentimento do seu responsável e o seu assentimento, sempre no seu melhor interesse (art. 14 da LGPD). Para dados sensíveis, o consentimento é específico e destacado (art. 11).',
+        '[CONFIRMAR COM O JURÍDICO DA UFV: uso também da base de estudo por órgão de pesquisa e regras para menores de 12 anos.]',
       ],
     },
     {
-      titulo: '5. Com quem compartilhamos',
+      titulo: '5. Quem vê seus dados',
       paragrafos: [
-        'Seus amigos aceitos veem só o que o perfil de amigo mostra.',
-        'Usamos serviços de tecnologia para o app funcionar (como hospedagem e banco de dados, login com Google e envio de notificações): [LISTAR OS FORNECEDORES E PAÍSES DOS SERVIDORES].',
-        '[CONFIRMAR: o NutriTeens não vende seus dados nem os usa para publicidade.]',
+        'Você, sempre.',
+        'A equipe da pesquisa (pesquisadores e nutricionista do projeto), só pra acompanhar o estudo: [CONFIRMAR O QUE CADA PERFIL VÊ NO PAINEL].',
+        'Amigos aceitos veem só o perfil de amigo. Ninguém vê suas refeições, seu peso ou suas respostas iniciais.',
+      ],
+    },
+    {
+      titulo: '6. Serviços que o app usa',
+      paragrafos: [
+        'Supabase: hospeda o banco de dados, o login e as fotos. [CONFIRMAR REGIÃO DO SERVIDOR; se fora do Brasil, há transferência internacional de dados.]',
+        'Google: só se você escolher entrar com o Google.',
+        'Open Food Facts: quando você usa o leitor, o app envia o código de barras ou o nome do produto que você buscou. Nenhum dado seu vai junto.',
         'Podemos compartilhar dados se uma lei ou ordem judicial exigir.',
       ],
     },
     {
-      titulo: '6. Por quanto tempo guardamos',
+      titulo: '7. Por quanto tempo guardamos',
       paragrafos: [
-        'Guardamos seus dados enquanto sua conta existir. Se você pedir exclusão, apagamos ou anonimizamos, salvo o que a lei obrigar a manter: [PRAZOS A DEFINIR].',
+        'Enquanto sua conta existir. Os dados da pesquisa ficam guardados com segurança por 5 anos depois do fim do estudo e depois são apagados, como manda o protocolo aprovado pelo Comitê de Ética.',
+        'Se você pedir pra apagar, apagamos ou deixamos anônimo em até [PRAZO A DEFINIR], salvo o que a lei obrigar a manter.',
       ],
     },
     {
-      titulo: '7. Seus direitos',
+      titulo: '8. Seus direitos (e do seu responsável)',
       paragrafos: [
-        'Você pode pedir: confirmação de que tratamos seus dados, acesso a eles, correção, anonimização ou exclusão, informação sobre com quem compartilhamos, e retirar seu consentimento quando quiser.',
-        'Para isso, fale com o encarregado pelo contato da seção 1. Respondemos em até [PRAZO].',
+        'Saber se tratamos seus dados, ver, corrigir, pedir pra apagar ou deixar anônimo, saber com quem compartilhamos e retirar o consentimento quando quiser.',
+        'É só falar com a pesquisadora responsável pelo contato abaixo. Respondemos em até [PRAZO, ex.: 15 dias].',
       ],
     },
     {
-      titulo: '8. Segurança',
+      titulo: '9. Segurança',
       paragrafos: [
-        'Usamos medidas técnicas para proteger seus dados, como login protegido, controle de quem acessa cada informação e conferência dos pontos pelo servidor. Nenhum sistema é 100% seguro; se houver um incidente que possa afetar você, vamos avisar.',
-      ],
-    },
-    {
-      titulo: '9. Adolescentes e responsáveis',
-      paragrafos: [
-        'O NutriTeens é feito para adolescentes e tratamos seus dados sempre pensando no seu melhor interesse. Seus responsáveis podem entrar em contato conosco sobre os seus dados: [DEFINIR PROCEDIMENTO — ver RF003].',
+        'Login protegido, conexão criptografada e regras no banco de dados que limitam quem acessa cada informação. Os pontos são conferidos pelo servidor.',
+        'Nenhum sistema é 100% seguro. Se acontecer um incidente que possa te afetar, avisamos você, seu responsável e a ANPD.',
       ],
     },
     {
       titulo: '10. Mudanças nesta política',
       paragrafos: [
-        'Se mudarmos algo importante, avisamos no app e pedimos um novo aceite quando necessário. A versão e a data ficam no topo deste texto.',
+        'Se algo importante mudar, avisamos no app e pedimos um novo aceite. A versão e a data ficam no topo.',
+      ],
+    },
+    {
+      titulo: '11. Contato',
+      paragrafos: [
+        'Profa. Maria Lúcia Bento Villela (pesquisadora responsável) · maria.villela@ufv.br · (31) 3612-6350 · Departamento de Informática, UFV, Viçosa-MG.',
+        'Ética da pesquisa: CEP/UFV (Comitê de Ética em Pesquisa com Seres Humanos) · cep@ufv.br · (31) 3612-2316 · Edifício Arthur Bernardes, piso inferior, Campus UFV.',
       ],
     },
   ],
 };
+
+// Folha de resumo (cadastro e reaceite). Tem que continuar fiel ao texto completo acima.
+export const RESUMO_COMBINADO: ItemResumo[] = [
+  { icone: 'eye-outline', titulo: 'O que a gente guarda', texto: 'Seu cadastro, o que você registra e as respostas das perguntas iniciais.' },
+  { icone: 'people-outline', titulo: 'Quem vê', texto: 'Você e a equipe da pesquisa da UFV. Amigos só veem seu perfil de amigo.' },
+  { icone: 'shield-checkmark-outline', titulo: 'O que nunca fazemos', texto: 'Vender seus dados, mostrar propaganda, contar calorias ou fazer ranking.' },
+  { icone: 'trash-outline', titulo: 'Você manda', texto: 'Pode ver, corrigir ou pedir pra apagar seus dados. Seu responsável também.' },
+  { icone: 'cloud-outline', titulo: 'Onde fica', texto: 'Em servidores protegidos. O leitor de código só envia o código do produto.' },
+  { icone: 'information-circle-outline', titulo: 'É uma pesquisa', texto: 'Aprovada pelo Comitê de Ética da UFV. Dá pra desistir sem prejuízo.' },
+];
+
+// O que mudou em relação à versão anterior (aparece no modal de reaceite).
+export const MUDANCAS_DA_VERSAO: string[] = [
+  'Contatos da pesquisadora responsável e do Comitê de Ética da UFV',
+  'Quais serviços o app usa e o que vai pra cada um',
+  'Por quanto tempo os dados da pesquisa ficam guardados',
+];
 
 export const DOCUMENTOS_LEGAIS: Record<TipoDocumentoLegal, DocumentoLegal> = {
   termos: TERMOS_DE_USO,

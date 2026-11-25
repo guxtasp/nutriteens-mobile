@@ -1,4 +1,4 @@
-import { categoriaDoAlimento, ordenarTrocas, escolherTrocasRefeicao, Troca } from '../trocas';
+import { categoriaDoAlimento, ordenarTrocas, escolherTrocasRefeicao, noLugarDe, Troca } from '../trocas';
 
 const t = (o: Partial<Troca> & { id: string }): Troca => ({
   categoria: 'DOCE', origemId: null, origemNome: null, destinoId: `d-${o.id}`, destinoNome: o.id,
@@ -86,5 +86,12 @@ describe('escolherTrocasRefeicao', () => {
   });
   it('troca específica de outro alimento não vale', () => {
     expect(escolherTrocasRefeicao([R({ id: 'a', origemId: 'outro' })], [refri], 'ALMOCO')).toBeNull();
+  });
+});
+
+describe('noLugarDe', () => {
+  it('concorda o artigo com a categoria', () => {
+    expect(noLugarDe('REFRIGERANTE_BEBIDA')).toBe('No lugar do refrigerante');
+    expect(noLugarDe('REFEICAO')).toBe('No lugar da refeição');
   });
 });

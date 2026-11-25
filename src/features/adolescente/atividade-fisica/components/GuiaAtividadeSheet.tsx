@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Props = {
   visivel: boolean;
@@ -39,6 +40,8 @@ const DURACAO_AUTO_AVANCO = 5000;
 const LARGURA_TELA = Dimensions.get('window').width;
 
 export default function GuiaAtividadeSheet({ visivel, onFechar }: Props) {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(36);
   const [montado, setMontado] = useState(visivel);
   const [passoAtual, setPassoAtual] = useState(0);
 
@@ -98,13 +101,13 @@ export default function GuiaAtividadeSheet({ visivel, onFechar }: Props) {
   const passo = PASSOS[passoAtual];
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={onFechar}>
+    <Modal navigationBarTranslucent statusBarTranslucent visible transparent animationType="none" onRequestClose={onFechar}>
       <Pressable style={StyleSheet.absoluteFillObject} onPress={onFechar}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
       </Pressable>
 
       <Animated.View style={[styles.sheetWrapper, { transform: [{ translateY: sheetTranslateY }] }]}>
-        <Pressable style={styles.sheet} onPress={avancarPasso}>
+        <Pressable style={[styles.sheet, { paddingBottom: respiroFolha }]} onPress={avancarPasso}>
           <View style={styles.puxador} />
 
           <View style={styles.cabecalho}>
@@ -155,7 +158,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    paddingBottom: 36,
   },
   puxador: {
     width: 40,

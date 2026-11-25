@@ -11,6 +11,7 @@ import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { GUIA_CADASTRO, rotuloCategoria, type OrigemAlimento } from '../utils/categoriasAlimento';
 import { INFO_ORIGEM } from '../screens/NovoAlimentoOrigemScreen';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Props = {
   visivel: boolean;
@@ -24,6 +25,8 @@ type Props = {
 const ORDEM: OrigemAlimento[] = ['NATURAL', 'PREPARADO_EM_CASA', 'INDUSTRIALIZADO'];
 
 export default function GuiaCadastroAlimentoSheet({ visivel, onFechar, origemInicial, iconesGrupos }: Props) {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(32);
   const [aba, setAba] = useState<OrigemAlimento>(origemInicial);
 
   // sempre abre na origem escolhida, mesmo se a pessoa mexeu nas abas da última vez
@@ -35,9 +38,9 @@ export default function GuiaCadastroAlimentoSheet({ visivel, onFechar, origemIni
   const visual = INFO_ORIGEM[aba];
 
   return (
-    <Modal visible={visivel} transparent animationType="slide" onRequestClose={onFechar}>
+    <Modal navigationBarTranslucent statusBarTranslucent visible={visivel} transparent animationType="slide" onRequestClose={onFechar}>
       <Pressable style={styles.backdrop} onPress={onFechar} accessibilityLabel="Fechar guia" />
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, { paddingBottom: respiroFolha }]}>
         <View style={styles.puxador} />
         <View style={styles.cabecalho}>
           <View style={styles.cabecalhoTitulo}>
@@ -118,7 +121,7 @@ const styles = StyleSheet.create({
   sheet: {
     position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '88%',
     backgroundColor: '#F6FAF1', borderTopLeftRadius: 26, borderTopRightRadius: 26,
-    paddingHorizontal: 20, paddingTop: 10, paddingBottom: 32,
+    paddingHorizontal: 20, paddingTop: 10,
   },
   puxador: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D9E2E8', alignSelf: 'center', marginBottom: 14 },
   cabecalho: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },

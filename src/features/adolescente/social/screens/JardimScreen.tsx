@@ -16,15 +16,18 @@ import { typography } from '../../../../shared/theme/typography';
 import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { feedbackToque } from '../../../../shared/audio/feedback';
-import CabecalhoTela from '../components/CabecalhoTela';
 import { AZUL_AGUA, BlocoRegar, CEU, mensagemErroJardim, nomeDoTema } from '../components/JardimPecas';
 import JardimBotao from '../components/JardimBotao';
 import JardimResumoCard from '../components/JardimResumoCard';
 import PlantaJardim from '../components/PlantaJardim';
 import { listarJardins, regarJardinsSeHojeContou, responderConviteJardim } from '../services/jardimService';
 import { MAX_JARDINS_ATIVOS, estagioDoJardim, euRegueiHoje, faltaRegarHoje, type Jardim } from '../utils/jardim';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 export default function JardimScreen() {
+  // edges só em cima: o fim da rolagem soma a barra do Android (ver shared/utils/areaSegura.ts)
+  const respiroFim = useRespiroInferior(60);
   const navigation = useNavigation<any>();
   const { userId } = useAuth();
   const [jardins, setJardins] = useState<Jardim[]>([]);
@@ -79,9 +82,9 @@ export default function JardimScreen() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <CabecalhoTela titulo="Jardim do grupo" aoVoltar={voltar} />
+      <ScreenHeader titulo="Jardim do grupo" onVoltar={voltar} />
 
-      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[estilos.conteudo, { paddingBottom: respiroFim }]} showsVerticalScrollIndicator={false}>
         {!!aviso && (
           <View style={estilos.msgCaixa} accessibilityRole="alert">
             <Ionicons name="information-circle" size={18} color={colors.primaryDark} />
@@ -144,7 +147,7 @@ export default function JardimScreen() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#F8FAF8' },
-  conteudo: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 60, gap: 14 },
+  conteudo: { paddingHorizontal: 16, paddingTop: 4, gap: 14 },
   secao: { fontFamily: typography.bold, fontSize: 12, letterSpacing: 0.8, color: '#5A6B64', textTransform: 'uppercase', marginTop: 4 },
   msgCaixa: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#EAF5DD', borderRadius: 14, padding: 12 },
   msgTexto: { flex: 1, fontFamily: typography.semiBold, fontSize: 13, lineHeight: 18, color: colors.primaryDark },

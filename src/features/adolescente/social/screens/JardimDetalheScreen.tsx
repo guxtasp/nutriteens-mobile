@@ -19,12 +19,13 @@ import { formatarDataISO } from '../../../../shared/utils/data';
 import { feedbackConquista, feedbackToque } from '../../../../shared/audio/feedback';
 import AbasSegmentadas from '../components/AbasSegmentadas';
 import { AvatarSocialView } from '../components/AvatarSocialView';
-import CabecalhoTela from '../components/CabecalhoTela';
 import { AZUL_AGUA, AvisoCresceu, BlocoRegar, CEU, Gotas, LinhaDoTempo, mensagemErroJardim, nomeDoTema } from '../components/JardimPecas';
 import JardimBotao from '../components/JardimBotao';
 import PlantaJardim from '../components/PlantaJardim';
 import { listarAmigos, type AmigoSocial } from '../services/socialService';
 import { convidarParaJardim, listarJardins, regarJardinsSeHojeContou, sairDoJardim } from '../services/jardimService';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 import {
   ESTAGIOS_JARDIM, MAX_MEMBROS_JARDIM, estagioDoJardim, euRegueiHoje, faltaRegarHoje, mensagemConviteJardim, nomeDoEstagio, progressoDoJardim,
   textoRegaHoje, type Jardim,
@@ -33,6 +34,8 @@ import {
 type Aba = 'jardim' | 'grupo';
 
 export default function JardimDetalheScreen() {
+  // edges só em cima: o fim da rolagem soma a barra do Android (ver shared/utils/areaSegura.ts)
+  const respiroFim = useRespiroInferior(60);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const id: string | undefined = route.params?.id;
@@ -129,7 +132,7 @@ export default function JardimDetalheScreen() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <CabecalhoTela titulo={j ? nomeDoTema(j.tema) : 'Jardim'} aoVoltar={voltar} />
+      <ScreenHeader titulo={j ? nomeDoTema(j.tema) : 'Jardim'} onVoltar={voltar} />
 
       {carregando ? <ActivityIndicator color={colors.primaryDark} style={{ marginTop: 40 }} /> : erro ? (
         <View style={estilos.centro}>
@@ -142,7 +145,7 @@ export default function JardimDetalheScreen() {
           <JardimBotao bloco={false} label="VOLTAR" onPress={voltar} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[estilos.conteudo, { paddingBottom: respiroFim }]} showsVerticalScrollIndicator={false}>
           <AbasSegmentadas<Aba>
             cor="#3E8E2F"
             atual={aba}
@@ -258,7 +261,7 @@ export default function JardimDetalheScreen() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#F8FAF8' },
-  conteudo: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 60, gap: 14 },
+  conteudo: { paddingHorizontal: 16, paddingTop: 4, gap: 14 },
   centro: { alignItems: 'center', gap: 12, marginTop: 40, paddingHorizontal: 24 },
   cartao: { backgroundColor: colors.white, borderRadius: 24, borderWidth: 2, borderColor: '#E4E9E6', overflow: 'hidden' },
   cartaoSimples: { backgroundColor: colors.white, borderRadius: 22, borderWidth: 1, borderColor: '#E4E9E6', padding: 16, gap: 10 },

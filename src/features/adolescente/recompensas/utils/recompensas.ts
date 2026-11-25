@@ -6,10 +6,24 @@
 // em quais telas pode aparecer e quando vale a pena perguntar ao servidor de novo.
 import type { CartaGuia } from '../../cartas/utils/cartas';
 import type { CategoriaReconhecimento, Insignia } from '../../perfil/services/gamificacaoService';
+import type { FaseMascote } from '../../perfil/utils/fasesMascote';
 
 export type Recompensa =
   | { tipo: 'carta'; chave: string; carta: CartaGuia }
-  | { tipo: 'insignia'; chave: string; insignia: Insignia };
+  | { tipo: 'insignia'; chave: string; insignia: Insignia }
+  /** o Broxis subiu de fase: sempre a última da fila (é o maior clímax) */
+  | {
+      tipo: 'fase';
+      chave: string;
+      fase: FaseMascote;
+      anterior: FaseMascote | null;
+      /** a fase seguinte (para mostrar a próxima meta); null na última */
+      proxima: FaseMascote | null;
+      /** todas as fases, em ordem (a trilha de bolinhas da tela) */
+      trilha: FaseMascote[];
+      posicao: number;
+      total: number;
+    };
 
 /** Ordem de exibição das insígnias/marcos/conquistas: o mais "raro" por último (clímax). */
 const PESO_CATEGORIA: Record<CategoriaReconhecimento, number> = { conquista: 0, marco: 1, insignia: 2 };
@@ -96,4 +110,21 @@ export function tituloRecompensaInsignia(categoria: CategoriaReconhecimento): st
   if (categoria === 'insignia') return 'Nova insígnia!';
   if (categoria === 'marco') return 'Marco alcançado!';
   return 'Conquista desbloqueada!';
+}
+
+/** Monta a recompensa de evolução do Broxis (a chave usa a fase: cada uma só é comemorada uma vez). */
+export function recompensaDeFase(fases: FaseMascote[], novaFase: FaseMascote['fase']): Recompensa | null {
+  const ordenadas = [...fases].sort((a, b) => a.xpMinimo - b.xpMinimo);
+  const i = ordenadas.findIndex((f) => f.fase === novaFase);
+  if (i < 0) return null;
+  return {
+    tipo: 'fase',
+    chave: `fase:${novaFase}`,
+    fase: ordenadas[i],
+    anterior: ordenadas[i - 1] ?? null,
+    proxima: ordenadas[i + 1] ?? null,
+    trilha: ordenadas,
+    posicao: i + 1,
+    total: ordenadas.length,
+  };
 }

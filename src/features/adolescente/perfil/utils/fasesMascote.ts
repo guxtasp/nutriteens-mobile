@@ -42,3 +42,26 @@ export function calcularEstadoFase(xpTotal: number, fases: FaseMascote[] = FASES
     xpFaltando: proxima.xpMinimo - xp,
   };
 }
+
+/** Posição da fase na ordem de evolução (0 = filhote). -1 se não existir na lista. */
+export function indiceFase(fase: FaseId, fases: FaseMascote[] = FASES_PADRAO): number {
+  return [...fases].sort((a, b) => a.xpMinimo - b.xpMinimo).findIndex((f) => f.fase === fase);
+}
+
+/**
+ * Decide se a evolução do Broxis merece a animação de "subiu de fase".
+ * Só comemora quando a fase atual está À FRENTE da última que o aluno já viu.
+ * Sem registro anterior (primeira vez neste aparelho), não comemora: quem já estava
+ * numa fase alta antes desta versão não deve ver uma evolução "do nada".
+ */
+export function faseParaCelebrar(
+  atual: FaseId,
+  ultimaVista: FaseId | null,
+  fases: FaseMascote[] = FASES_PADRAO,
+): FaseId | null {
+  if (!ultimaVista) return null;
+  const iAtual = indiceFase(atual, fases);
+  const iVista = indiceFase(ultimaVista, fases);
+  if (iAtual < 0) return null;
+  return iAtual > iVista ? atual : null;
+}

@@ -21,6 +21,7 @@ import Prato from './Prato';
 import Classifique from './Classifique';
 import CartaoConteudo from './CartaoConteudo';
 import { contarPontuadas, ehPassoPontuado, filaAposResposta, montarFila } from '../../utils/sessaoPassos';
+import { useRespiroInferior } from '../../../../../shared/hooks/useRespiroInferior';
 
 type Props = {
   questoes: QuestaoQuiz[];
@@ -62,6 +63,8 @@ type RespostaMapa = Record<string, string>;
 export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Props) {
   // fila de passos: cresce quando uma questão errada é reapresentada
   const [fila, setFila] = useState(() => montarFila(questoes));
+  // a tela da lição usa edges só em cima: o botão de baixo soma a barra do sistema aqui
+  const respiroRodape = useRespiroInferior(layout.rodapeBotaoMargemInferior);
   const [indice, setIndice] = useState(0);
   const [respondido, setRespondido] = useState(false);
   // acertos na PRIMEIRA tentativa (retentativa não conta)
@@ -321,7 +324,7 @@ export default function ExercicioQuizContainer({ questoes, onConcluirTodas }: Pr
       {/* botão ancorado embaixo (mesma posição do CONTINUAR do Recordatório);
           some quando o painel de feedback aparece no lugar dele */}
       {!respondido && (
-        <View style={styles.rodape}>
+        <View style={[styles.rodape, { paddingBottom: respiroRodape }]}>
           <AppButton
             label="CONTINUAR"
             backgroundColor={podeResponder() ? colors.primary : '#B8B8B8'}
@@ -354,7 +357,6 @@ const styles = StyleSheet.create({
   rodape: {
     paddingHorizontal: layout.margemFluxoH,
     paddingTop: 12,
-    paddingBottom: layout.rodapeBotaoMargemInferior,
   },
   retentativa: {
     fontFamily: typography.bold,

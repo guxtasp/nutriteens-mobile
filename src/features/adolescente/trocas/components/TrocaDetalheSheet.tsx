@@ -21,12 +21,15 @@ export type TrocaDetalhe = {
 
 type Props = { item: TrocaDetalhe | null; origemNome?: string | null; onFechar: () => void };
 
-function Bloco({ icone, titulo, texto }: { icone: string; titulo: string; texto: string }) {
+/** Bloco "o que muda / o que você ganha / dica". `destaque` = fundo amarelo pontual (dica). */
+export function Bloco({ icone, titulo, texto, destaque }: { icone: string; titulo: string; texto: string; destaque?: boolean }) {
   return (
-    <View style={styles.bloco}>
-      <View style={styles.blocoIcone}><MaterialCommunityIcons name={icone as any} size={16} color={colors.primaryDark} /></View>
+    <View style={[styles.bloco, destaque && styles.blocoDestaque]}>
+      <View style={[styles.blocoIcone, destaque && styles.blocoIconeDestaque]}>
+        <MaterialCommunityIcons name={icone as any} size={16} color={destaque ? colors.amareloTexto : colors.primaryDark} />
+      </View>
       <View style={{ flex: 1 }}>
-        <AppText style={styles.blocoTitulo}>{titulo}</AppText>
+        <AppText style={[styles.blocoTitulo, destaque && styles.blocoTituloDestaque]}>{titulo}</AppText>
         <AppText style={styles.blocoTexto}>{texto}</AppText>
       </View>
     </View>
@@ -83,6 +86,9 @@ const styles = StyleSheet.create({
   chip: { backgroundColor: '#E2F3D3', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   chipTexto: { fontFamily: typography.bold, fontSize: 11, color: colors.primaryDark },
   bloco: { flexDirection: 'row', gap: 10, backgroundColor: '#F4F8F5', borderRadius: 14, padding: 12, marginTop: 8 },
+  blocoDestaque: { backgroundColor: colors.amareloSuave },
+  blocoIconeDestaque: { backgroundColor: colors.amareloMedio },
+  blocoTituloDestaque: { color: colors.amareloTexto },
   blocoIcone: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#E2F3D3', alignItems: 'center', justifyContent: 'center' },
   blocoTitulo: { fontFamily: typography.bold, fontSize: 12, color: colors.primaryDark, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 },
   blocoTexto: { fontFamily: typography.regular, fontSize: 14, color: '#3F5148', lineHeight: 20 },

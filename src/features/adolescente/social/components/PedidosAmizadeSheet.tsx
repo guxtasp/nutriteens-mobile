@@ -13,6 +13,7 @@ import { typography } from '../../../../shared/theme/typography';
 import type { SolicitacaoSocial } from '../services/socialService';
 import { turma } from '../theme/turma';
 import { AvatarSocialView } from './AvatarSocialView';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Props = {
   visivel: boolean;
@@ -42,6 +43,8 @@ function Contador({ valor, suave }: { valor: number; suave?: boolean }) {
 }
 
 export function PedidosAmizadeSheet({ visivel, recebidos, enviados, ocupado, onFechar, onResponder, onCancelar, onOpcoes }: Props) {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(24);
   const [confirmando, setConfirmando] = useState<SolicitacaoSocial | null>(null);
 
   // Se o pedido some da lista (respondido em outro aparelho, por exemplo), a confirmação some junto.
@@ -56,7 +59,7 @@ export function PedidosAmizadeSheet({ visivel, recebidos, enviados, ocupado, onF
   const vazio = recebidos.length === 0 && enviados.length === 0;
 
   return (
-    <Modal visible={visivel} transparent animationType="slide" onRequestClose={onFechar}>
+    <Modal navigationBarTranslucent statusBarTranslucent visible={visivel} transparent animationType="slide" onRequestClose={onFechar}>
       <View style={estilos.overlay}>
         <Pressable style={estilos.fundo} onPress={onFechar} accessibilityLabel="Fechar" />
 
@@ -74,7 +77,7 @@ export function PedidosAmizadeSheet({ visivel, recebidos, enviados, ocupado, onF
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: respiroFolha }}>
             {vazio && (
               <View style={estilos.vazio}>
                 <BroxisMascot size={84} pose="curioso" entrance="nenhuma" />

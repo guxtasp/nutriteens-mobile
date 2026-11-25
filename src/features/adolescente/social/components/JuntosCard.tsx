@@ -27,6 +27,7 @@ import {
 } from '../utils/cartinhas';
 import { AvatarSocialView } from './AvatarSocialView';
 import CartinhaArte from './CartinhaArte';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Props = { amigos: AmigoSocial[]; refreshToken: number; onMandarCartinha: (amigo: AmigoSocial) => void };
 
@@ -108,6 +109,8 @@ function PresenteSheet({
   onFechar: () => void;
   onMandarCartinha: (a: AmigoSocial) => void;
 }) {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(28);
   const [lista, setLista] = useState(amigosJuntos);
   const [escolhido, setEscolhido] = useState<string>(
     (amigosJuntos.find((j) => !j.presenteado) ?? amigosJuntos[0]).amizadeId
@@ -160,10 +163,10 @@ function PresenteSheet({
   }
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onFechar}>
+    <Modal navigationBarTranslucent statusBarTranslucent visible transparent animationType="slide" onRequestClose={onFechar}>
       <View style={estilos.raiz}>
         <Pressable style={estilos.fundo} onPress={onFechar} accessibilityLabel="Fechar" />
-        <View style={estilos.caixa}>
+        <View style={[estilos.caixa, { paddingBottom: respiroFolha }]}>
           <View style={estilos.puxador} />
           <AppText style={estilos.caixaTitulo}>Fizemos juntos!</AppText>
           <AppText style={estilos.caixaSub}>
@@ -259,7 +262,7 @@ const estilos = StyleSheet.create({
 
   raiz: { flex: 1, justifyContent: 'flex-end' },
   fundo: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  caixa: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, maxHeight: '88%' },
+  caixa: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '88%' },
   puxador: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: '#D5DDD8', marginBottom: 14 },
   caixaTitulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark },
   caixaSub: { fontSize: 13, color: '#6B7280', marginTop: 2, marginBottom: 10 },

@@ -11,14 +11,17 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { feedbackToque } from '../../../../shared/audio/feedback';
-import CabecalhoTela from '../components/CabecalhoTela';
 import { CEU, mensagemErroJardim } from '../components/JardimPecas';
 import JardimBotao from '../components/JardimBotao';
 import PlantaJardim from '../components/PlantaJardim';
 import { criarJardim } from '../services/jardimService';
 import { TEMAS_JARDIM, type TemaJardim } from '../utils/jardim';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 export default function NovoJardimScreen() {
+  // edges só em cima: o fim da rolagem soma a barra do Android (ver shared/utils/areaSegura.ts)
+  const respiroFim = useRespiroInferior(48);
   const navigation = useNavigation<any>();
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -43,8 +46,8 @@ export default function NovoJardimScreen() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <CabecalhoTela titulo="Novo jardim" aoVoltar={voltar} />
-      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+      <ScreenHeader titulo="Novo jardim" onVoltar={voltar} />
+      <ScrollView contentContainerStyle={[estilos.conteudo, { paddingBottom: respiroFim }]} showsVerticalScrollIndicator={false}>
         <AppText style={estilos.titulo}>Qual planta vocês vão cuidar?</AppText>
         <AppText style={estilos.sub}>Toque numa planta para plantar. Depois é só chamar os amigos.</AppText>
 
@@ -81,7 +84,7 @@ export default function NovoJardimScreen() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#F8FAF8' },
-  conteudo: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 12 },
+  conteudo: { paddingHorizontal: 16, paddingTop: 4, gap: 12 },
   titulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark },
   sub: { fontFamily: typography.regular, fontSize: 13, lineHeight: 19, color: '#5A6B64' },
   msgCaixa: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#EAF5DD', borderRadius: 14, padding: 12 },

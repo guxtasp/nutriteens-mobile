@@ -2,8 +2,10 @@
 // Aba "Alternativas" (módulo Comer): hub no mesmo estilo da tela de registrar alimentação.
 //  - Vitaminas e minerais (RF016, fase 3)  - Scanner de alimentos (RF013/RF022, fase 4)
 //  - Alternativas alimentares / trocas (RF015, fase 1) -> SugestoesAlimentares
+//  - Receitas salvas: linha logo abaixo de Receitas (só com 1+ salva), o caminho mais curto até elas
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Ionicons as Icone } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +21,8 @@ import CartaoJogo from '../../jogos/components/CartaoJogo';
 import HomeBottomBar, { useAlturaBarraAbas } from '../../_shared/components/HomeBottomBar';
 import TabHeader from '../../_shared/components/TabHeader';
 import QuickActionsMenu from '../../_shared/components/QuickActionsMenu';
+import { useReceitasSalvas } from '../../receitas-ingredientes/hooks/useReceitasSalvas';
+import { textoQuantidadeSalvas } from '../../receitas-ingredientes/utils/receitasSalvas';
 
 type Nav = NativeStackNavigationProp<AdolescenteStackParamList, 'Alimentacao'>;
 
@@ -109,6 +113,7 @@ export default function AlimentacaoHomeScreen() {
   const navigation = useNavigation<Nav>();
   const [menuAberto, setMenuAberto] = useState(false);
   const [info, setInfo] = useState<Item['info'] | null>(null);
+  const { salvas } = useReceitasSalvas();
 
   function handleSelecionarAcao(opcao: 'alimentacao' | 'agua' | 'atividade') {
     setMenuAberto(false);
@@ -141,8 +146,8 @@ export default function AlimentacaoHomeScreen() {
             onInfo={() => setInfo(item.info)}
           />
         ) : (
+          <React.Fragment key={item.key}>
           <CartaoHub
-            key={item.key}
             tags={item.tags}
             titulo={item.nome}
             subtitulo={item.descricao}
@@ -152,6 +157,24 @@ export default function AlimentacaoHomeScreen() {
             onInfo={() => setInfo(item.info)}
             atraso={i * 90}
           />
+          {item.key === 'receitas' && salvas.length > 0 && (
+            <Pressable
+              onPress={() => navigation.navigate('ReceitasSalvas')}
+              style={({ pressed }) => [styles.salvas, pressed && styles.salvasPressionada]}
+              accessibilityRole="button"
+              accessibilityLabel={`Receitas salvas, ${textoQuantidadeSalvas(salvas.length)}`}
+            >
+              <View style={styles.salvasIcone}>
+                <Icone name="bookmark" size={18} color={colors.destaqueTexto} />
+              </View>
+              <View style={styles.flex}>
+                <AppText style={styles.salvasTitulo}>Receitas salvas</AppText>
+                <AppText style={styles.salvasTexto}>{textoQuantidadeSalvas(salvas.length)} pra fazer depois</AppText>
+              </View>
+              <Icone name="chevron-forward" size={20} color={colors.primaryDark} />
+            </Pressable>
+          )}
+          </React.Fragment>
         ))}
       </ScrollView>
 
@@ -172,5 +195,22 @@ export default function AlimentacaoHomeScreen() {
 const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: colors.white },
   conteudo: { paddingHorizontal: layout.margemH, paddingBottom: 120, gap: 16 },
+  flex: { flex: 1 },
+  salvas: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 60,
+    marginTop: -6,
+    borderWidth: 1.5,
+    borderColor: colors.bordaSuave,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  salvasPressionada: { backgroundColor: colors.superficieSuave },
+  salvasIcone: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.exercicioAcertoFundo, alignItems: 'center', justifyContent: 'center' },
+  salvasTitulo: { fontFamily: typography.bold, fontSize: 14, color: colors.primaryDark },
+  salvasTexto: { fontFamily: typography.regular, fontSize: 12, color: colors.textoSuave, marginTop: 1 },
   pergunta: { fontFamily: typography.regular, fontSize: 13, color: '#7A8B94', marginBottom: 2 },
 });

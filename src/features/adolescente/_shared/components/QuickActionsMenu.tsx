@@ -2,10 +2,11 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Pressable, StyleSheet, Modal, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
+import { layout } from '../../../../shared/theme/layout';
+import { useAlturaBarraAbas } from './HomeBottomBar';
 
 type Opcao = 'alimentacao' | 'agua' | 'atividade';
 
@@ -23,7 +24,8 @@ const OPCOES: { key: Opcao; label: string; icone: keyof typeof Ionicons.glyphMap
 
 export default function QuickActionsMenu({ aberto, onFechar, onSelecionar }: Props) {
   // o Modal cobre a janela inteira (inclusive sob os botões do Android); a barra de abas sobe com a área segura
-  const insets = useSafeAreaInsets();
+  // as opções abrem logo acima da barra de abas (mesma conta dela, que já soma a área segura)
+  const alturaBarra = useAlturaBarraAbas();
   // controla se o Modal está montado — precisa ficar montado durante a animação de saída
   const [montado, setMontado] = React.useState(aberto);
 
@@ -93,7 +95,7 @@ export default function QuickActionsMenu({ aberto, onFechar, onSelecionar }: Pro
   if (!montado) return null;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={onFechar}>
+    <Modal visible transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={onFechar}>
       <Pressable style={styles.backdropTouch} onPress={onFechar}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
       </Pressable>
@@ -103,7 +105,7 @@ export default function QuickActionsMenu({ aberto, onFechar, onSelecionar }: Pro
         style={[
           styles.wrapper,
           {
-            bottom: 110 + insets.bottom,
+            bottom: alturaBarra + layout.respiroAcimaDaBarra,
             opacity: pillOpacity,
             transform: [{ translateY: pillTranslateY }],
           },
@@ -140,7 +142,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 110, // mesmo valor de antes — ajuste conforme a altura real da HomeBottomBar
   },
   pill: {
     flexDirection: 'row',

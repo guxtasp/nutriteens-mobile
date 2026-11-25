@@ -11,12 +11,13 @@ import { AppText } from '../../../../shared/ui/AppText';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { feedbackToque } from '../../../../shared/audio/feedback';
-import CabecalhoTela from '../components/CabecalhoTela';
 import { ROXO, mensagemErroDesafio } from '../components/DesafioPecas';
 import JardimBotao from '../components/JardimBotao';
 import { ATIVIDADE } from '../theme/turma';
 import { criarDesafio } from '../services/desafioGrupoService';
 import { METRICAS_DESAFIO, type MetricaDesafio, type ModoDesafio } from '../utils/desafioGrupo';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 const MODOS: { modo: ModoDesafio; nome: string; icone: keyof typeof Ionicons.glyphMap; frase: string; detalhe: string }[] = [
   { modo: 'COOPERATIVO', nome: 'Em equipe', icone: 'people', frase: 'Todo mundo junto, sem ranking.', detalhe: 'Os dias de cada um somam e a turma ganha medalhas de bronze, prata e ouro.' },
@@ -24,6 +25,8 @@ const MODOS: { modo: ModoDesafio; nome: string; icone: keyof typeof Ionicons.gly
 ];
 
 export default function NovoDesafioScreen() {
+  // edges só em cima: o fim da rolagem soma a barra do Android (ver shared/utils/areaSegura.ts)
+  const respiroFim = useRespiroInferior(48);
   const navigation = useNavigation<any>();
   const [metrica, setMetrica] = useState<MetricaDesafio>('AGUA');
   const [modo, setModo] = useState<ModoDesafio>('COOPERATIVO');
@@ -45,8 +48,8 @@ export default function NovoDesafioScreen() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <CabecalhoTela titulo="Novo desafio" aoVoltar={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('DesafioGrupo'))} />
-      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+      <ScreenHeader titulo="Novo desafio" onVoltar={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('DesafioGrupo'))} />
+      <ScrollView contentContainerStyle={[estilos.conteudo, { paddingBottom: respiroFim }]} showsVerticalScrollIndicator={false}>
         <View style={estilos.passoTopo}>
           <View style={estilos.passoNumero}><AppText style={estilos.passoNumeroTexto}>1</AppText></View>
           <AppText style={estilos.titulo}>Qual hábito a turma vai cumprir?</AppText>
@@ -111,7 +114,7 @@ export default function NovoDesafioScreen() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#F6F8F5' },
-  conteudo: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 12 },
+  conteudo: { paddingHorizontal: 16, paddingTop: 4, gap: 12 },
   passoTopo: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   passoNumero: { width: 26, height: 26, borderRadius: 13, backgroundColor: ROXO, alignItems: 'center', justifyContent: 'center' },
   passoNumeroTexto: { fontFamily: typography.bold, fontSize: 13, color: colors.white },

@@ -20,6 +20,7 @@ import {
   type TipoCartinha,
 } from '../utils/cartinhas';
 import CartinhaArte from './CartinhaArte';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Props = {
   /** null = fechado */
@@ -30,6 +31,8 @@ type Props = {
 type Resultado = { ok: boolean; texto: string };
 
 export function EnviarCartinhaSheet({ amigo, onFechar }: Props) {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(28);
   const [escolhida, setEscolhida] = useState<TipoCartinha | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -103,10 +106,10 @@ export function EnviarCartinhaSheet({ amigo, onFechar }: Props) {
   }
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onFechar}>
+    <Modal navigationBarTranslucent statusBarTranslucent visible transparent animationType="slide" onRequestClose={onFechar}>
       <View style={estilos.raiz}>
         <Pressable style={estilos.fundo} onPress={onFechar} accessibilityLabel="Fechar" />
-        <View style={estilos.caixa}>
+        <View style={[estilos.caixa, { paddingBottom: respiroFolha }]}>
           <View style={estilos.puxador} />
           <AppText style={estilos.titulo}>Mandar cartinha para {amigo.apelido}</AppText>
           <AppText style={estilos.sub}>Escolha uma. Ela chega na caixa de cartinhas. Dá para mandar 1 por dia para cada amigo.</AppText>
@@ -169,7 +172,7 @@ export function EnviarCartinhaSheet({ amigo, onFechar }: Props) {
 const estilos = StyleSheet.create({
   raiz: { flex: 1, justifyContent: 'flex-end' },
   fundo: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  caixa: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, maxHeight: '88%' },
+  caixa: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '88%' },
   puxador: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: '#D5DDD8', marginBottom: 14 },
   titulo: { fontFamily: typography.bold, fontSize: 18, color: colors.primaryDark },
   sub: { fontSize: 13, color: '#6B7280', marginTop: 2, marginBottom: 8 },

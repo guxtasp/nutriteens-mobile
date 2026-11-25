@@ -3,8 +3,7 @@ import ReceitaCompartilhadaScreen from '../features/adolescente/social/screens/R
 import NotificacoesScreen from '../features/adolescente/notificacoes/screens/NotificacoesScreen';
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import TriagemIntroScreen from '../features/adolescente/triagem/screens/TriagemIntroScreen';
-import TriagemApresentacaoScreen from '../features/adolescente/triagem/screens/TriagemApresentacaoScreen';
+import BroxisConversaScreen from '../features/adolescente/triagem/screens/BroxisConversaScreen';
 import RecordatorioRefeicaoScreen from '../features/adolescente/triagem/recordatorio/screens/RecordatorioRefeicaoScreen';
 import EbiaPerguntaScreen from '../features/adolescente/triagem/ebia/screens/EbiaPerguntaScreen';
 import HomeScreen from '../features/adolescente/home/screens/HomeScreen';
@@ -14,12 +13,14 @@ import JogoMemoriaScreen from '../features/adolescente/jogos/screens/JogoMemoria
 import JogoNovaScreen from '../features/adolescente/jogos/screens/JogoNovaScreen';
 import VitaminasScreen from '../features/adolescente/vitaminas/screens/VitaminasScreen';
 import NutrienteDetalheScreen from '../features/adolescente/vitaminas/screens/NutrienteDetalheScreen';
+import TesteNutrienteScreen from '../features/adolescente/vitaminas/screens/TesteNutrienteScreen';
 import type { NutrienteChave } from '../features/adolescente/alimentacao/utils/nutrientesPorGrupo';
 import ScannerAlimentoScreen from '../features/adolescente/scanner/screens/ScannerAlimentoScreen';
 import ResultadoScannerScreen from '../features/adolescente/scanner/screens/ResultadoScannerScreen';
 import CadastroProdutoScannerScreen from '../features/adolescente/scanner/screens/CadastroProdutoScannerScreen';
 import type { MotivoSolicitacao } from '../features/adolescente/scanner/services/scannerService';
 import ReceitasComIngredientesScreen from '../features/adolescente/receitas-ingredientes/screens/ReceitasComIngredientesScreen';
+import ReceitasSalvasScreen from '../features/adolescente/receitas-ingredientes/screens/ReceitasSalvasScreen';
 import SugestoesAlimentaresScreen from '../features/adolescente/alimentacao/screens/SugestoesAlimentaresScreen';
 import AlimentacaoHomeScreen from '../features/adolescente/alimentacao/screens/AlimentacaoHomeScreen';
 import TrilhaScreen from '../features/adolescente/trilha/screens/TrilhaScreen';
@@ -59,16 +60,24 @@ import MissoesScreen from '../features/adolescente/missoes/screens/MissoesScreen
 import MetricasScreen from '../features/adolescente/metricas/screens/MetricasScreen';
 import AlbumCartasScreen from '../features/adolescente/cartas/screens/AlbumCartasScreen';
 import ExtratoXpScreen from '../features/adolescente/perfil/screens/ExtratoXpScreen';
+import ApagarDadosScreen from '../features/adolescente/perfil/screens/ApagarDadosScreen';
+import ApagarConfirmarScreen from '../features/adolescente/perfil/screens/ApagarConfirmarScreen';
+import ApagarProntoScreen from '../features/adolescente/perfil/screens/ApagarProntoScreen';
 import type { CategoriaTroca } from '../features/adolescente/trocas/utils/trocas';
 import type { TrocaSugerida } from '../features/adolescente/trocas/services/trocasService';
 import OfflineBanner from '../shared/offline/OfflineBanner';
 import { OfflineProvider } from '../shared/offline/OfflineContext';
 import RecompensasHost from '../features/adolescente/recompensas/components/RecompensasHost';
 import { TourProvider } from '../features/adolescente/tour/TourContext';
+import LegalDocumentoScreen from '../features/legal/screens/LegalDocumentoScreen';
+import TrocaBaralhoScreen from '../features/adolescente/trocas/screens/TrocaBaralhoScreen';
+import TrocaTesteiScreen from '../features/adolescente/trocas/screens/TrocaTesteiScreen';
+import TrocasGuardadasScreen from '../features/adolescente/trocas/screens/TrocasGuardadasScreen';
+import ReaceiteTermosHost from '../features/legal/components/ReaceiteTermosHost';
 
 export type AdolescenteStackParamList = {
+  // conversa com o Bróxis antes do recordatório (nome de rota mantido de propósito)
   TriagemIntro: undefined;
-  TriagemApresentacao: undefined;
   RecordatorioRefeicao: { indice: number; recordatorioId?: string };
   EbiaPergunta: { indice: number; respostasAnteriores: boolean[] };
   Home: undefined;
@@ -77,12 +86,18 @@ export type AdolescenteStackParamList = {
   Metricas: { aba?: 'resumo' | 'habitos' | 'conquistas' | string } | undefined;
   Alimentacao: undefined;
   SugestoesAlimentares: { categoria?: CategoriaTroca } | undefined;
+  // baralho de ideias de uma categoria; `trocaInicialId` abre já numa carta (ideia do dia)
+  TrocaBaralho: { categoria: CategoriaTroca; trocaInicialId?: string };
+  TrocaTestei: { trocaId: string };
+  TrocasGuardadas: undefined;
   ReceitasIngredientes: undefined;
+  ReceitasSalvas: undefined;
   Vitaminas: undefined;
   Jogos: undefined;
   JogoNova: undefined;
   JogoMemoria: undefined;
   NutrienteDetalhe: { nutriente: NutrienteChave };
+  TesteNutriente: { nutriente: NutrienteChave };
   Trilha: undefined;
   LicaoDetalhe: {
     licaoId: string;
@@ -119,6 +134,10 @@ export type AdolescenteStackParamList = {
   Profile: undefined;
   AlbumCartas: undefined;
   ExtratoXp: undefined;
+  // "Apagar meus dados" (fase 5): Pronto recebe o código do registro anônimo
+  ApagarDados: undefined;
+  ApagarConfirmar: undefined;
+  ApagarPronto: { codigo: string | null };
   BuscaAlimento: { tipo: TipoRefeicao; nomeRefeicao: string; alimentoRecemCriado?: Alimento };
   NovoAlimentoOrigem: { tipo: TipoRefeicao; nomeRefeicao: string };
   NovoAlimentoForm: { tipo: TipoRefeicao; nomeRefeicao: string; origem: OrigemAlimento };
@@ -140,6 +159,9 @@ export type AdolescenteStackParamList = {
   CadastroProdutoScanner: { codigo: string; motivo?: MotivoSolicitacao };
   TipoRefeicao:undefined;
   MetodoRegistroAlimentar: { tipo: TipoRefeicao; nomeRefeicao: string };
+  // abertos pelo reaceite dos termos (v2.0)
+  TermosDeUso: { documento: 'termos' };
+  PoliticaPrivacidade: { documento: 'privacidade' };
 };
 
 const Stack = createNativeStackNavigator<AdolescenteStackParamList>();
@@ -159,8 +181,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 {etapaOnboarding === 'TRIAGEM' ? (
                 <>
-                    <Stack.Screen name="TriagemIntro" component={TriagemIntroScreen} />
-                    <Stack.Screen name="TriagemApresentacao" component={TriagemApresentacaoScreen} />
+                    <Stack.Screen name="TriagemIntro" component={BroxisConversaScreen} />
                     <Stack.Screen name="RecordatorioRefeicao" component={RecordatorioRefeicaoScreen} />
                     <Stack.Screen name="EbiaPergunta" component={EbiaPerguntaScreen} />
                     <Stack.Screen name="Home" component={HomeScreen} options={{ animation: 'none' }} />
@@ -169,7 +190,11 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Metricas" component={MetricasScreen} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
+                    <Stack.Screen name="TrocaBaralho" component={TrocaBaralhoScreen} />
+                    <Stack.Screen name="TrocaTestei" component={TrocaTesteiScreen} options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="TrocasGuardadas" component={TrocasGuardadasScreen} />
                     <Stack.Screen name="ReceitasIngredientes" component={ReceitasComIngredientesScreen} />
+                    <Stack.Screen name="ReceitasSalvas" component={ReceitasSalvasScreen} />
                     <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
                     <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
                     <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />
@@ -178,6 +203,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="JogoNova" component={JogoNovaScreen} />
                     <Stack.Screen name="JogoMemoria" component={JogoMemoriaScreen} />
                     <Stack.Screen name="NutrienteDetalhe" component={NutrienteDetalheScreen} />
+                    <Stack.Screen name="TesteNutriente" component={TesteNutrienteScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
                     <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
@@ -202,6 +228,9 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     <Stack.Screen name="AlbumCartas" component={AlbumCartasScreen} />
                     <Stack.Screen name="ExtratoXp" component={ExtratoXpScreen} />
+                    <Stack.Screen name="ApagarDados" component={ApagarDadosScreen} />
+                    <Stack.Screen name="ApagarConfirmar" component={ApagarConfirmarScreen} />
+                    <Stack.Screen name="ApagarPronto" component={ApagarProntoScreen} options={{ gestureEnabled: false }} />
                     <Stack.Screen name="ConsumoAgua" component={ConsumoAguaScreen} />
                     <Stack.Screen name="TipoRefeicao" component={TipoRefeicaoScreen} />
                     <Stack.Screen name="MetodoRegistroAlimentar" component={MetodoRegistroScreen} />
@@ -209,7 +238,9 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="NovoAlimentoOrigem" component={NovoAlimentoOrigemScreen} />
                     <Stack.Screen name="NovoAlimentoForm" component={NovoAlimentoFormScreen} />
                     <Stack.Screen name="AlimentoCadastrado" component={AlimentoCadastradoScreen} />
-                    <Stack.Screen name="FeedbackRefeicao" component={FeedbackRefeicaoScreen} />                    
+                    <Stack.Screen name="FeedbackRefeicao" component={FeedbackRefeicaoScreen} />
+                    <Stack.Screen name="TermosDeUso" component={LegalDocumentoScreen} initialParams={{ documento: 'termos' }} />
+                    <Stack.Screen name="PoliticaPrivacidade" component={LegalDocumentoScreen} initialParams={{ documento: 'privacidade' }} />                    
                 </>
                 ) : (
                 <>
@@ -217,7 +248,11 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Sequencia" component={SequenciaScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Alimentacao" component={AlimentacaoHomeScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="SugestoesAlimentares" component={SugestoesAlimentaresScreen} />
+                    <Stack.Screen name="TrocaBaralho" component={TrocaBaralhoScreen} />
+                    <Stack.Screen name="TrocaTestei" component={TrocaTesteiScreen} options={{ presentation: 'modal' }} />
+                    <Stack.Screen name="TrocasGuardadas" component={TrocasGuardadasScreen} />
                     <Stack.Screen name="ReceitasIngredientes" component={ReceitasComIngredientesScreen} />
+                    <Stack.Screen name="ReceitasSalvas" component={ReceitasSalvasScreen} />
                     <Stack.Screen name="ScannerAlimento" component={ScannerAlimentoScreen} />
                     <Stack.Screen name="ResultadoScanner" component={ResultadoScannerScreen} />
                     <Stack.Screen name="CadastroProdutoScanner" component={CadastroProdutoScannerScreen} />
@@ -226,6 +261,7 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="JogoNova" component={JogoNovaScreen} />
                     <Stack.Screen name="JogoMemoria" component={JogoMemoriaScreen} />
                     <Stack.Screen name="NutrienteDetalhe" component={NutrienteDetalheScreen} />
+                    <Stack.Screen name="TesteNutriente" component={TesteNutrienteScreen} options={{ presentation: 'modal' }} />
                     <Stack.Screen name="Trilha" component={TrilhaScreen} options={{ animation: 'none' }} />
                     <Stack.Screen name="LicaoDetalhe" component={LicaoDetalheScreen} />
                     <Stack.Screen name="LicaoCompleta" component={LicaoCompletaScreen} />
@@ -252,6 +288,9 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="Profile" component={ProfileScreen} />
                     <Stack.Screen name="AlbumCartas" component={AlbumCartasScreen} />
                     <Stack.Screen name="ExtratoXp" component={ExtratoXpScreen} />
+                    <Stack.Screen name="ApagarDados" component={ApagarDadosScreen} />
+                    <Stack.Screen name="ApagarConfirmar" component={ApagarConfirmarScreen} />
+                    <Stack.Screen name="ApagarPronto" component={ApagarProntoScreen} options={{ gestureEnabled: false }} />
                     <Stack.Screen name="ConsumoAgua" component={ConsumoAguaScreen} />
                     <Stack.Screen name="TipoRefeicao" component={TipoRefeicaoScreen} />
                     <Stack.Screen name="MetodoRegistroAlimentar" component={MetodoRegistroScreen} />
@@ -260,12 +299,16 @@ export default function AdolescenteNavigator({ etapaOnboarding }: Props) {
                     <Stack.Screen name="NovoAlimentoForm" component={NovoAlimentoFormScreen} />
                     <Stack.Screen name="AlimentoCadastrado" component={AlimentoCadastradoScreen} />
                     <Stack.Screen name="FeedbackRefeicao" component={FeedbackRefeicaoScreen} />
+                    <Stack.Screen name="TermosDeUso" component={LegalDocumentoScreen} initialParams={{ documento: 'termos' }} />
+                    <Stack.Screen name="PoliticaPrivacidade" component={LegalDocumentoScreen} initialParams={{ documento: 'privacidade' }} />
                 </>
                 )}
             </Stack.Navigator>
             {/* lembretes só depois da triagem (durante o onboarding não dispara nada) */}
             <LembretesGate ativo={etapaOnboarding !== 'TRIAGEM'} />
             <RecompensasHost ativo={etapaOnboarding !== 'TRIAGEM'} />
+            {/* reaceite dos termos: só depois da triagem, em telas calmas */}
+            <ReaceiteTermosHost ativo={etapaOnboarding !== 'TRIAGEM'} />
             <OfflineBanner />
           </TourProvider>
       </AlimentacaoProvider>

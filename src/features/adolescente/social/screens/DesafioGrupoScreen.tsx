@@ -16,7 +16,6 @@ import { useAuth } from '../../../../shared/contexts/AuthContext';
 import { formatarDataISO } from '../../../../shared/utils/data';
 import { feedbackToque } from '../../../../shared/audio/feedback';
 import AbasSegmentadas from '../components/AbasSegmentadas';
-import CabecalhoTela from '../components/CabecalhoTela';
 import { ROXO, mensagemErroDesafio } from '../components/DesafioPecas';
 import DesafioResumoCard from '../components/DesafioResumoCard';
 import JardimBotao from '../components/JardimBotao';
@@ -25,10 +24,14 @@ import { ATIVIDADE } from '../theme/turma';
 import type { Trofeu } from '../utils/trofeu';
 import { listarDesafios, listarTrofeus, responderConviteDesafio, sincronizarDesafiosHoje } from '../services/desafioGrupoService';
 import { MAX_DESAFIOS_ATIVOS, fraseDaMetrica, jaAcabou, nomeDaMetrica, type DesafioGrupo } from '../utils/desafioGrupo';
+import { ScreenHeader } from '../../../../shared/ui/ScreenHeader';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Aba = 'desafios' | 'trofeus';
 
 export default function DesafioGrupoScreen() {
+  // edges só em cima: o fim da rolagem soma a barra do Android (ver shared/utils/areaSegura.ts)
+  const respiroFim = useRespiroInferior(48);
   const navigation = useNavigation<any>();
   const { userId } = useAuth();
   const hoje = formatarDataISO(new Date());
@@ -86,9 +89,9 @@ export default function DesafioGrupoScreen() {
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top']}>
-      <CabecalhoTela titulo="Desafio em grupo" aoVoltar={voltar} />
+      <ScreenHeader titulo="Desafio em grupo" onVoltar={voltar} />
 
-      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[estilos.conteudo, { paddingBottom: respiroFim }]} showsVerticalScrollIndicator={false}>
         <AbasSegmentadas<Aba>
           cor={ROXO}
           atual={aba}
@@ -159,7 +162,7 @@ export default function DesafioGrupoScreen() {
 
 const estilos = StyleSheet.create({
   tela: { flex: 1, backgroundColor: '#F6F8F5' },
-  conteudo: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48, gap: 14 },
+  conteudo: { paddingHorizontal: 16, paddingTop: 4, gap: 14 },
   secao: { fontFamily: typography.bold, fontSize: 12, letterSpacing: 0.8, color: '#5A6B64', textTransform: 'uppercase', marginTop: 4 },
   convite: { backgroundColor: colors.white, borderRadius: 22, borderWidth: 2, borderColor: ROXO, padding: 16, gap: 12 },
   tituloCartao: { fontFamily: typography.bold, fontSize: 16, lineHeight: 21, color: colors.primaryDark },

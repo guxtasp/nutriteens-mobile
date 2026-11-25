@@ -11,6 +11,7 @@ import type { ReceitaComAlimento, PassoReceita, IngredienteReceita } from '../se
 import { buscarPassosDaReceita, buscarIngredientesDaReceita } from '../services/receitasService';
 import GuiaPreparoReceitaSheet from './GuiaPreparoReceitaSheet';
 import { registrarEvento } from '../../../../shared/analytics/analytics';
+import { useRespiroInferior } from '../../../../shared/hooks/useRespiroInferior';
 
 type Props = {
   receita: ReceitaComAlimento | null;
@@ -26,6 +27,8 @@ type Props = {
 const ROTULO_DIFICULDADE = { FACIL: 'Fácil', MEDIO: 'Médio', DIFICIL: 'Difícil' };
 
 export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCarrinho, onEnviarParaAmigo, previa = false }: Props) {
+  // folha presa embaixo: o respiro soma a barra do Android (edge-to-edge); ver shared/utils/areaSegura.ts
+  const respiroFolha = useRespiroInferior(32);
   const [passos, setPassos] = useState<PassoReceita[]>([]);
   const [ingredientes, setIngredientes] = useState<IngredienteReceita[]>([]);
   const [guiaVisivel, setGuiaVisivel] = useState(false);
@@ -85,13 +88,13 @@ export default function ReceitaDetalheSheet({ receita, onFechar, onAdicionarAoCa
 
   return (
     <>
-      <Modal visible transparent animationType="slide" onRequestClose={onFechar}>
+      <Modal navigationBarTranslucent statusBarTranslucent visible transparent animationType="slide" onRequestClose={onFechar}>
         {/* o passo a passo vive DENTRO deste Modal (overlay): abrir um segundo Modal
             por cima de outro falha no iOS e o guia nunca aparecia */}
         <View style={styles.raiz}>
           <Pressable style={styles.backdrop} onPress={onFechar} />
 
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: respiroFolha }]}>
             <View style={styles.puxador} />
 
             {/* overlay absoluto: o banner reservava ~80px de altura vazia no topo mesmo sem mensagem */}
@@ -190,7 +193,7 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
     backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 20, paddingBottom: 32, maxHeight: '85%',
+    padding: 20, maxHeight: '85%',
   },
   scroll: { flexGrow: 0, flexShrink: 1 },
   bannerOverlay: { position: 'absolute', top: 24, left: 20, right: 20, zIndex: 10 },
