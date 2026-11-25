@@ -19,8 +19,10 @@ import { AppButton } from '../../../../shared/ui/AppButton';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { feedbackPerda } from '../../../../shared/audio/feedback';
-import { BroxisTristeAnimado } from './BroxisTristeAnimado';
+import { BroxisPose } from '../../../../shared/ui/BroxisPose';
 import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { respiroInferior, respiroSuperior } from '../../../../shared/utils/areaSegura';
 
 type Props = {
   visivel: boolean;
@@ -34,7 +36,8 @@ type Props = {
 
 const CINZA_APAGADO = '#9AA5A0';
 // A arte do Bróxis triste é um PNG de 148 px: acima de ~120 dp ela estoura e perde qualidade.
-const TAMANHO_MASCOTE = 120;
+// Bróxis de corpo inteiro chorando (antes: rosto redondo animado, BroxisTristeAnimado)
+const TAMANHO_MASCOTE = 150;
 const TAMANHO_FOGUINHO = 96;
 
 export function mensagemPerda(diasPerdidos?: number): string {
@@ -84,6 +87,9 @@ function Gota({ x, atraso, dur, altura, ativa }: { x: number; atraso: number; du
 }
 
 export default function PerdaSequenciaOverlay({ visivel, onFinalizado, diasPerdidos, recorde }: Props) {
+  // tela cheia por baixo das barras (edge-to-edge): topo e base somam as barras do sistema;
+  // o tamanho do Bróxis e o palco dele continuam iguais
+  const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const total = diasPerdidos && diasPerdidos > 1 ? Math.min(diasPerdidos, 999) : 0;
   const [numero, setNumero] = useState(total);
@@ -278,9 +284,9 @@ export default function PerdaSequenciaOverlay({ visivel, onFinalizado, diasPerdi
   );
 
   return (
-    <Modal visible={visivel} transparent animationType="fade" statusBarTranslucent onRequestClose={onFinalizado}>
+    <Modal visible={visivel} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onFinalizado}>
       <Pressable style={styles.tudo} onPress={irParaOFinal} accessible={false}>
-        <LinearGradient colors={[colors.background, colors.primaryDark]} style={styles.fundo}>
+        <LinearGradient colors={[colors.background, colors.primaryDark]} style={[styles.fundo, { paddingTop: respiroSuperior(insets.top, 72), paddingBottom: respiroInferior(insets.bottom, 40) }]}>
           {GOTAS.map((g, i) => (
             <Gota key={i} {...g} altura={height} ativa={visivel} />
           ))}
@@ -331,7 +337,7 @@ export default function PerdaSequenciaOverlay({ visivel, onFinalizado, diasPerdi
                   },
                 ]}
               >
-                <BroxisTristeAnimado tamanho={TAMANHO_MASCOTE} ativo={rostoAtivo} />
+                <BroxisPose pose="chorando" tamanho={TAMANHO_MASCOTE} entrada={false} movimento={rostoAtivo ? 'soluco' : 'nenhum'} />
               </Animated.View>
             </View>
 
@@ -368,7 +374,7 @@ export default function PerdaSequenciaOverlay({ visivel, onFinalizado, diasPerdi
 
 const styles = StyleSheet.create({
   tudo: { flex: 1 },
-  fundo: { flex: 1, paddingHorizontal: 24, paddingTop: 72, paddingBottom: 40, overflow: 'hidden' },
+  fundo: { flex: 1, paddingHorizontal: 24, overflow: 'hidden' },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   gota: {
     position: 'absolute',

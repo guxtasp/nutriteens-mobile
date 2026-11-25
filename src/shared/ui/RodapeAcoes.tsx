@@ -16,16 +16,18 @@ type Props = {
   semDivisoria?: boolean;
   /** cor de fundo; padrão branco */
   fundo?: string;
+  /** espaço mínimo embaixo em aparelhos sem barra do sistema (padrão layout.rodapeEspacoMin) */
+  espacoMin?: number;
   style?: StyleProp<ViewStyle>;
 };
 
-export function RodapeAcoes({ children, semDivisoria, fundo = colors.white, style }: Props) {
+export function RodapeAcoes({ children, semDivisoria, fundo = colors.white, espacoMin = layout.rodapeEspacoMin, style }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View
       style={[
         styles.rodape,
-        { backgroundColor: fundo, paddingBottom: Math.max(insets.bottom, layout.rodapeEspacoMin) },
+        { backgroundColor: fundo, paddingBottom: Math.max(insets.bottom, espacoMin) },
         !semDivisoria && styles.divisoria,
         style,
       ]}

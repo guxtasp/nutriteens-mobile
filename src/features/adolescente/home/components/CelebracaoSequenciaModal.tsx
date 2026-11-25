@@ -16,6 +16,7 @@ import { Modal, View, Animated, Easing, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { AppText } from '../../../../shared/ui/AppText';
+import { ARTE_POSE } from '../../../../shared/ui/BroxisPose';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { IMAGENS_STATUS_DIA, DiaSemana } from '../types/statusDia';
@@ -23,6 +24,8 @@ import { obterConteudoCelebracao } from '../utils/celebracaoSequencia';
 import { feedbackCelebracao } from '../../../../shared/audio/feedback';
 import { Dimensions } from 'react-native';
 import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { respiroInferior, respiroSuperior } from '../../../../shared/utils/areaSegura';
 
 const CORES_STATUS_MANTIDO = new Set(['mantido', 'hoje_mantido']);
 const ROSA_SEQUENCIA = '#E9578F';
@@ -61,6 +64,9 @@ function FundoRaiosDeSol() {
 }
 
 export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias, onFechar }: Props) {
+  // tela cheia por baixo das barras (edge-to-edge): topo e base somam as barras do sistema;
+  // o tamanho do Bróxis e o palco dele continuam iguais
+  const insets = useSafeAreaInsets();
   const conteudo = useMemo(() => obterConteudoCelebracao(sequenciaAtual), [sequenciaAtual]);
   const rotuloDia = sequenciaAtual === 1 ? 'dia de sequência' : 'dias de sequência';
 
@@ -210,8 +216,8 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
   const heroGlowOpacity = heroOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.45] });
 
   return (
-    <Modal visible={visivel} transparent animationType="fade" statusBarTranslucent onRequestClose={onFechar}>
-      <View style={styles.container}>
+    <Modal visible={visivel} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onFechar}>
+      <View style={[styles.container, { paddingTop: respiroSuperior(insets.top, 72), paddingBottom: respiroInferior(insets.bottom, 40) }]}>
         <FundoRaiosDeSol />
 
         {/* --- fase 1: foguinho hero, sozinho e centralizado --- */}
@@ -255,7 +261,7 @@ export default function CelebracaoSequenciaModal({ visivel, sequenciaAtual, dias
               <Ionicons name="sparkles" size={15} color="#FFF3C4" />
             </Animated.View>
             <Image
-              source={require('../../../../../assets/img/feedback/supercontente.png')}
+              source={ARTE_POSE.torcida}
               style={styles.mascoteImagem}
               resizeMode="contain"
             />
@@ -313,8 +319,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 32,
-    paddingTop: 72,
-    paddingBottom: 40,
     justifyContent: 'space-between',
   },
   heroContainer: {
@@ -380,15 +384,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   mascoteArea: {
-    width: 140,
-    height: 140,
+    width: 170,
+    height: 170,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
   mascoteImagem: {
-    width: 140,
-    height: 140,
+    width: 170,
+    height: 170,
   },
   sparkleTopLeft: {
     position: 'absolute',

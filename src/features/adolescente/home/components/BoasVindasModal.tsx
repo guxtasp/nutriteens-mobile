@@ -26,11 +26,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { AppText } from '../../../../shared/ui/AppText';
+import { ARTE_POSE } from '../../../../shared/ui/BroxisPose';
 import ChuvaDeConfete from '../../../../shared/ui/ChuvaDeConfete';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { feedbackBoasVindas, feedbackLeve } from '../../../../shared/audio/feedback';
 import type { MensagemBoasVindas } from '../utils/boasVindas';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { respiroInferior, respiroSuperior } from '../../../../shared/utils/areaSegura';
 
 type Props = {
   visivel: boolean;
@@ -130,6 +133,9 @@ function Onda({ tamanho, defasagem, animar }: { tamanho: number; defasagem: numb
 }
 
 export default function BoasVindasModal({ visivel, mensagem, onFechar }: Props) {
+  // tela cheia por baixo das barras (edge-to-edge): topo e base somam as barras do sistema;
+  // o tamanho do Bróxis e o palco dele continuam iguais
+  const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   // null = ainda não sabemos a preferência do sistema (a animação espera, pra não piscar)
   const [reduzirMovimento, setReduzirMovimento] = useState<boolean | null>(null);
@@ -249,7 +255,7 @@ export default function BoasVindasModal({ visivel, mensagem, onFechar }: Props) 
   const giro = acenoGiro.interpolate({ inputRange: [-1, 1], outputRange: ['-4deg', '4deg'] });
 
   return (
-    <Modal visible={visivel} transparent animationType="fade" statusBarTranslucent onRequestClose={onFechar}>
+    <Modal visible={visivel} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onFechar}>
       <View style={styles.container}>
         <LinearGradient colors={['#0B2F25', colors.background, '#2A8A5B']} style={StyleSheet.absoluteFill} />
 
@@ -258,7 +264,7 @@ export default function BoasVindasModal({ visivel, mensagem, onFechar }: Props) 
         ))}
 
         {/* palco: ondas + Bróxis + balão encostado nele */}
-        <View style={styles.palco}>
+        <View style={[styles.palco, { paddingTop: respiroSuperior(insets.top, 40) }]}>
           <View style={{ width: diametro, height: diametro, alignItems: 'center', justifyContent: 'center' }}>
             <View style={styles.ondas} pointerEvents="none">
               <Onda tamanho={diametro * 1.3} defasagem={0} animar={animar} />
@@ -267,16 +273,16 @@ export default function BoasVindasModal({ visivel, mensagem, onFechar }: Props) 
 
             <Animated.View
               accessible
-              accessibilityLabel="Bróxis dando oi"
+              accessibilityLabel="Bróxis dando as boas-vindas"
               style={{
                 opacity: broxisOpacity,
                 transform: [{ translateY: broxisY }, { scale: broxisScale }, { rotate: giro }],
               }}
             >
               <Image
-                source={require('../../../../../assets/img/feedback/acolhedor.png')}
-                style={{ width: diametro, height: diametro, borderRadius: diametro / 2, borderWidth: 5, borderColor: colors.white }}
-                resizeMode="cover"
+                source={ARTE_POSE.apresentando}
+                style={{ width: diametro, height: diametro }}
+                resizeMode="contain"
               />
             </Animated.View>
 
@@ -291,7 +297,7 @@ export default function BoasVindasModal({ visivel, mensagem, onFechar }: Props) 
         </View>
 
         {/* cartão branco */}
-        <Animated.View style={[styles.cartao, { transform: [{ translateY: cartaoY }] }]}>
+        <Animated.View style={[styles.cartao, { paddingBottom: respiroInferior(insets.bottom, 32), transform: [{ translateY: cartaoY }] }]}>
           <View style={styles.titulo} accessible accessibilityRole="header" accessibilityLabel={mensagem.titulo}>
             {palavras.map((palavra, i) => (
               <Animated.View
@@ -380,7 +386,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 40,
   },
   ondas: {
     ...StyleSheet.absoluteFillObject,
@@ -423,7 +428,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 26,
-    paddingBottom: 32,
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 16,

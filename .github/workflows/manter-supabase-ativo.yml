@@ -1,0 +1,43 @@
+# .github/workflows/manter-supabase-ativo.yml
+#
+# O plano gratuito do Supabase pausa o projeto depois de ~7 dias sem atividade no banco.
+# Este agendamento chama a função public.ping() a cada 3 dias (margem segura) para manter
+# o projeto acordado. Usa só a URL e a chave ANON (as mesmas públicas do app), guardadas
+# como "secrets" do repositório no GitHub. Nunca use a chave service_role aqui.
+#
+# Configuração (uma vez): GitHub > repositório > Settings > Secrets and variables > Actions >
+#   SUPABASE_URL       = valor de EXPO_PUBLIC_SUPABASE_URL
+#   SUPABASE_ANON_KEY  = valor de EXPO_PUBLIC_SUPABASE_ANON_KEY
+# Para testar na hora: aba Actions > "Manter Supabase ativo" > Run workflow.
+
+name: Manter Supabase ativo
+
+on:
+  schedule:
+    - cron: '17 9 */3 * *' # a cada 3 dias, 09:17 UTC (06:17 em Brasília)
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Chamar public.ping()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -e
+          for tentativa in 1 2 3; do
+            status=$(curl -s -o resposta.txt -w '%{http_code}' -X POST \
+              "$SUPABASE_URL/rest/v1/rpc/ping" \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+              -H "Content-Type: application/json" \
+              -d '{}')
+            echo "Tentativa $tentativa: HTTP $status - $(cat resposta.txt)"
+            if [ "$status" = "200" ]; then exit 0; fi
+            sleep 20
+          done
+          echo "O Supabase não respondeu. Se o projeto já estiver pausado, reative em supabase.com/dashboard (Resume project)."
+          exit 1

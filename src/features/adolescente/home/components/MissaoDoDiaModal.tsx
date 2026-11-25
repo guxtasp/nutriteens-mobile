@@ -14,12 +14,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppButton } from '../../../../shared/ui/AppButton';
 import { AppText } from '../../../../shared/ui/AppText';
+import { ARTE_POSE } from '../../../../shared/ui/BroxisPose';
 import { IconeMissao } from '../../../../shared/ui/IconeMissao';
 import { colors } from '../../../../shared/theme/colors';
 import { typography } from '../../../../shared/theme/typography';
 import { feedbackLeve, feedbackToque } from '../../../../shared/audio/feedback';
 import { useReduzirMovimento } from '../../../../shared/hooks/useReduzirMovimento';
 import type { MissaoDoDia } from '../services/missaoService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { respiroInferior, respiroSuperior } from '../../../../shared/utils/areaSegura';
 import {
   montarConteudoMissaoTela,
   rotuloDataExtenso,
@@ -83,6 +86,9 @@ function Bolha({ x, tamanho, duracao, atraso, altura, largura, animar }: (typeof
 }
 
 export default function MissaoDoDiaModal({ visivel, missao, hojeISO, sequenciaAtual, onAceitar, onFechar }: Props) {
+  // tela cheia por baixo das barras (edge-to-edge): topo e base somam as barras do sistema;
+  // o tamanho do Bróxis e o palco dele continuam iguais
+  const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const reduzir = useReduzirMovimento();
   const animar = !reduzir;
@@ -179,14 +185,14 @@ export default function MissaoDoDiaModal({ visivel, missao, hojeISO, sequenciaAt
   const sobe = flutuar.interpolate({ inputRange: [0, 1], outputRange: [0, -8] });
 
   return (
-    <Modal visible={visivel} transparent animationType="fade" statusBarTranslucent onRequestClose={onFechar}>
+    <Modal visible={visivel} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onFechar}>
       <View style={styles.container}>
         <LinearGradient colors={['#0B2F25', colors.background, '#2A8A5B']} style={StyleSheet.absoluteFill} />
         {BOLHAS.map((b, i) => (
           <Bolha key={i} {...b} altura={height} largura={width} animar={animar} />
         ))}
 
-        <View style={styles.palco}>
+        <View style={[styles.palco, { paddingTop: respiroSuperior(insets.top, 24), paddingBottom: respiroInferior(insets.bottom, 0) }]}>
           {/* Bróxis + balão */}
           <Animated.View
             style={{ opacity: broxisOpacity, transform: [{ translateY: Animated.add(broxisY, sobe) }] }}
@@ -194,7 +200,7 @@ export default function MissaoDoDiaModal({ visivel, missao, hojeISO, sequenciaAt
             accessibilityLabel="Bróxis incentivando"
           >
             <Image
-              source={require('../../../../../assets/img/feedback/incentivando.png')}
+              source={ARTE_POSE.determinado}
               style={{ width: mascoteTamanho, height: mascoteTamanho }}
               resizeMode="contain"
             />
@@ -271,7 +277,7 @@ export default function MissaoDoDiaModal({ visivel, missao, hojeISO, sequenciaAt
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  palco: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingTop: 24 },
+  palco: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
   balao: {
     position: 'absolute',
     top: 4,

@@ -17,3 +17,12 @@ describe('respiroInferior', () => {
     expect(respiroInferior(-5, 20)).toBe(20);
   });
 });
+
+describe('respiroSuperior', () => {
+  it('mantém o respiro original com barra de status comum e soma o notch quando ele é maior', () => {
+    const { respiroSuperior } = require('../areaSegura');
+    expect(respiroSuperior(24, 72)).toBe(72);
+    expect(respiroSuperior(59, 40)).toBe(75);
+    expect(respiroSuperior(0, 40)).toBe(40);
+  });
+});

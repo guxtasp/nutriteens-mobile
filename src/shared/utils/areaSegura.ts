@@ -11,3 +11,12 @@ export function respiroInferior(insetInferior: number, base: number, acimaDaBarr
   const inset = Number.isFinite(insetInferior) && insetInferior > 0 ? insetInferior : 0;
   return Math.max(base, inset + acimaDaBarra);
 }
+
+/**
+ * Mesma regra para o topo (barra de status, notch, Dynamic Island) em telas e modais de tela cheia
+ * que desenham por baixo da barra (statusBarTranslucent): o maior entre o respiro original e
+ * "inset de cima + respiro".
+ */
+export function respiroSuperior(insetSuperior: number, base: number, acimaDaBarra: number = layout.respiroAcimaDaBarra): number {
+  return respiroInferior(insetSuperior, base, acimaDaBarra);
+}
